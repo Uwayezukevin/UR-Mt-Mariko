@@ -12,6 +12,7 @@ export default function EventAttendance() {
   const [attendance, setAttendance] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isAttendanceClosed, setIsAttendanceClosed] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -20,6 +21,7 @@ export default function EventAttendance() {
   const fetchData = async () => {
     setLoading(true);
     setError("");
+
     try {
       const [eventRes, membersRes, attendanceRes] = await Promise.all([
         api.get(`/events/${eventId}`),
@@ -27,14 +29,37 @@ export default function EventAttendance() {
         api.get(`/attendance/event/${eventId}`),
       ]);
 
-      setEvent(eventRes.data);
-      setMembers(membersRes.data);
+      const eventData = eventRes.data;
+      const membersData = membersRes.data;
+      const attendanceData = attendanceRes.data;
+
+      setEvent(eventData);
+      setMembers(membersData);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const eventDate = new Date(eventData.date);
+      eventDate.setHours(0, 0, 0, 0);
+
+      // 🔥 Logic:
+      // Attendance closed only if event date < today
+      setIsAttendanceClosed(eventDate < today);
 
       // Convert attendance array → object
       const map = {};
-      attendanceRes.data.forEach((a) => {
+      attendanceData.forEach((a) => {
         map[a.member._id] = a.status;
       });
+
+      // Auto mark absent visually for past events only
+      if (eventDate < today) {
+        membersData.forEach((member) => {
+          if (!map[member._id]) {
+            map[member._id] = "absent";
+          }
+        });
+      }
 
       setAttendance(map);
     } catch (err) {
@@ -46,6 +71,11 @@ export default function EventAttendance() {
   };
 
   const markAttendance = async (memberId, status) => {
+    if (isAttendanceClosed) {
+      alert("This event has already happened. Attendance is closed.");
+      return;
+    }
+
     try {
       await api.post(`/attendance/mark/${eventId}/${memberId}`, { status });
 
@@ -55,7 +85,10 @@ export default function EventAttendance() {
       }));
     } catch (err) {
       console.error(err);
-      alert("Failed to mark attendance. Try again.");
+      alert(
+        err.response?.data?.message ||
+          "Failed to mark attendance. Try again."
+      );
     }
   };
 
@@ -72,10 +105,19 @@ export default function EventAttendance() {
         <FaArrowLeft /> Back
       </button>
 
-      <h1 className="text-2xl font-bold text-blue-600 mb-2">{event.title}</h1>
-      <p className="text-gray-500 mb-6">
+      <h1 className="text-2xl font-bold text-blue-600 mb-2">
+        {event.title}
+      </h1>
+
+      <p className="text-gray-500 mb-2">
         {event.date ? new Date(event.date).toLocaleDateString() : "-"}
       </p>
+
+      {isAttendanceClosed && (
+        <p className="text-red-600 font-medium mb-4">
+          ⚠ Attendance closed — this event has already happened.
+        </p>
+      )}
 
       <div className="space-y-3">
         {members.map((member) => (
@@ -85,28 +127,35 @@ export default function EventAttendance() {
           >
             <div>
               <p className="font-medium">{member.fullName}</p>
-              <p className="text-sm text-gray-500 capitalize">{member.category}</p>
+              <p className="text-sm text-gray-500 capitalize">
+                {member.category}
+              </p>
+              <p className="text-sm text-gray-500 capitalize">
+                {member.subgroup?.name}
+              </p>
             </div>
 
             <div className="flex gap-2">
               <button
+                disabled={isAttendanceClosed}
                 onClick={() => markAttendance(member._id, "present")}
-                className={`px-3 py-1 rounded ${
+                className={`px-3 py-1 rounded transition ${
                   attendance[member._id] === "present"
                     ? "bg-blue-600 text-white"
                     : "bg-blue-100 text-blue-600"
-                }`}
+                } ${isAttendanceClosed ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Present
               </button>
 
               <button
+                disabled={isAttendanceClosed}
                 onClick={() => markAttendance(member._id, "absent")}
-                className={`px-3 py-1 rounded ${
+                className={`px-3 py-1 rounded transition ${
                   attendance[member._id] === "absent"
                     ? "bg-red-600 text-white"
                     : "bg-red-100 text-red-600"
-                }`}
+                } ${isAttendanceClosed ? "opacity-50 cursor-not-allowed" : ""}`}
               >
                 Absent
               </button>

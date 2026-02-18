@@ -75,37 +75,70 @@ export const getMemberById = async (req, res) => {
 export const updateMember = async (req, res) => {
   try {
     const member = await Member.findById(req.params.id);
-    if (!member) return res.status(404).json({ message: "Member not found" });
 
-    const { fullName, category, nationalId, dateOfBirth, phone, parent, gender,subgroup,sakraments } = req.body;
-
-    // Check child-parent rules
-    if (category === "child" && !parent) {
-      return res.status(400).json({ message: "Child must have a parent" });
-    }
-    if (category !== "child" && parent) {
-      return res.status(400).json({ message: "Only children can have a parent" });
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
     }
 
-    // Update fields
-    member.fullName = fullName || member.fullName;
-    member.category = category || member.category;
-    member.nationalId = nationalId || member.nationalId;
-    member.dateOfBirth = dateOfBirth || member.dateOfBirth;
-    member.phone = phone || member.phone;
-    member.parent = parent || null;
-    member.gendrer = gender || member.gender;
-    member.subgroup = subgroup || member.subgroup;
-    member.sakraments = sakraments || member.sakraments;
+    const {
+      fullName,
+      category,
+      nationalId,
+      dateOfBirth,
+      phone,
+      parent,
+      gender,
+      subgroup,
+      sakraments,
+    } = req.body;
+
+    // ================= UPDATE CATEGORY FIRST =================
+    if (category !== undefined) {
+      member.category = category;
+    }
+
+    // ================= HANDLE PARENT LOGIC SAFELY =================
+
+    if (member.category === "child") {
+      // If parent sent and not empty → use it
+      if (parent !== undefined && parent !== "") {
+        member.parent = parent;
+      }
+
+      // If after update parent is still missing → error
+      if (!member.parent) {
+        return res
+          .status(400)
+          .json({ message: "Child must have a parent" });
+      }
+    } else {
+      // If not child → always remove parent
+      member.parent = null;
+    }
+
+    // ================= UPDATE OTHER FIELDS =================
+
+    if (fullName !== undefined) member.fullName = fullName;
+    if (nationalId !== undefined) member.nationalId = nationalId;
+    if (dateOfBirth !== undefined) member.dateOfBirth = dateOfBirth;
+    if (phone !== undefined) member.phone = phone;
+    if (gender !== undefined) member.gender = gender;
+    if (subgroup !== undefined) member.subgroup = subgroup;
+    if (sakraments !== undefined) member.sakraments = sakraments;
 
     await member.save();
 
-    res.status(200).json({ message: "Member updated", member });
+    res.status(200).json({
+      message: "Member updated successfully",
+      member,
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 // DELETE MEMBER
 export const deleteMember = async (req, res) => {

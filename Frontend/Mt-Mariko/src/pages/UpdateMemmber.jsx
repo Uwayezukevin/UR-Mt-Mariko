@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaUser, FaPhone, FaCalendar, FaUsers,FaArrowLeft } from "react-icons/fa";
+import {
+  FaUser,
+  FaPhone,
+  FaCalendar,
+  FaUsers,
+  FaArrowLeft,
+  FaIdCard,
+} from "react-icons/fa";
 import api from "../api/axios";
 
 export default function UpdateMember() {
-  const { memberId } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -14,6 +21,7 @@ export default function UpdateMember() {
     dateOfBirth: "",
     phone: "",
     parent: "",
+    gender: "",
     subgroup: "",
     sakraments: [],
   });
@@ -29,7 +37,7 @@ export default function UpdateMember() {
     const fetchData = async () => {
       try {
         const [memberRes, subRes, sakRes, membersRes] = await Promise.all([
-          api.get(`/members/${memberId}`),
+          api.get(`/members/${id}`),
           api.get("/subgroups"),
           api.get("/sakraments"),
           api.get("/members"),
@@ -44,6 +52,7 @@ export default function UpdateMember() {
           dateOfBirth: m.dateOfBirth ? m.dateOfBirth.split("T")[0] : "",
           phone: m.phone ?? "",
           parent: m.parent?._id || m.parent || "",
+          gender: m.gender ?? "",
           subgroup: m.subgroup?._id || m.subgroup || "",
           sakraments: Array.isArray(m.sakraments)
             ? m.sakraments.map((s) => s._id || s)
@@ -53,12 +62,29 @@ export default function UpdateMember() {
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
 
-        // parents = adults only, not self
-        setParents(
-          membersRes.data.filter(
-            (p) => p.category === "adult" && p._id !== memberId,
-          ),
+        // Only adults and not self
+        const adultParents = membersRes.data.filter(
+          (p) => p.category === "adult" && p._id !== id,
         );
+
+        // If current member is child and has a parent,
+        // make sure parent exists in dropdown
+        if (m.category === "child" && m.parent) {
+          const existingParentId = m.parent?._id || m.parent;
+
+          const parentExists = adultParents.find(
+            (p) => p._id === existingParentId,
+          );
+
+          if (!parentExists) {
+            adultParents.push({
+              _id: existingParentId,
+              fullName: m.parent.fullName || "Current Parent",
+            });
+          }
+        }
+
+        setParents(adultParents);
       } catch (err) {
         console.error(err);
         setError("Failed to load member data");
@@ -66,161 +92,234 @@ export default function UpdateMember() {
     };
 
     fetchData();
-  }, [memberId]);
+  }, [id]);
 
-  // ================= HANDLERS =================
+  // ================= HANDLE INPUT =================
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => {
+      let updated = { ...prev, [name]: value };
+
+      // If category changes and is not child → remove parent
+      if (name === "category" && value !== "child") {
+        updated.parent = "";
+      }
+
+      return updated;
+    });
   };
 
-  const handleSakramentToggle = (id) => {
+  const handleSakramentToggle = (sakId) => {
     setFormData((prev) => ({
       ...prev,
-      sakraments: prev.sakraments.includes(id)
-        ? prev.sakraments.filter((s) => s !== id)
-        : [...prev.sakraments, id],
+      sakraments: prev.sakraments.includes(sakId)
+        ? prev.sakraments.filter((s) => s !== sakId)
+        : [...prev.sakraments, sakId],
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  // ================= SUBMIT =================
 
-    try {
-      await api.put(`/members/${memberId}`, formData);
-      navigate("/members");
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to update member");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      setError("");
+
+      try {
+        // 🔥 Remove empty strings before sending
+        const cleanedData = { ...formData };
+
+        Object.keys(cleanedData).forEach((key) => {
+          if (cleanedData[key] === "") {
+            delete cleanedData[key];
+          }
+        });
+
+        console.log("Submitting:", cleanedData);
+
+        await api.put(`/members/${id}`, cleanedData);
+
+        navigate("/members");
+      } catch (err) {
+        console.error(err);
+        setError(err.response?.data?.message || "Failed to update member");
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // ================= UI =================
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-blue-600 mb-6"
-      >
-        <FaArrowLeft /> Back
-      </button>
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          Update Member
-        </h1>
+    <div className="min-h-screen bg-blue-50 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition"
+          >
+            <FaArrowLeft /> Back
+          </button>
+
+          <h1 className="text-2xl md:text-3xl font-bold text-blue-600">
+            Update Member
+          </h1>
+
+          <div></div>
+        </div>
 
         {error && (
-          <p className="bg-red-100 text-red-600 text-sm p-3 rounded mb-4">
+          <p className="bg-red-100 text-red-600 text-sm p-3 rounded mb-6">
             {error}
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Full Name */}
-          <div className="relative">
-            <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Full Name */}
+            <div className="relative">
+              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                required
+                placeholder="Full Name"
+                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              />
+            </div>
+
+            {/* National ID */}
+            <div className="relative">
+              <FaIdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+              <input
+                type="text"
+                name="nationalId"
+                value={formData.nationalId}
+                onChange={handleChange}
+                placeholder="National ID"
+                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              />
+            </div>
+
+            {/* Category */}
+            <select
+              name="category"
+              value={formData.category}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-4 py-3 border rounded-lg"
-            />
-          </div>
-
-          {/* Category (locked) */}
-          <div className="relative">
-            <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-            <select
-              value={formData.category}
-              disabled
-              className="w-full pl-10 pr-4 py-3 border rounded-lg bg-gray-100"
+              className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             >
+              <option value="">Select Category</option>
               <option value="child">Child</option>
               <option value="youth">Youth</option>
               <option value="adult">Adult</option>
             </select>
-          </div>
 
-          {/* Parent */}
-          {formData.category === "child" && (
+            {/* Gender */}
             <select
-              name="parent"
-              value={formData.parent}
+              name="gender"
+              value={formData.gender}
               onChange={handleChange}
               required
-              className="w-full pl-3 pr-4 py-3 border rounded-lg"
+              className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             >
-              <option value="">Select Parent</option>
-              {parents.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.fullName}
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+
+            {/* Parent (only if child) */}
+            {formData.category === "child" && (
+              <select
+                name="parent"
+                value={formData.parent}
+                onChange={handleChange}
+                required
+                className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              >
+                <option value="">Select Parent</option>
+                {parents.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.fullName}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Date of Birth */}
+            <div className="relative">
+              <FaCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+              <input
+                type="date"
+                name="dateOfBirth"
+                value={formData.dateOfBirth}
+                onChange={handleChange}
+                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              />
+            </div>
+
+            {/* Phone */}
+            <div className="relative">
+              <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Phone Number"
+                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              />
+            </div>
+
+            {/* Subgroup */}
+            <select
+              name="subgroup"
+              value={formData.subgroup}
+              onChange={handleChange}
+              className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+            >
+              <option value="">Select Subgroup</option>
+              {subgroups.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}
                 </option>
               ))}
             </select>
-          )}
-
-          {/* Date of Birth */}
-          <div className="relative">
-            <FaCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-            <input
-              type="date"
-              name="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 border rounded-lg"
-            />
           </div>
-
-          {/* Phone */}
-          <div className="relative">
-            <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 border rounded-lg"
-            />
-          </div>
-
-          {/* Subgroup */}
-          <select
-            name="subgroup"
-            value={formData.subgroup}
-            onChange={handleChange}
-            className="w-full pl-3 pr-4 py-3 border rounded-lg"
-          >
-            <option value="">Select Subgroup</option>
-            {subgroups.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
 
           {/* Sakraments */}
-          <div className="grid grid-cols-2 gap-2 border p-3 rounded">
-            {sakraments.map((s) => (
-              <label key={s._id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.sakraments.includes(s._id)}
-                  onChange={() => handleSakramentToggle(s._id)}
-                />
-                {s.name}
-              </label>
-            ))}
+          <div className="border rounded-xl p-5 bg-gray-50">
+            <h3 className="font-semibold text-gray-700 mb-4">Sakraments</h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {sakraments.map((s) => (
+                <label
+                  key={s._id}
+                  className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm cursor-pointer hover:bg-blue-50 transition"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.sakraments.includes(s._id)}
+                    onChange={() => handleSakramentToggle(s._id)}
+                  />
+                  {s.name}
+                </label>
+              ))}
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg"
+            className={`w-full py-3 rounded-lg text-white font-semibold transition ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {loading ? "Updating..." : "Update Member"}
           </button>

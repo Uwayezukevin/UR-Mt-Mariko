@@ -14,7 +14,7 @@ export const userSchema = checkSchema({
     isEmail: { errorMessage: "Must be a valid email address" },
   },
 
-  userphoneNumber: {
+  userphonenumber: {
     notEmpty: { errorMessage: "Phone number is required" },
     matches: {
       options: [/^(\+2507|07)\d{8}$/],

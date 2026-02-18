@@ -85,7 +85,7 @@ export default function Signup() {
             <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               type="tel"
-              name="userphoneNumber"
+              name="userphonenumber"
               placeholder="07XXXXXXXX or +2507XXXXXXXX"
               value={formData.userphonenumber}
               onChange={handleChange}

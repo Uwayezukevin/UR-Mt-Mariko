@@ -43,7 +43,7 @@ export default function Members() {
             } catch {
               decisionMap[member._id] = null;
             }
-          })
+          }),
         );
 
         setDecisions(decisionMap);
@@ -62,18 +62,22 @@ export default function Members() {
   useEffect(() => {
     let data = [...members];
 
-    if (categoryFilter !== "all") data = data.filter((m) => m.category === categoryFilter);
-    if (genderFilter !== "all") data = data.filter((m) => m.gender === genderFilter);
-    if (subgroupFilter !== "all") data = data.filter((m) => m.subgroup?._id === subgroupFilter);
+    if (categoryFilter !== "all")
+      data = data.filter((m) => m.category === categoryFilter);
+    if (genderFilter !== "all")
+      data = data.filter((m) => m.gender === genderFilter);
+    if (subgroupFilter !== "all")
+      data = data.filter((m) => m.subgroup?._id === subgroupFilter);
 
     setFilteredMembers(data);
   }, [categoryFilter, genderFilter, subgroupFilter, members]);
 
   if (loading)
-    return <div className="p-6 text-center text-blue-600">Loading members...</div>;
+    return (
+      <div className="p-6 text-center text-blue-600">Loading members...</div>
+    );
 
-  if (error)
-    return <div className="p-6 text-center text-red-500">{error}</div>;
+  if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
 
   return (
     <div className="p-6">
@@ -149,8 +153,13 @@ function MemberCard({ member, decision, onClick }) {
       className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
     >
       <h2 className="text-lg font-semibold text-gray-800">{member.fullName}</h2>
-      <p className="text-sm text-gray-500 capitalize">Category: {member.category}</p>
-      <p className="text-sm text-gray-500">Subgroup: {member.subgroup?.name || "None"}</p>
+      <p className="text-sm text-gray-500 capitalize">
+        Category: {member.category}
+      </p>
+      <p className="text-sm text-gray-500">
+        Subgroup: {member.subgroup?.name || "None"}
+      </p>
+      <br />
 
       {decision ? (
         <div className="mt-4 flex items-center gap-2">

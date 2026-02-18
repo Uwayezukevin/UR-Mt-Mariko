@@ -19,7 +19,7 @@ export const memberSchema = checkSchema({
   },
 
   nationalId: {
-    optional: true,
+    optional: { options: { nullable: true, checkFalsy: true } },
     isLength: {
       options: { min: 16, max: 16 },
       errorMessage: "National ID must be 16 characters",
@@ -34,7 +34,7 @@ export const memberSchema = checkSchema({
   },
 
   phone: {
-    optional: true,
+    optional: { options: { checkFalsy: true } },
     matches: {
       options: [/^(\+2507|07)\d{8}$/],
       errorMessage: "Must be a valid Rwanda phone number",
@@ -58,12 +58,12 @@ export const memberSchema = checkSchema({
       },
     },
   },
-  gender : {
-    notEmpty : {errorMessage : "You must have a gender select your gender"},
+  gender: {
+    notEmpty: { errorMessage: "You must have a gender select your gender" },
     isIn: {
-    options: [["male", "female"]],
-    errorMessage: "Gender must be male or female",
-  },
+      options: [["male", "female"]],
+      errorMessage: "Gender must be male or female",
+    },
   },
   subgroup: {
     optional: true,

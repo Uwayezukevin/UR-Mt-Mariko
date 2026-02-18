@@ -5,6 +5,7 @@ import Signup from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
 import MemberDetails from "./pages/MemberDetails";
+import UpdateMember from "./pages/UpdateMemmber";
 import CreateMember from "./pages/CreateMember";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
@@ -12,6 +13,7 @@ import EventAttendance from "./pages/EventAttendance";
 import EventsPublic from "./pages/EventsPublic";
 import ProtectedRoute from "./routes/ProtectedRoutes"; // <-- singular to match your component
 import Home from "./pages/Home";
+import EventDetailsPublic from "./pages/EventDetailsPublic";
 import AdminMessages from "./pages/AdminMessage";
 
 function App() {
@@ -21,6 +23,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/events-public" element={<EventsPublic />} />
+        <Route path="/events-public/:id" element={<EventDetailsPublic />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
@@ -86,6 +89,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MemberDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/members/edit/:id"
+          element={
+            <ProtectedRoute>
+              <UpdateMember />
             </ProtectedRoute>
           }
         />

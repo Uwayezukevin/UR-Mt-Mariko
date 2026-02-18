@@ -8,7 +8,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [time, setTime] = useState(new Date());
-  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // CONTACT FORM STATE
   const [contactData, setContactData] = useState({
@@ -74,12 +73,18 @@ export default function Home() {
           <h1 className="text-xl font-bold text-blue-600">Attendance System</h1>
 
           <div className="flex items-center gap-6 text-gray-700">
-            <a href="#home" className="hover:text-blue-600">Home</a>
-            <a href="#about" className="hover:text-blue-600">About</a>
-            <a href="#contact" className="hover:text-blue-600">Contact</a>
+            <a href="#home" className="hover:text-blue-600">
+              Home
+            </a>
+            <a href="#about" className="hover:text-blue-600">
+              About
+            </a>
+            <a href="#contact" className="hover:text-blue-600">
+              Contact
+            </a>
 
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate("/login")}
               className="text-blue-600 font-medium hover:underline"
             >
               Login
@@ -94,12 +99,16 @@ export default function Home() {
       </nav>
 
       {/* HERO */}
-      <section id="home" className="pt-36 pb-24 px-6 max-w-7xl mx-auto text-center">
+      <section
+        id="home"
+        className="pt-36 pb-24 px-6 max-w-7xl mx-auto text-center"
+      >
         <h2 className="text-4xl md:text-5xl font-bold text-blue-600 mb-4">
-          Umuryangoremzo witiriwe Mutagatifu Mariko
+          Umuryangoremezo witiriwe Mutagatifu Mariko
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Manage members, track attendance, and stay informed about upcoming events.
+          Manage members, track attendance, and stay informed about upcoming
+          events.
         </p>
       </section>
 
@@ -128,7 +137,7 @@ export default function Home() {
                 </div>
 
                 <button
-                  onClick={() => setSelectedEvent(event)}
+                  onClick={() => navigate(`events-public/${event._id}`)}
                   className="mt-4 text-sm text-blue-600 hover:underline"
                 >
                   View Details
@@ -146,9 +155,21 @@ export default function Home() {
       {/* ABOUT */}
       <section id="about" className="bg-white py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <h3 className="text-2xl font-semibold text-blue-600 mb-4">About Us</h3>
+          <h3 className="text-2xl font-semibold text-blue-600 mb-4">
+            About Us
+          </h3>
           <p className="text-gray-600">
-            This system was developed to help the track of attendance , data , events of members of group called Umuryangoremezo witiriwe Mutagatifu Mariko. This System was developed to simplify all the processes made to check member's attendance and data , this was a complex and complicated process. So through the Idea of one member called Ufitingabire Vincent De Paul, we hired a developer to build this robust system to support our member's Idea and also inorder to solve such big problem we had been facing for along  time. So this system is dedicated to our members and our leaders but also guests are allowed. This system is also in charge of Parish of Saint Peter cyahafi. We hope you guys will enjoy to use it.
+            This system was developed to help the track of attendance , data ,
+            events of members of group called Umuryangoremezo witiriwe
+            Mutagatifu Mariko. This System was developed to simplify all the
+            processes made to check member's attendance and data , this was a
+            complex and complicated process. So through the Idea of one member
+            called Ufitingabire Vincent De Paul, we hired a developer to build
+            this robust system to support our member's Idea and also inorder to
+            solve such big problem we had been facing for along time. So this
+            system is dedicated to our members and our leaders but also guests
+            are allowed. This system is also in charge of Parish of Saint Peter
+            cyahafi. We hope you guys will enjoy to use it.
           </p>
         </div>
       </section>
@@ -156,7 +177,9 @@ export default function Home() {
       {/* CONTACT FORM */}
       <section id="contact" className="py-20 px-6 bg-blue-50">
         <div className="max-w-5xl mx-auto">
-          <h3 className="text-2xl font-semibold text-blue-600 mb-6">Contact Admin</h3>
+          <h3 className="text-2xl font-semibold text-blue-600 mb-6">
+            Contact Admin
+          </h3>
 
           <form
             onSubmit={handleContactSubmit}
@@ -215,7 +238,8 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className="bg-white text-center py-4 text-sm text-gray-500">
-        © {new Date().getFullYear()} Umuryangoremezo witiriwe Mutagatifu Mariko || Empowered and built by dev Uwayezu Kevin
+        © {new Date().getFullYear()} Umuryangoremezo witiriwe Mutagatifu Mariko
+        || Empowered and built by dev Uwayezu Kevin
       </footer>
     </div>
   );

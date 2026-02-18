@@ -21,19 +21,17 @@ export default function MemberDetails() {
         setLoading(true);
         setError("");
 
-        const [memberRes, attendanceRes, decisionRes] =
-          await Promise.all([
-            api.get(`/members/${id}`),
-            api.get(`/attendance/member/${id}`),
-            api.get(`/decision/member/${id}`),
-          ]);
+        const [memberRes, attendanceRes, decisionRes] = await Promise.all([
+          api.get(`/members/${id}`),
+          api.get(`/attendance/member/${id}`),
+          api.get(`/decision/member/${id}`),
+        ]);
 
         if (!isMounted) return;
 
         setMember(memberRes.data);
         setAttendance(attendanceRes.data || []);
         setDecision(decisionRes.data || null);
-
       } catch (err) {
         if (isMounted) {
           setError("Failed to load member details.");
@@ -53,27 +51,15 @@ export default function MemberDetails() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="p-6 text-blue-600">
-        Loading member details...
-      </div>
-    );
+    return <div className="p-6 text-blue-600">Loading member details...</div>;
   }
 
   if (error) {
-    return (
-      <div className="p-6 text-red-500">
-        {error}
-      </div>
-    );
+    return <div className="p-6 text-red-500">{error}</div>;
   }
 
   if (!member) {
-    return (
-      <div className="p-6 text-red-500">
-        Member not found
-      </div>
-    );
+    return <div className="p-6 text-red-500">Member not found</div>;
   }
 
   return (
@@ -88,9 +74,7 @@ export default function MemberDetails() {
 
       {/* Member Profile */}
       <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h1 className="text-2xl font-bold text-blue-600">
-          {member.fullName}
-        </h1>
+        <h1 className="text-2xl font-bold text-blue-600">{member.fullName}</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-gray-700">
           <p>
@@ -105,7 +89,7 @@ export default function MemberDetails() {
 
           <p>
             <span className="font-semibold">Phone:</span>{" "}
-            {member.phone || member.userphoneNumber || "N/A"}
+            {member.phone || member.userphoneNumber || "Not yet"}
           </p>
 
           <p>
@@ -126,6 +110,13 @@ export default function MemberDetails() {
               ? member.sakraments.map((s) => s.name).join(", ")
               : "None"}
           </p>
+          <br />
+          <button
+            onClick={() => navigate(`/members/edit/${member._id}`)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition"
+          >
+            Edit
+          </button>
         </div>
 
         {/* Attendance Decision */}
@@ -163,9 +154,7 @@ export default function MemberDetails() {
         </h2>
 
         {attendance.length === 0 ? (
-          <p className="text-gray-500">
-            No attendance records found.
-          </p>
+          <p className="text-gray-500">No attendance records found.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
