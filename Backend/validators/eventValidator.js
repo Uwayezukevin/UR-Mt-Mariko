@@ -2,20 +2,20 @@ import { checkSchema } from "express-validator";
 
 export const eventSchema = checkSchema({
   title: {
-    notEmpty: { errorMessage: "Event title is required" },
+    notEmpty: { errorMessage: "Izina ry'igikorwa rirakenewe" },
     isLength: {
       options: { min: 2 },
-      errorMessage: "Title must be at least 2 characters",
+      errorMessage: "Izina rigomba kugira byibura inyuguti ebyiri",
     },
   },
 
   description: {
-    notEmpty: { errorMessage: "Event description is required" },
+    notEmpty: { errorMessage: "Ubusobanuro bw'igikorwa burakenewe" },
   },
 
   date: {
-    notEmpty: { errorMessage: "Event date is required" },
-    isISO8601: { errorMessage: "Event date must be a valid ISO date" },
+    notEmpty: { errorMessage: "Itariki y'igikorwa irakenewe" },
+    isISO8601: { errorMessage: "Itariki igomba kuba yanditse neza" },
   },
 
   members: {

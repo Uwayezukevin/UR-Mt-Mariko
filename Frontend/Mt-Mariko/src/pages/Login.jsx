@@ -40,7 +40,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          System Login
+          Kwinjira muri konti yawe
         </h1>
 
         {error && (
@@ -49,14 +49,14 @@ export default function Login() {
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           {/* Email */}
           <div className="relative">
             <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               type="email"
               name="useremail"
-              placeholder="Email address"
+              placeholder="Address ya Email"
               value={formData.useremail}
               onChange={handleChange}
               required
@@ -70,7 +70,7 @@ export default function Login() {
             <input
               type="password"
               name="userpassword"
-              placeholder="Password"
+              placeholder="Ijambobanga"
               value={formData.userpassword}
               onChange={handleChange}
               required
@@ -83,17 +83,17 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Kwinjira ..." : "Injira"}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-            Don’t have an account?{" "}
+            Nta konti ufite?{" "}
           <span
             onClick={() => navigate("/signup")}
             className="text-blue-600 cursor-pointer hover:underline"
           >
-            Sign up
+            Hanga konti
           </span>
         </p>
       </div>

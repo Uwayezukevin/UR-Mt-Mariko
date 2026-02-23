@@ -23,7 +23,6 @@ export default function Members() {
       try {
         setLoading(true);
 
-        // Fetch members and subgroups first
         const [membersRes, subgroupsRes] = await Promise.all([
           api.get("/members"),
           api.get("/subgroups"),
@@ -33,7 +32,6 @@ export default function Members() {
         setFilteredMembers(membersRes.data);
         setSubgroups(subgroupsRes.data);
 
-        // Fetch decisions for each member individually
         const decisionMap = {};
         await Promise.all(
           membersRes.data.map(async (member) => {
@@ -43,13 +41,13 @@ export default function Members() {
             } catch {
               decisionMap[member._id] = null;
             }
-          }),
+          })
         );
 
         setDecisions(decisionMap);
       } catch (err) {
         console.error(err);
-        setError("Failed to load members.");
+        setError("Ntibishoboye gupakurura abanyamuryango.");
       } finally {
         setLoading(false);
       }
@@ -58,7 +56,6 @@ export default function Members() {
     fetchData();
   }, []);
 
-  // Apply filters
   useEffect(() => {
     let data = [...members];
 
@@ -74,20 +71,24 @@ export default function Members() {
 
   if (loading)
     return (
-      <div className="p-6 text-center text-blue-600">Loading members...</div>
+      <div className="p-6 text-center text-blue-600">
+        Turimo gupakurura abanyamuryango...
+      </div>
     );
 
   if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Members</h1>
+      <h1 className="text-2xl font-bold text-blue-600 mb-6">
+        Urutonde rw'Abanyamuryango
+      </h1>
 
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-blue-600 mb-6"
       >
-        <FaArrowLeft /> Back
+        <FaArrowLeft /> Subira inyuma
       </button>
 
       {/* FILTERS */}
@@ -97,10 +98,10 @@ export default function Members() {
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="border rounded-lg px-3 py-2"
         >
-          <option value="all">All Categories</option>
-          <option value="child">Child</option>
-          <option value="youth">Youth</option>
-          <option value="adult">Adult</option>
+          <option value="all">Ibyiciro yose</option>
+          <option value="child">Abana</option>
+          <option value="youth">Urubyiruko</option>
+          <option value="adult">Abakuru</option>
         </select>
 
         <select
@@ -108,7 +109,7 @@ export default function Members() {
           onChange={(e) => setSubgroupFilter(e.target.value)}
           className="border rounded-lg px-3 py-2"
         >
-          <option value="all">All Subgroups</option>
+          <option value="all">Imiryango remezo yose</option>
           {subgroups.map((sg) => (
             <option key={sg._id} value={sg._id}>
               {sg.name}
@@ -121,15 +122,16 @@ export default function Members() {
           onChange={(e) => setGenderFilter(e.target.value)}
           className="border rounded-lg px-3 py-2"
         >
-          <option value="all">All Genders</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
+          <option value="all">Ibitsina byombi</option>
+          <option value="male">Gabo</option>
+          <option value="female">Gore</option>
         </select>
       </div>
 
-      {/* MEMBERS GRID */}
       {filteredMembers.length === 0 ? (
-        <p className="text-gray-500">No members found.</p>
+        <p className="text-gray-500">
+          Nta munyamuryango wabonetse.
+        </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMembers.map((member) => (
@@ -147,18 +149,37 @@ export default function Members() {
 }
 
 function MemberCard({ member, decision, onClick }) {
+
+  const translateCategory = (category) => {
+    if (category === "child") return "Umwana";
+    if (category === "youth") return "Urubyiruko";
+    if (category === "adult") return "Umukuru";
+    return category;
+  };
+
+  const translateStatus = (status) => {
+    if (status === "ACTIVE") return "AKORA";
+    if (status === "INACTIVE") return "NTAKORA";
+    return status;
+  };
+
   return (
     <div
       onClick={onClick}
       className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
     >
-      <h2 className="text-lg font-semibold text-gray-800">{member.fullName}</h2>
+      <h2 className="text-lg font-semibold text-gray-800">
+        {member.fullName}
+      </h2>
+
       <p className="text-sm text-gray-500 capitalize">
-        Category: {member.category}
+        Icyiciro: {translateCategory(member.category)}
       </p>
+
       <p className="text-sm text-gray-500">
-        Subgroup: {member.subgroup?.name || "None"}
+        Umuryango remezo: {member.subgroup?.name || "Nta wo"}
       </p>
+
       <br />
 
       {decision ? (
@@ -176,11 +197,13 @@ function MemberCard({ member, decision, onClick }) {
                 : "bg-red-100 text-red-600"
             }`}
           >
-            {decision.status} ({decision.attendancePercentage}%)
+            {translateStatus(decision.status)} ({decision.attendancePercentage}%)
           </span>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-gray-400">No attendance record</p>
+        <p className="mt-4 text-sm text-gray-400">
+          Nta makuru y'uko yitabiriye ahari.
+        </p>
       )}
     </div>
   );

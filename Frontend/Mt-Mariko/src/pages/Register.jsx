@@ -42,7 +42,7 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          Create Account
+          Guhanga Konti
         </h1>
 
         {error && (
@@ -51,14 +51,14 @@ export default function Signup() {
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
           {/* Username */}
           <div className="relative">
             <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               type="text"
               name="username"
-              placeholder="Username"
+              placeholder="Amazina yombi"
               value={formData.username}
               onChange={handleChange}
               required
@@ -72,7 +72,7 @@ export default function Signup() {
             <input
               type="email"
               name="useremail"
-              placeholder="Email address"
+              placeholder="Address ya Email"
               value={formData.useremail}
               onChange={handleChange}
               required
@@ -86,7 +86,7 @@ export default function Signup() {
             <input
               type="tel"
               name="userphonenumber"
-              placeholder="07XXXXXXXX or +2507XXXXXXXX"
+              placeholder="07XXXXXXXX cg +2507XXXXXXXX"
               value={formData.userphonenumber}
               onChange={handleChange}
               required
@@ -100,7 +100,7 @@ export default function Signup() {
             <input
               type="password"
               name="userpassword"
-              placeholder="Password"
+              placeholder="Ijambobanga"
               value={formData.userpassword}
               onChange={handleChange}
               required
@@ -113,17 +113,17 @@ export default function Signup() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? "Konti irigukorwa..." : "Hanga Konti"}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Already have an account?{" "}
+          Usanzwe ufite konti?{" "}
           <span
             onClick={() => navigate("/")}
             className="text-blue-600 cursor-pointer hover:underline"
           >
-            Log in
+            Injira muri konti yawe
           </span>
         </p>
       </div>

@@ -62,24 +62,17 @@ export default function UpdateMember() {
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
 
-        // Only adults and not self
         const adultParents = membersRes.data.filter(
-          (p) => p.category === "adult" && p._id !== id,
+          (p) => p.category === "adult" && p._id !== id
         );
 
-        // If current member is child and has a parent,
-        // make sure parent exists in dropdown
         if (m.category === "child" && m.parent) {
           const existingParentId = m.parent?._id || m.parent;
-
-          const parentExists = adultParents.find(
-            (p) => p._id === existingParentId,
-          );
-
+          const parentExists = adultParents.find((p) => p._id === existingParentId);
           if (!parentExists) {
             adultParents.push({
               _id: existingParentId,
-              fullName: m.parent.fullName || "Current Parent",
+              fullName: m.parent.fullName || "Parent Current",
             });
           }
         }
@@ -87,7 +80,7 @@ export default function UpdateMember() {
         setParents(adultParents);
       } catch (err) {
         console.error(err);
-        setError("Failed to load member data");
+        setError("Ntibyashoboye gupakira amakuru y'umunyamuryango");
       }
     };
 
@@ -97,15 +90,9 @@ export default function UpdateMember() {
   // ================= HANDLE INPUT =================
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((prev) => {
       let updated = { ...prev, [name]: value };
-
-      // If category changes and is not child → remove parent
-      if (name === "category" && value !== "child") {
-        updated.parent = "";
-      }
-
+      if (name === "category" && value !== "child") updated.parent = "";
       return updated;
     });
   };
@@ -120,34 +107,26 @@ export default function UpdateMember() {
   };
 
   // ================= SUBMIT =================
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      setLoading(true);
-      setError("");
+    try {
+      const cleanedData = { ...formData };
+      Object.keys(cleanedData).forEach((key) => {
+        if (cleanedData[key] === "") delete cleanedData[key];
+      });
 
-      try {
-        // 🔥 Remove empty strings before sending
-        const cleanedData = { ...formData };
-
-        Object.keys(cleanedData).forEach((key) => {
-          if (cleanedData[key] === "") {
-            delete cleanedData[key];
-          }
-        });
-
-        console.log("Submitting:", cleanedData);
-
-        await api.put(`/members/${id}`, cleanedData);
-
-        navigate("/members");
-      } catch (err) {
-        console.error(err);
-        setError(err.response?.data?.message || "Failed to update member");
-      } finally {
-        setLoading(false);
-      }
-    };
+      await api.put(`/members/${id}`, cleanedData);
+      navigate("/members");
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.message || "Ntibyashoboye guhindura amakuru");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ================= UI =================
   return (
@@ -160,20 +139,16 @@ export default function UpdateMember() {
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition"
           >
-            <FaArrowLeft /> Back
+            <FaArrowLeft /> Subira Inyuma
           </button>
-
           <h1 className="text-2xl md:text-3xl font-bold text-blue-600">
-            Update Member
+            Hindura Umunyamuryango
           </h1>
-
           <div></div>
         </div>
 
         {error && (
-          <p className="bg-red-100 text-red-600 text-sm p-3 rounded mb-6">
-            {error}
-          </p>
+          <p className="bg-red-100 text-red-600 text-sm p-3 rounded mb-6">{error}</p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -187,7 +162,7 @@ export default function UpdateMember() {
                 value={formData.fullName}
                 onChange={handleChange}
                 required
-                placeholder="Full Name"
+                placeholder="Izina ryuzuye"
                 className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
               />
             </div>
@@ -200,7 +175,7 @@ export default function UpdateMember() {
                 name="nationalId"
                 value={formData.nationalId}
                 onChange={handleChange}
-                placeholder="National ID"
+                placeholder="Indangamuntu"
                 className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
               />
             </div>
@@ -213,10 +188,10 @@ export default function UpdateMember() {
               required
               className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             >
-              <option value="">Select Category</option>
-              <option value="child">Child</option>
-              <option value="youth">Youth</option>
-              <option value="adult">Adult</option>
+              <option value="">Hitamo Icyiciro</option>
+              <option value="child">Umwana</option>
+              <option value="youth">Urubyiruko</option>
+              <option value="adult">Umukuru</option>
             </select>
 
             {/* Gender */}
@@ -227,12 +202,12 @@ export default function UpdateMember() {
               required
               className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             >
-              <option value="">Select Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              <option value="">Hitamo Igitsina</option>
+              <option value="male">Gabo</option>
+              <option value="female">Gore</option>
             </select>
 
-            {/* Parent (only if child) */}
+            {/* Parent */}
             {formData.category === "child" && (
               <select
                 name="parent"
@@ -241,7 +216,7 @@ export default function UpdateMember() {
                 required
                 className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
               >
-                <option value="">Select Parent</option>
+                <option value="">Hitamo Umubyeyi</option>
                 {parents.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.fullName}
@@ -270,7 +245,7 @@ export default function UpdateMember() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="Phone Number"
+                placeholder="Telefone"
                 className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
               />
             </div>
@@ -282,7 +257,7 @@ export default function UpdateMember() {
               onChange={handleChange}
               className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
             >
-              <option value="">Select Subgroup</option>
+              <option value="">Hitamo Itsinda rito</option>
               {subgroups.map((s) => (
                 <option key={s._id} value={s._id}>
                   {s.name}
@@ -294,7 +269,6 @@ export default function UpdateMember() {
           {/* Sakraments */}
           <div className="border rounded-xl p-5 bg-gray-50">
             <h3 className="font-semibold text-gray-700 mb-4">Sakraments</h3>
-
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {sakraments.map((s) => (
                 <label
@@ -321,7 +295,7 @@ export default function UpdateMember() {
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            {loading ? "Updating..." : "Update Member"}
+            {loading ? "Birimo guhindurwa..." : "Hindura Umunyamuryango"}
           </button>
         </form>
       </div>

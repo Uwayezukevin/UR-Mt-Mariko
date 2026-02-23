@@ -42,21 +42,17 @@ export default function EventAttendance() {
       const eventDate = new Date(eventData.date);
       eventDate.setHours(0, 0, 0, 0);
 
-      // 🔥 Logic:
-      // Attendance closed only if event date < today
       setIsAttendanceClosed(eventDate < today);
 
-      // Convert attendance array → object
       const map = {};
       attendanceData.forEach((a) => {
         map[a.member._id] = a.status;
       });
 
-      // Auto mark absent visually for past events only
       if (eventDate < today) {
         membersData.forEach((member) => {
           if (!map[member._id]) {
-            map[member._id] = "absent";
+            map[member._id] = "ntabwo yitabiriye";
           }
         });
       }
@@ -64,7 +60,7 @@ export default function EventAttendance() {
       setAttendance(map);
     } catch (err) {
       console.error(err);
-      setError("Failed to load data. Please try again.");
+      setError("Ntibyakunze kuzana amakuru. Ongera ugerageze.");
     } finally {
       setLoading(false);
     }
@@ -72,7 +68,7 @@ export default function EventAttendance() {
 
   const markAttendance = async (memberId, status) => {
     if (isAttendanceClosed) {
-      alert("This event has already happened. Attendance is closed.");
+      alert("Iki gikorwa cyamaze kuba. Kwitabira byarafunzwe.");
       return;
     }
 
@@ -87,14 +83,14 @@ export default function EventAttendance() {
       console.error(err);
       alert(
         err.response?.data?.message ||
-          "Failed to mark attendance. Try again."
+          "Ntibyakunze gushyiraho kwitabira. Ongera ugerageze."
       );
     }
   };
 
-  if (loading) return <p className="p-6 text-blue-600">Loading event...</p>;
+  if (loading) return <p className="p-6 text-blue-600">Ibirori birimo gutegurwa...</p>;
   if (error) return <p className="p-6 text-red-500">{error}</p>;
-  if (!event) return <p className="p-6 text-red-500">Event not found.</p>;
+  if (!event) return <p className="p-6 text-red-500">Ibirori ntibyabonetse.</p>;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -102,7 +98,7 @@ export default function EventAttendance() {
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-blue-600 mb-6 hover:text-blue-800"
       >
-        <FaArrowLeft /> Back
+        <FaArrowLeft /> Subira inyuma
       </button>
 
       <h1 className="text-2xl font-bold text-blue-600 mb-2">
@@ -115,7 +111,7 @@ export default function EventAttendance() {
 
       {isAttendanceClosed && (
         <p className="text-red-600 font-medium mb-4">
-          ⚠ Attendance closed — this event has already happened.
+          ⚠ Kwitabira byarafunzwe — iki gikorwa cyamaze kuba.
         </p>
       )}
 
@@ -138,26 +134,26 @@ export default function EventAttendance() {
             <div className="flex gap-2">
               <button
                 disabled={isAttendanceClosed}
-                onClick={() => markAttendance(member._id, "present")}
+                onClick={() => markAttendance(member._id, "yitabiriye")}
                 className={`px-3 py-1 rounded transition ${
-                  attendance[member._id] === "present"
+                  attendance[member._id] === "yitabiriye"
                     ? "bg-blue-600 text-white"
                     : "bg-blue-100 text-blue-600"
                 } ${isAttendanceClosed ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                Present
+                Yitabiriye
               </button>
 
               <button
                 disabled={isAttendanceClosed}
-                onClick={() => markAttendance(member._id, "absent")}
+                onClick={() => markAttendance(member._id, "ntabwo yitabiriye")}
                 className={`px-3 py-1 rounded transition ${
-                  attendance[member._id] === "absent"
+                  attendance[member._id] === "ntabwo yitabiriye"
                     ? "bg-red-600 text-white"
                     : "bg-red-100 text-red-600"
                 } ${isAttendanceClosed ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                Absent
+                Ntabwo yitabiriye
               </button>
             </div>
           </div>

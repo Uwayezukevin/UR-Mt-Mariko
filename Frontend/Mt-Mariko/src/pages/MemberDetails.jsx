@@ -34,7 +34,7 @@ export default function MemberDetails() {
         setDecision(decisionRes.data || null);
       } catch (err) {
         if (isMounted) {
-          setError("Failed to load member details.");
+          setError("Ntibyashoboye gupakira amakuru y'umunyamuryango.");
         }
       } finally {
         if (isMounted) {
@@ -51,7 +51,7 @@ export default function MemberDetails() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-6 text-blue-600">Loading member details...</div>;
+    return <div className="p-6 text-blue-600">Birimo gupakira amakuru y'umunyamuryango...</div>;
   }
 
   if (error) {
@@ -59,7 +59,7 @@ export default function MemberDetails() {
   }
 
   if (!member) {
-    return <div className="p-6 text-red-500">Member not found</div>;
+    return <div className="p-6 text-red-500">Umunyamuryango ntiyabonetse</div>;
   }
 
   return (
@@ -69,7 +69,7 @@ export default function MemberDetails() {
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-blue-600 mb-6"
       >
-        <FaArrowLeft /> Back
+        <FaArrowLeft /> Subira Inyuma
       </button>
 
       {/* Member Profile */}
@@ -78,44 +78,44 @@ export default function MemberDetails() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-gray-700">
           <p>
-            <span className="font-semibold">Category:</span>{" "}
+            <span className="font-semibold">Icyiciro:</span>{" "}
             <span className="capitalize">{member.category}</span>
           </p>
 
           <p>
-            <span className="font-semibold">Gender:</span>{" "}
+            <span className="font-semibold">Igitsina:</span>{" "}
             {member.gender || "N/A"}
           </p>
 
           <p>
-            <span className="font-semibold">Phone:</span>{" "}
-            {member.phone || member.userphoneNumber || "Not yet"}
+            <span className="font-semibold">Telefone:</span>{" "}
+            {member.phone || member.userphoneNumber || "Nta telefone yatanzwe"}
           </p>
 
           <p>
-            <span className="font-semibold">Date of Birth:</span>{" "}
+            <span className="font-semibold">Itariki y'amavuko:</span>{" "}
             {member.dateOfBirth
               ? new Date(member.dateOfBirth).toLocaleDateString()
-              : "Not provided"}
+              : "Nta tariki yatanzwe"}
           </p>
 
           <p>
-            <span className="font-semibold">Subgroup:</span>{" "}
-            {member.subgroup?.name || "Not assigned"}
+            <span className="font-semibold">Itsinda rito:</span>{" "}
+            {member.subgroup?.name || "Nta tsinda ryashyizweho"}
           </p>
 
           <p className="md:col-span-2">
             <span className="font-semibold">Sakraments:</span>{" "}
             {member.sakraments?.length > 0
               ? member.sakraments.map((s) => s.name).join(", ")
-              : "None"}
+              : "Nta Sakramenti"}
           </p>
-          <br />
+
           <button
             onClick={() => navigate(`/members/edit/${member._id}`)}
             className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition"
           >
-            Edit
+            Hindura Amakuru
           </button>
         </div>
 
@@ -136,12 +136,12 @@ export default function MemberDetails() {
                     : "bg-red-100 text-red-600"
                 }`}
               >
-                {decision.status} — {decision.attendancePercentage}%
+                {decision.status === "ACTIVE" ? "Akiriho" : "Ntahari"} — {decision.attendancePercentage}%
               </span>
             </>
           ) : (
             <span className="text-gray-400 text-sm">
-              No attendance decision yet
+              Nta cyemezo ku kwitabira kigezeho
             </span>
           )}
         </div>
@@ -150,26 +150,26 @@ export default function MemberDetails() {
       {/* Attendance History */}
       <div className="bg-white rounded-xl shadow p-6">
         <h2 className="text-xl font-semibold text-blue-600 mb-4">
-          Attendance History
+          Amateka yo kwitabira
         </h2>
 
         {attendance.length === 0 ? (
-          <p className="text-gray-500">No attendance records found.</p>
+          <p className="text-gray-500">Nta mateka yo kwitabira yabonetse.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-blue-50 text-left">
-                  <th className="p-3">Event</th>
+                  <th className="p-3">Igikorwa</th>
                   <th className="p-3">Status</th>
-                  <th className="p-3">Marked On</th>
+                  <th className="p-3">Itariki yanditsweho</th>
                 </tr>
               </thead>
               <tbody>
                 {attendance.map((record) => (
                   <tr key={record._id} className="border-b">
                     <td className="p-3">
-                      {record.event?.title || "Unknown event"}
+                      {record.event?.title || "Igikorwa nticyamenyekanye"}
                     </td>
 
                     <td className="p-3 capitalize">
@@ -180,7 +180,7 @@ export default function MemberDetails() {
                             : "bg-red-100 text-red-600"
                         }`}
                       >
-                        {record.status}
+                        {record.status === "present" ? "Yitabiriye" : "Ntacyitabiriye"}
                       </span>
                     </td>
 

@@ -19,7 +19,7 @@ export default function Events() {
     date: "",
   });
 
-  // 🔥 Get Event Status
+  // 🔥 Menya Status y'Igikorwa
   const getEventStatus = (eventDate) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -32,7 +32,7 @@ export default function Events() {
     return "upcoming";
   };
 
-  // 🔥 Filtered Events
+  // 🔥 Events zahujwe na Filter
   const filteredEvents = useMemo(() => {
     if (filter === "all") return events;
 
@@ -49,7 +49,7 @@ export default function Events() {
       setEvents(res.data);
     } catch (err) {
       console.error(err);
-      setError("Failed to load events");
+      setError("Ntibyakunze kugaragaza ibikorwa.");
     } finally {
       setFetching(false);
     }
@@ -79,7 +79,7 @@ export default function Events() {
       fetchEvents();
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Failed to create event");
+      setError(err.response?.data?.message || "Ntibyashoboye, gerageza nyuma.");
     } finally {
       setLoading(false);
     }
@@ -93,16 +93,16 @@ export default function Events() {
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
         >
-          <FaArrowLeft /> Back
+          <FaArrowLeft /> Subira Inyuma
         </button>
 
-        <h1 className="text-2xl font-bold text-blue-600">Events</h1>
+        <h1 className="text-2xl font-bold text-blue-600">Ibikorwa</h1>
 
         <button
           onClick={() => setShowForm((prev) => !prev)}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
         >
-          <FaPlus /> {showForm ? "Cancel" : "New Event"}
+          <FaPlus /> {showForm ? "Funga" : "Igikorwa gishya"}
         </button>
       </div>
 
@@ -118,7 +118,13 @@ export default function Events() {
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
-            {type.charAt(0).toUpperCase() + type.slice(1)}
+            {type === "all"
+              ? "Byose"
+              : type === "today"
+              ? "Uyu munsi"
+              : type === "upcoming"
+              ? "Ibitegenyijwe"
+              : "Byarangiye"}
           </button>
         ))}
       </div>
@@ -134,12 +140,13 @@ export default function Events() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
+          autoComplete="off"
           className="bg-white p-6 rounded-xl shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           <input
             type="text"
             name="title"
-            placeholder="Event title"
+            placeholder="Izina ry'igikorwa"
             value={formData.title}
             onChange={handleChange}
             required
@@ -157,7 +164,7 @@ export default function Events() {
 
           <textarea
             name="description"
-            placeholder="Event description"
+            placeholder="Ubutumwa bwihariye ku gikorwa"
             value={formData.description}
             onChange={handleChange}
             required
@@ -169,17 +176,17 @@ export default function Events() {
             disabled={loading}
             className="bg-blue-600 text-white py-3 rounded-lg md:col-span-2 hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Creating..." : "Create Event"}
+            {loading ? "Tegereza gato..." : "Hanga igikorwa"}
           </button>
         </form>
       )}
 
       {/* Events Grid */}
       {fetching ? (
-        <p className="text-center text-gray-500">Loading events...</p>
+        <p className="text-center text-gray-500">Kureba ibikorwa...</p>
       ) : filteredEvents.length === 0 ? (
         <p className="text-center text-gray-500">
-          No {filter !== "all" ? filter : ""} events found.
+          Nta bikorwa byabonetse {filter !== "all" ? `by'${filter === "today" ? "uyu munsi" : filter === "upcoming" ? "ibitegenyijwe" : "byarangiye"}'` : ""}
         </p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -207,10 +214,10 @@ export default function Events() {
                     }`}
                   >
                     {status === "today"
-                      ? "Today"
+                      ? "Uyu munsi"
                       : status === "completed"
-                      ? "Completed"
-                      : "Upcoming"}
+                      ? "Byarangiye"
+                      : "Ibitegenyijwe"}
                   </span>
                 </div>
 

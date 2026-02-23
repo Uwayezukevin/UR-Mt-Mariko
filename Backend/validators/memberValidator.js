@@ -3,15 +3,15 @@ import mongoose from "mongoose";
 
 export const memberSchema = checkSchema({
   fullName: {
-    notEmpty: { errorMessage: "Full name is required" },
+    notEmpty: { errorMessage: "Izina ryuzuye rirakenewe" },
     isLength: {
       options: { min: 2 },
-      errorMessage: "Full name must be at least 2 characters",
+      errorMessage: "Izina ryuzuye rigomba kuba rifite inyuguti zirenzwe ebyiri",
     },
   },
 
   category: {
-    notEmpty: { errorMessage: "Category is required" },
+    notEmpty: { errorMessage: "Icyiciro kirakenwe" },
     isIn: {
       options: [["child", "youth", "adult"]],
       errorMessage: "Category must be child, youth, or adult",
@@ -22,14 +22,14 @@ export const memberSchema = checkSchema({
     optional: { options: { nullable: true, checkFalsy: true } },
     isLength: {
       options: { min: 16, max: 16 },
-      errorMessage: "National ID must be 16 characters",
+      errorMessage: "Irangamuntu igomba kuba byibura imibare 16",
     },
   },
 
   dateOfBirth: {
     optional: true,
     isISO8601: {
-      errorMessage: "Date of birth must be a valid date",
+      errorMessage: "Shyiramo itariki ya nyayo",
     },
   },
 
@@ -37,7 +37,7 @@ export const memberSchema = checkSchema({
     optional: { options: { checkFalsy: true } },
     matches: {
       options: [/^(\+2507|07)\d{8}$/],
-      errorMessage: "Must be a valid Rwanda phone number",
+      errorMessage: "Telefoni igomba kuba ari numero y' URwanda",
     },
   },
 

@@ -9,7 +9,7 @@ export default function Home() {
   const [events, setEvents] = useState([]);
   const [time, setTime] = useState(new Date());
 
-  // CONTACT FORM STATE
+  // STATE Y'UBUTUMWA
   const [contactData, setContactData] = useState({
     name: "",
     email: "",
@@ -19,7 +19,7 @@ export default function Home() {
   const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  // Live clock
+  // Isaha ikora live
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -49,17 +49,17 @@ export default function Home() {
     e.preventDefault();
 
     if (!contactData.email && !contactData.phone) {
-      alert("Please provide either email or phone number.");
+      alert("Nyamuneka shyiramo email cyangwa telefone.");
       return;
     }
 
     try {
       setSending(true);
       await axios.post("http://localhost:2350/messages/send", contactData);
-      setSuccessMsg("Message sent successfully!");
+      setSuccessMsg("Ubutumwa bwoherejwe neza!");
       setContactData({ name: "", email: "", phone: "", message: "" });
     } catch (err) {
-      alert("Failed to send message");
+      alert("Ntibyashoboye koherezwa ubutumwa");
     } finally {
       setSending(false);
     }
@@ -70,24 +70,24 @@ export default function Home() {
       {/* NAVBAR */}
       <nav className="bg-white shadow fixed top-0 left-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">Attendance System</h1>
+          <h1 className="text-xl font-bold text-blue-600">Umuryango remezo witiriwe Mutagatifu Mariko</h1>
 
           <div className="flex items-center gap-6 text-gray-700">
             <a href="#home" className="hover:text-blue-600">
-              Home
+              Ahabanza
             </a>
             <a href="#about" className="hover:text-blue-600">
-              About
+              Ibyerekeye
             </a>
             <a href="#contact" className="hover:text-blue-600">
-              Contact
+              Tumenye
             </a>
 
             <button
               onClick={() => navigate("/login")}
               className="text-blue-600 font-medium hover:underline"
             >
-              Login
+              Injira
             </button>
 
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -107,19 +107,18 @@ export default function Home() {
           Umuryangoremezo witiriwe Mutagatifu Mariko
         </h2>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Manage members, track attendance, and stay informed about upcoming
-          events.
+          Kugenzura abanyamuryango, gukurikirana kwitabira ibikorwa, no kumenya amakuru y'ibikorwa biri imbere.
         </p>
       </section>
 
       {/* EVENTS */}
       <section className="px-6 pb-20 max-w-7xl mx-auto">
         <h3 className="text-2xl font-semibold text-blue-600 mb-6">
-          Upcoming Events
+          Ibikorwa biri imbere
         </h3>
 
         {events.length === 0 ? (
-          <p className="text-gray-500">No upcoming events.</p>
+          <p className="text-gray-500">Nta bikorwa biri imbere.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {events.map((event) => (
@@ -140,7 +139,7 @@ export default function Home() {
                   onClick={() => navigate(`events-public/${event._id}`)}
                   className="mt-4 text-sm text-blue-600 hover:underline"
                 >
-                  View Details
+                  Reba ibisobanuro
                 </button>
               </div>
             ))}
@@ -148,7 +147,7 @@ export default function Home() {
         )}
 
         <Link to="/events-public" className="text-blue-600 hover:underline">
-          View all events →
+          Reba ibikorwa byose →
         </Link>
       </section>
 
@@ -156,20 +155,13 @@ export default function Home() {
       <section id="about" className="bg-white py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <h3 className="text-2xl font-semibold text-blue-600 mb-4">
-            About Us
+            Ibyerekeye Sisitemu
           </h3>
           <p className="text-gray-600">
-            This system was developed to help the track of attendance , data ,
-            events of members of group called Umuryangoremezo witiriwe
-            Mutagatifu Mariko. This System was developed to simplify all the
-            processes made to check member's attendance and data , this was a
-            complex and complicated process. So through the Idea of one member
-            called Ufitingabire Vincent De Paul, we hired a developer to build
-            this robust system to support our member's Idea and also inorder to
-            solve such big problem we had been facing for along time. So this
-            system is dedicated to our members and our leaders but also guests
-            are allowed. This system is also in charge of Parish of Saint Peter
-            cyahafi. We hope you guys will enjoy to use it.
+            Iyi sisitemu yashyizweho kugirango ifashe gukurikirana abanyamuryango, amakuru yabo, n'ibikorwa byabo by'umuryango witiriwe Mutagatifu Mariko. 
+            Mbere, kugenzura abanyamuryango no kubika amakuru byari inzira igoye kandi itari yoroshye. 
+            Ku gitekerezo cy'umunyamuryango witwa Ufitingabire Vincent De Paul, twashatse umutekinisiye wubatse iyi sisitemu ikomeye, igamije gufasha abanyamuryango no koroshya ubu buryo. 
+            Sisitemu igenewe abanyamuryango, abayobozi, ndetse n'abashyitsi barabemererwa. Ikaba kandi ishinzwe Paruwasi ya Mutagatifu Peter hafi aho. Twizeye ko muzayikoresha neza.
           </p>
         </div>
       </section>
@@ -178,17 +170,18 @@ export default function Home() {
       <section id="contact" className="py-20 px-6 bg-blue-50">
         <div className="max-w-5xl mx-auto">
           <h3 className="text-2xl font-semibold text-blue-600 mb-6">
-            Contact Admin
+            Tumenye Admin
           </h3>
 
           <form
             onSubmit={handleContactSubmit}
+            autoComplete="off"
             className="bg-white shadow rounded-xl p-6 grid gap-4 max-w-xl"
           >
             <input
               type="text"
               name="name"
-              placeholder="Your Name"
+              placeholder="Izina ryawe"
               value={contactData.name}
               onChange={handleContactChange}
               className="border rounded px-4 py-2"
@@ -207,7 +200,7 @@ export default function Home() {
             <input
               type="tel"
               name="phone"
-              placeholder="Phone (optional)"
+              placeholder="Telefone (optional)"
               value={contactData.phone}
               onChange={handleContactChange}
               className="border rounded px-4 py-2"
@@ -215,7 +208,7 @@ export default function Home() {
 
             <textarea
               name="message"
-              placeholder="Your message (attendance request, question...)"
+              placeholder="Ubutumwa bwawe (gusaba kwitabira, ikibazo...)"
               value={contactData.message}
               onChange={handleContactChange}
               className="border rounded px-4 py-2 h-28"
@@ -226,7 +219,7 @@ export default function Home() {
               disabled={sending}
               className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-60"
             >
-              {sending ? "Sending..." : "Send Message"}
+              {sending ? "Birimo koherezwa..." : "Ohereza Ubutumwa"}
             </button>
 
             {successMsg && (
@@ -239,7 +232,7 @@ export default function Home() {
       {/* FOOTER */}
       <footer className="bg-white text-center py-4 text-sm text-gray-500">
         © {new Date().getFullYear()} Umuryangoremezo witiriwe Mutagatifu Mariko
-        || Empowered and built by dev Uwayezu Kevin
+        || Yubatswe na dev Uwayezu Kevin
       </footer>
     </div>
   );

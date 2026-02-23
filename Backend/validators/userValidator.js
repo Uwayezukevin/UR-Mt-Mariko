@@ -2,30 +2,30 @@ import { checkSchema } from "express-validator";
 
 export const userSchema = checkSchema({
   username: {
-    notEmpty: { errorMessage: "Username is required" },
+    notEmpty: { errorMessage: "Izina ryawe rirakenewe" },
     isLength: {
       options: { min: 3 },
-      errorMessage: "Username must be at least 3 characters",
+      errorMessage: "Izina rigomba kuba byibura inyuguti zirenze 3",
     },
   },
 
   useremail: {
-    notEmpty: { errorMessage: "Email is required" },
-    isEmail: { errorMessage: "Must be a valid email address" },
+    notEmpty: { errorMessage: "Email yawe irakenewe" },
+    isEmail: { errorMessage: "Shyiramo email ya nyayo" },
   },
 
   userphonenumber: {
-    notEmpty: { errorMessage: "Phone number is required" },
+    notEmpty: { errorMessage: "Numero ya telefoni irakenewe" },
     matches: {
       options: [/^(\+2507|07)\d{8}$/],
-      errorMessage: "Must be a valid Rwanda phone number",
+      errorMessage: "Numero ya telefoni igomba kuba ari iy'u Rwanda",
     },
   },
   userpassword: {
-    notEmpty: { errorMessage: "Password is required" },
+    notEmpty: { errorMessage: "Ijambo banga rirakenewe" },
     isLength: {
       options: { min: 6 },
-      errorMessage: "Password must be at least 6 characters",
+      errorMessage: "Ijambo banga rigomba kuba byibura guhera kunyuguti 6 kuzamura",
     },
   },
 

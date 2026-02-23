@@ -27,7 +27,7 @@ export default function EventDetailsPublic() {
         setAttendance(attendanceRes.data || []);
       } catch (err) {
         console.error(err);
-        setError("Failed to load event details.");
+        setError("Ntibyashoboye kwerekana amakuru y'igikorwa.");
       } finally {
         setLoading(false);
       }
@@ -37,7 +37,7 @@ export default function EventDetailsPublic() {
   }, [id]);
 
   if (loading) {
-    return <div className="p-6 text-blue-600">Loading event details...</div>;
+    return <div className="p-6 text-blue-600">Turimo gutunganya amakuru y'igikorwa...</div>;
   }
 
   if (error) {
@@ -45,7 +45,7 @@ export default function EventDetailsPublic() {
   }
 
   if (!event) {
-    return <div className="p-6 text-red-500">Event not found.</div>;
+    return <div className="p-6 text-red-500">Igikorwa nticyabonetse.</div>;
   }
 
   const formatDate = (dateStr) => {
@@ -58,15 +58,15 @@ export default function EventDetailsPublic() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Back Button */}
+      {/* Buto yo gusubira inyuma */}
       <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6"
       >
-        <FaArrowLeft /> Back
+        <FaArrowLeft /> Subira inyuma
       </button>
 
-      {/* Event Info */}
+      {/* Amakuru y'Igikorwa */}
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <h1 className="text-2xl font-bold text-blue-600">{event.title}</h1>
         <p className="text-gray-500 mt-1">{formatDate(event.date)}</p>
@@ -74,22 +74,22 @@ export default function EventDetailsPublic() {
         <br />
       </div>
 
-      {/* Attendance Table */}
+      {/* Table y'Abitabiriye */}
       <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-xl font-semibold text-blue-600 mb-4">Attendance</h2>
+        <h2 className="text-xl font-semibold text-blue-600 mb-4">Abitabiriye</h2>
 
         {attendance.length === 0 ? (
           <p className="text-gray-500">
-            No attendance recorded for this event.
+            Nta bitabiriye byanditswe kuri iki gikorwa.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-blue-50">
-                  <th className="p-3 text-left">Member</th>
-                  <th className="p-3 text-left">Status</th>
-                  <th className="p-3 text-left">Date</th>
+                  <th className="p-3 text-left">Umuryango</th>
+                  <th className="p-3 text-left">Uburyo yitabiriye</th>
+                  <th className="p-3 text-left">Itariki</th>
                 </tr>
               </thead>
               <tbody>
@@ -99,7 +99,7 @@ export default function EventDetailsPublic() {
                     className="border-b hover:bg-gray-50 transition"
                   >
                     <td className="p-3">
-                      {record.member?.fullName || "Unknown"}
+                      {record.member?.fullName || "Ntizwi"}
                     </td>
                     <td className="p-3 capitalize">
                       <span

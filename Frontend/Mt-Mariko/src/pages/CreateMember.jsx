@@ -33,7 +33,6 @@ export default function CreateMember() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -46,20 +45,18 @@ export default function CreateMember() {
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
 
-        // Only adults as possible parents
         const adults = parentRes.data.filter(
-          (member) => member.category === "adult",
+          (member) => member.category === "adult"
         );
         setParents(adults);
       } catch (err) {
-        console.error("Failed to fetch data:", err);
+        console.error("Ntibishoboye kubona amakuru:", err);
       }
     };
 
     fetchData();
   }, []);
 
-  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -69,7 +66,6 @@ export default function CreateMember() {
     }));
   };
 
-  // Toggle sakraments
   const handleSakramentToggle = (id) => {
     setFormData((prev) => ({
       ...prev,
@@ -79,20 +75,16 @@ export default function CreateMember() {
     }));
   };
 
-  // Submit form
-  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      // Prepare payload
       const payload = {
         fullName: formData.fullName,
         category: formData.category,
         gender: formData.gender,
-        // Only include optional fields if they have a value
         ...(formData.nationalId ? { nationalId: formData.nationalId } : {}),
         ...(formData.dateOfBirth ? { dateOfBirth: formData.dateOfBirth } : {}),
         ...(formData.phone ? { phone: formData.phone } : {}),
@@ -108,12 +100,10 @@ export default function CreateMember() {
       await api.post("/members", payload);
       navigate("/members");
     } catch (err) {
-      console.error(err.response?.data || err);
-
       const message =
         err.response?.data?.errors?.map((e) => e.msg).join(", ") ||
         err.response?.data?.message ||
-        "Member creation failed";
+        "Kurema umunyamuryango byanze";
 
       setError(message);
     } finally {
@@ -124,16 +114,17 @@ export default function CreateMember() {
   return (
     <div className="min-h-screen bg-blue-50 py-10 px-4">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 relative">
-        {/* Back button */}
+        
+        {/* Subira inyuma */}
         <button
           onClick={() => navigate(-1)}
           className="absolute left-4 top-4 flex items-center gap-2 text-blue-600 hover:text-blue-800"
         >
-          <FaArrowLeft /> Back
+          <FaArrowLeft /> Subira inyuma
         </button>
 
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          Create Member
+          Andika Umunyamuryango Mushya
         </h1>
 
         {error && (
@@ -142,14 +133,15 @@ export default function CreateMember() {
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Full Name */}
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+          
+          {/* Amazina yose */}
           <div className="relative">
             <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               type="text"
               name="fullName"
-              placeholder="Full Name"
+              placeholder="Amazina yose"
               value={formData.fullName}
               onChange={handleChange}
               required
@@ -157,7 +149,7 @@ export default function CreateMember() {
             />
           </div>
 
-          {/* Category */}
+          {/* Icyiciro */}
           <div className="relative">
             <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <select
@@ -167,14 +159,14 @@ export default function CreateMember() {
               required
               className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select Category</option>
-              <option value="child">Child</option>
-              <option value="youth">Youth</option>
-              <option value="adult">Adult</option>
+              <option value="">Hitamo Icyiciro</option>
+              <option value="child">Umwana</option>
+              <option value="youth">Urubyiruko</option>
+              <option value="adult">Umukuru</option>
             </select>
           </div>
 
-          {/* Parent */}
+          {/* Umubyeyi */}
           {formData.category === "child" && (
             <div className="relative">
               <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
@@ -185,7 +177,7 @@ export default function CreateMember() {
                 required
                 className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select Parent</option>
+                <option value="">Hitamo Umubyeyi</option>
                 {parents.map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.fullName}
@@ -195,20 +187,20 @@ export default function CreateMember() {
             </div>
           )}
 
-          {/* National ID */}
+          {/* Indangamuntu */}
           <div className="relative">
             <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               type="text"
               name="nationalId"
-              placeholder="National ID"
+              placeholder="Indangamuntu"
               value={formData.nationalId}
               onChange={handleChange}
               className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Date of Birth */}
+          {/* Itariki y'amavuko */}
           <div className="relative">
             <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
@@ -220,20 +212,20 @@ export default function CreateMember() {
             />
           </div>
 
-          {/* Phone */}
+          {/* Telefoni */}
           <div className="relative">
             <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <input
               type="tel"
               name="phone"
-              placeholder="Phone"
+              placeholder="Telefoni"
               value={formData.phone}
               onChange={handleChange}
               className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Gender */}
+          {/* Igitsina */}
           <div className="relative">
             <FaVenusMars className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <select
@@ -243,13 +235,13 @@ export default function CreateMember() {
               required
               className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
+              <option value="">Hitamo Igitsina</option>
+              <option value="male">Gabo</option>
+              <option value="female">Gore</option>
             </select>
           </div>
 
-          {/* Subgroup */}
+          {/* Umuryango remezo */}
           <div className="relative">
             <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
             <select
@@ -259,7 +251,7 @@ export default function CreateMember() {
               required
               className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Select Subgroup</option>
+              <option value="">Hitamo Umuryango Remezo</option>
               {subgroups.map((s) => (
                 <option key={s._id} value={s._id}>
                   {s.name}
@@ -268,9 +260,11 @@ export default function CreateMember() {
             </select>
           </div>
 
-          {/* Sakraments */}
+          {/* Sakramentu */}
           <div className="space-y-2">
-            <p className="font-semibold text-gray-700">Sakraments:</p>
+            <p className="font-semibold text-gray-700">
+              Amasakramentu:
+            </p>
             <div className="flex flex-wrap gap-2">
               {sakraments.map((s) => (
                 <button
@@ -289,13 +283,14 @@ export default function CreateMember() {
             </div>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Creating member..." : "Create Member"}
+            {loading
+              ? "Turimo kurema umunyamuryango..."
+              : "Andika Umunyamuryango"}
           </button>
         </form>
       </div>
