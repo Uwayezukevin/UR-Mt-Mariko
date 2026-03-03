@@ -36,11 +36,6 @@ app.use(cors());
 app.use(express.json());
 
 // ===============================
-// DATABASE CONNECTION
-// ===============================
-connectDB();
-
-// ===============================
 // ROUTES
 // ===============================
 app.use("/umuryangoremezo/backend/", router);
@@ -55,33 +50,44 @@ io.on("connection", (socket) => {
 });
 
 // ===============================
-// 🔥 CRON JOB - AUTO MARK ABSENT
+// START SERVER ONLY AFTER DB CONNECTS
 // ===============================
-// Runs every day at midnight (00:00)
-cron.schedule("0 0 * * *", async () => {
-  console.log("Running daily auto attendance job...");
-  try {
-    await autoMarkAbsent();
-  } catch (error) {
-    console.error("Auto attendance failed:", error);
-  }
-});
 
-// Optional: run once when server starts (for testing)
-(async () => {
-  try {
-    await autoMarkAbsent();
-    console.log("Initial auto attendance check completed.");
-  } catch (err) {
-    console.error("Initial auto attendance failed:", err);
-  }
-})();
-
-// ===============================
-// SERVER START
-// ===============================
 const port = process.env.PORT || 2350;
 
-server.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+const startServer = async () => {
+  try {
+    // ✅ WAIT for DB
+    await connectDB();
+    console.log("Database connection established successfully");
+
+    // ✅ Start server AFTER DB
+    server.listen(port, () => {
+      console.log(`Server running on http://localhost:${port}`);
+    });
+
+    // ✅ Run initial auto attendance AFTER DB
+    try {
+      await autoMarkAbsent();
+      console.log("Initial auto attendance check completed.");
+    } catch (err) {
+      console.error("Initial auto attendance failed:", err);
+    }
+
+    // ✅ Schedule cron AFTER DB
+    cron.schedule("0 0 * * *", async () => {
+      console.log("Running daily auto attendance job...");
+      try {
+        await autoMarkAbsent();
+      } catch (error) {
+        console.error("Auto attendance failed:", error);
+      }
+    });
+
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

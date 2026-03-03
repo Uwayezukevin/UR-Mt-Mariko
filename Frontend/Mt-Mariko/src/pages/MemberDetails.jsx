@@ -136,7 +136,7 @@ export default function MemberDetails() {
                     : "bg-red-100 text-red-600"
                 }`}
               >
-                {decision.status === "ACTIVE" ? "Akiriho" : "Ntahari"} — {decision.attendancePercentage}%
+                {decision.status === "ACTIVE" ? "Aritabira" : "Ntiyitabira"} — {decision.attendancePercentage}%
               </span>
             </>
           ) : (

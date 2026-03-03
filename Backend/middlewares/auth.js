@@ -30,8 +30,15 @@ export const protect = async (req, res, next) => {
 
 // Admin only
 export const adminOnly = (req, res, next) => {
+  // 🔒 Check if user exists first
+  if (!req.user) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  // 🔒 Then check role
   if (req.user.userrole !== "admin") {
     return res.status(403).json({ message: "Access denied: admin only" });
   }
+
   next();
 };

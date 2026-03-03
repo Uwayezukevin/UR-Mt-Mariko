@@ -53,7 +53,7 @@ export default function Dashboard() {
       <nav className="bg-white shadow fixed top-0 left-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-blue-600">
-            Sisitemu y'Ibyitabira
+            Sisitemu y'Umuryangoremezo mutagatifu Mariko
           </h1>
 
           <div className="flex items-center gap-6 text-gray-700">
@@ -73,11 +73,9 @@ export default function Dashboard() {
       <aside className={`bg-white w-64 p-6 shadow-lg fixed md:static z-20 h-full transition-transform duration-300 ${
         open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}>
-
-        <h2 className="text-2xl font-bold text-blue-600 mb-8">
-          Akanama k'Ubuyobozi
-        </h2>
-
+        <br />
+        <br />
+        <br />
         <nav className="space-y-4">
           <SidebarButton icon={<FaCalendarAlt />} label="Imbonerahamwe" onClick={() => navigate("/dashboard")} />
           <SidebarButton icon={<FaUsers />} label="Abanyamuryango" onClick={() => navigate("/members")} />

@@ -17,11 +17,14 @@ const attendanceSchema = new mongoose.Schema(
       enum: ["present", "absent"],
       default: "present",
     },
-    note: {
-      type: String,
-    },
+    note: String,
   },
   { timestamps: true }
 );
 
-export default mongoose.model("Attendance", attendanceSchema);
+// ✅ Prevent OverwriteModelError
+const Attendance =
+  mongoose.models.Attendance ||
+  mongoose.model("Attendance", attendanceSchema);
+
+export default Attendance;

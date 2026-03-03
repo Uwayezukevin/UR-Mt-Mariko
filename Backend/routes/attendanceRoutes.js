@@ -21,6 +21,6 @@ router.post(
 router.get("/event/:eventId", protect, getAttendanceByEvent);
 
 // Get all attendance for a specific member
-router.get("/member/:memberId", protect, getAttendanceByMember);
+router.get("/member/:memberId", getAttendanceByMember);
 
 export default router;
