@@ -1,5 +1,5 @@
 import Member from "../mongoschema/memberschema.js";
-import Attendance from "../mongoschema/attendanceschema.js";
+import Attendance from "../mongoschema/attendanceSchema.js";
 import Event from "../mongoschema/eventschema.js";
 import mongoose from "mongoose";
 // ================= CREATE MEMBER =================
