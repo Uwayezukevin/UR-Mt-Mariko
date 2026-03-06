@@ -31,14 +31,14 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    axios.get("http://localhost:2350/dashboard/stats")
+    axios.get("https://ur-mt-mariko.onrender.com/dashboard/stats")
       .then(res => setStats(res.data))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    const socket = io("http://localhost:2350");
+    const socket = io("https://ur-mt-mariko.onrender.com");
     socket.on("newMessage", () => {
       setUnreadMessages(prev => prev + 1);
     });
@@ -80,7 +80,7 @@ export default function Dashboard() {
           <SidebarButton icon={<FaCalendarAlt />} label="Imbonerahamwe" onClick={() => navigate("/dashboard")} />
           <SidebarButton icon={<FaUsers />} label="Abanyamuryango" onClick={() => navigate("/members")} />
           <SidebarButton icon={<FaUserPlus />} label="Andika Umunyamuryango" onClick={() => navigate("/members/create")} />
-          <SidebarButton icon={<FaCalendarAlt />} label="Ibirori" onClick={() => navigate("/events")} />
+          <SidebarButton icon={<FaCalendarAlt />} label="Ibikorwa" onClick={() => navigate("/events")} />
 
           <SidebarButton
             icon={<FaEnvelope />}

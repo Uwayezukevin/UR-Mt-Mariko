@@ -12,7 +12,7 @@ export default function AdminMessages() {
 
   // Guhuza socket
   useEffect(() => {
-    const s = io("http://localhost:2350");
+    const s = io("https://ur-mt-mariko.onrender.com");
     setSocket(s);
 
     s.on("newMessage", (message) => {
@@ -33,7 +33,7 @@ export default function AdminMessages() {
   // Kuzana ubutumwa
   useEffect(() => {
     axios
-      .get("http://localhost:2350/messages")
+      .get("https://ur-mt-mariko.onrender.com/messages")
       .then((res) => setMessages(res.data))
       .catch((err) => console.error(err));
   }, []);

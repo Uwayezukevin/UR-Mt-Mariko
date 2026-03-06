@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:2350/umuryangoremezo/backend",
+  // baseURL: "http://localhost:2350/umuryangoremezo/backend", locally
+  // Online backend
+  baseURL : "https://ur-mt-mariko.onrender.com/umuryangoremezo/backend"
 });
 
 api.interceptors.request.use((config) => {
