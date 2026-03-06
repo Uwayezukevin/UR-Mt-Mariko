@@ -20,7 +20,7 @@ const server = http.createServer(app);
 // ===============================
 const io = new Server(server, {
   cors: {
-    origin: {origin: "http://localhost:5173"},
+    origin: {origin: "https://https://umuryangoremezo-mutagatifu-mariko.vercel.app"},
   },
 });
 
