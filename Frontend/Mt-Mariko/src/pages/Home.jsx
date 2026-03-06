@@ -96,7 +96,7 @@ export default function Home() {
 
     try {
       setSending(true);
-      await axios.post("http://localhost:2350/messages/send", contactData);
+      await axios.post("https://ur-mt-mariko.onrender.com/umuryangoremezo/backend/messages/send", contactData);
       setSuccessMsg("Ubutumwa bwoherejwe neza!");
       setContactData({ name: "", email: "", phone: "", message: "" });
     } catch (err) {
