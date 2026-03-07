@@ -25,13 +25,14 @@ export default function Signup() {
 
     try {
       await api.post("/users/register", formData);
-      navigate("/"); // redirect to login
+      navigate("/"); // redirect to login after signup
     } catch (err) {
       if (err.response?.data?.errors) {
+        // Display all validation messages
         const messages = err.response.data.errors.map((e) => e.msg).join(", ");
         setError(messages);
       } else {
-        setError("Account creation failed");
+        setError("Ntibyashoboye guhanga konti. Ongera ugerageze.");
       }
     } finally {
       setLoading(false);
@@ -72,7 +73,7 @@ export default function Signup() {
             <input
               type="email"
               name="useremail"
-              placeholder="Address ya Email"
+              placeholder="Email yawe"
               value={formData.useremail}
               onChange={handleChange}
               required
@@ -86,7 +87,7 @@ export default function Signup() {
             <input
               type="tel"
               name="userphonenumber"
-              placeholder="07XXXXXXXX cg +2507XXXXXXXX"
+              placeholder="07XXXXXXXX cyangwa +2507XXXXXXXX"
               value={formData.userphonenumber}
               onChange={handleChange}
               required
@@ -113,17 +114,17 @@ export default function Signup() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Konti irigukorwa..." : "Hanga Konti"}
+            {loading ? "Konti iri gukorwa..." : "Hanga Konti"}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          Usanzwe ufite konti?{" "}
+          Ufite konti?{" "}
           <span
             onClick={() => navigate("/")}
             className="text-blue-600 cursor-pointer hover:underline"
           >
-            Injira muri konti yawe
+            Injira hano
           </span>
         </p>
       </div>

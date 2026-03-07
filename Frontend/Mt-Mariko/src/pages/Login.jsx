@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaUser, FaLock,FaArrowLeft } from "react-icons/fa";
+import { FaUser, FaLock, FaArrowLeft } from "react-icons/fa";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 
@@ -37,12 +37,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-blue-50 px-4">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-blue-600 mb-6 hover:underline"
+      >
+        <FaArrowLeft /> Subira Inyuma
+      </button>
+
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
           Kwinjira muri konti yawe
         </h1>
 
+        {/* Error */}
         {error && (
           <p className="bg-red-100 text-red-600 text-sm p-3 rounded mb-4">
             {error}
@@ -88,7 +97,7 @@ export default function Login() {
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-            Nta konti ufite?{" "}
+          Nta konti ufite?{" "}
           <span
             onClick={() => navigate("/signup")}
             className="text-blue-600 cursor-pointer hover:underline"

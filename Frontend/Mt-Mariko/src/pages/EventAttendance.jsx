@@ -88,54 +88,69 @@ export default function EventAttendance() {
     }
   };
 
-  if (loading) return <p className="p-6 text-blue-600">Ibirori birimo gutegurwa...</p>;
-  if (error) return <p className="p-6 text-red-500">{error}</p>;
-  if (!event) return <p className="p-6 text-red-500">Ibirori ntibyabonetse.</p>;
+  if (loading)
+    return <p className="p-4 sm:p-6 text-blue-600">Ibirori birimo gutegurwa...</p>;
+
+  if (error)
+    return <p className="p-4 sm:p-6 text-red-500">{error}</p>;
+
+  if (!event)
+    return <p className="p-4 sm:p-6 text-red-500">Ibirori ntibyabonetse.</p>;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-blue-600 mb-6 hover:text-blue-800"
+        className="flex items-center gap-2 text-blue-600 mb-6 hover:text-blue-800 text-sm sm:text-base"
       >
         <FaArrowLeft /> Subira inyuma
       </button>
 
-      <h1 className="text-2xl font-bold text-blue-600 mb-2">
+      <h1 className="text-xl sm:text-2xl font-bold text-blue-600 mb-2">
         {event.title}
       </h1>
 
-      <p className="text-gray-500 mb-2">
+      <p className="text-gray-500 mb-3 text-sm sm:text-base">
         {event.date ? new Date(event.date).toLocaleDateString() : "-"}
       </p>
 
       {isAttendanceClosed && (
-        <p className="text-red-600 font-medium mb-4">
+        <p className="text-red-600 font-medium mb-4 text-sm sm:text-base">
           ⚠ Kwitabira byarafunzwe — iki gikorwa cyamaze kuba.
         </p>
       )}
 
       <div className="space-y-3">
+
         {members.map((member) => (
           <div
             key={member._id}
-            className="flex justify-between items-center bg-white p-4 rounded shadow hover:shadow-md transition"
+            className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white p-4 rounded-xl shadow hover:shadow-md transition gap-3"
           >
+
+            {/* MEMBER INFO */}
             <div>
-              <p className="font-medium">{member.fullName}</p>
-              <p className="text-sm text-gray-500 capitalize">
+              <p className="font-medium text-sm sm:text-base">
+                {member.fullName}
+              </p>
+
+              <p className="text-xs sm:text-sm text-gray-500 capitalize">
                 {member.category}
               </p>
-              <p className="text-sm text-gray-500 capitalize">
+
+              <p className="text-xs sm:text-sm text-gray-500 capitalize">
                 {member.subgroup?.name}
               </p>
             </div>
 
-            <div className="flex gap-2">
+            {/* BUTTONS */}
+            <div className="flex gap-2 flex-wrap">
+
               <button
                 disabled={isAttendanceClosed}
                 onClick={() => markAttendance(member._id, "yitabiriye")}
-                className={`px-3 py-1 rounded transition ${
+                className={`px-3 py-1.5 text-sm rounded transition ${
                   attendance[member._id] === "yitabiriye"
                     ? "bg-blue-600 text-white"
                     : "bg-blue-100 text-blue-600"
@@ -147,7 +162,7 @@ export default function EventAttendance() {
               <button
                 disabled={isAttendanceClosed}
                 onClick={() => markAttendance(member._id, "ntabwo yitabiriye")}
-                className={`px-3 py-1 rounded transition ${
+                className={`px-3 py-1.5 text-sm rounded transition ${
                   attendance[member._id] === "ntabwo yitabiriye"
                     ? "bg-red-600 text-white"
                     : "bg-red-100 text-red-600"
@@ -155,9 +170,11 @@ export default function EventAttendance() {
               >
                 Ntabwo yitabiriye
               </button>
+
             </div>
           </div>
         ))}
+
       </div>
     </div>
   );

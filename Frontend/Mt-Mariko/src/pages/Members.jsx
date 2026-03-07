@@ -18,6 +18,7 @@ export default function Members() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetch members, subgroups, and decisions
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -56,15 +57,13 @@ export default function Members() {
     fetchData();
   }, []);
 
+  // Apply filters
   useEffect(() => {
     let data = [...members];
 
-    if (categoryFilter !== "all")
-      data = data.filter((m) => m.category === categoryFilter);
-    if (genderFilter !== "all")
-      data = data.filter((m) => m.gender === genderFilter);
-    if (subgroupFilter !== "all")
-      data = data.filter((m) => m.subgroup?._id === subgroupFilter);
+    if (categoryFilter !== "all") data = data.filter((m) => m.category === categoryFilter);
+    if (genderFilter !== "all") data = data.filter((m) => m.gender === genderFilter);
+    if (subgroupFilter !== "all") data = data.filter((m) => m.subgroup?._id === subgroupFilter);
 
     setFilteredMembers(data);
   }, [categoryFilter, genderFilter, subgroupFilter, members]);
@@ -76,22 +75,21 @@ export default function Members() {
       </div>
     );
 
-  if (error) return <div className="p-6 text-center text-red-500">{error}</div>;
+  if (error)
+    return <div className="p-6 text-center text-red-500">{error}</div>;
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">
-        Urutonde rw'Abanyamuryango
-      </h1>
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold text-blue-600 mb-6">Urutonde rw'Abanyamuryango</h1>
 
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-blue-600 mb-6"
+        className="flex items-center gap-2 text-blue-600 mb-6 hover:underline"
       >
         <FaArrowLeft /> Subira inyuma
       </button>
 
-      {/* FILTERS */}
+      {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6">
         <select
           value={categoryFilter}
@@ -128,10 +126,9 @@ export default function Members() {
         </select>
       </div>
 
+      {/* Members List */}
       {filteredMembers.length === 0 ? (
-        <p className="text-gray-500">
-          Nta munyamuryango wabonetse.
-        </p>
+        <p className="text-gray-500">Nta munyamuryango wabonetse.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMembers.map((member) => (
@@ -148,8 +145,8 @@ export default function Members() {
   );
 }
 
+// Single Member Card
 function MemberCard({ member, decision, onClick }) {
-
   const translateCategory = (category) => {
     if (category === "child") return "Umwana";
     if (category === "youth") return "Urubyiruko";
@@ -168,19 +165,13 @@ function MemberCard({ member, decision, onClick }) {
       onClick={onClick}
       className="bg-white p-6 rounded-xl shadow hover:shadow-lg cursor-pointer transition"
     >
-      <h2 className="text-lg font-semibold text-gray-800">
-        {member.fullName}
-      </h2>
-
+      <h2 className="text-lg font-semibold text-gray-800">{member.fullName}</h2>
       <p className="text-sm text-gray-500 capitalize">
         Icyiciro: {translateCategory(member.category)}
       </p>
-
       <p className="text-sm text-gray-500">
         Umuryango remezo: {member.subgroup?.name || "Nta wo"}
       </p>
-
-      <br />
 
       {decision ? (
         <div className="mt-4 flex items-center gap-2">
@@ -189,7 +180,6 @@ function MemberCard({ member, decision, onClick }) {
           ) : (
             <FaUserTimes className="text-red-500" />
           )}
-
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${
               decision.status === "ACTIVE"
@@ -201,9 +191,7 @@ function MemberCard({ member, decision, onClick }) {
           </span>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-gray-400">
-          Nta makuru y'uko yitabiriye ahari.
-        </p>
+        <p className="mt-4 text-sm text-gray-400">Nta makuru y'uko yitabiriye ahari.</p>
       )}
     </div>
   );

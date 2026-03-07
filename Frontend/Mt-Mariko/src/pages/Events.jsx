@@ -19,7 +19,6 @@ export default function Events() {
     date: "",
   });
 
-  // 🔥 Menya Status y'Igikorwa
   const getEventStatus = (eventDate) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -32,16 +31,11 @@ export default function Events() {
     return "upcoming";
   };
 
-  // 🔥 Events zahujwe na Filter
   const filteredEvents = useMemo(() => {
     if (filter === "all") return events;
-
-    return events.filter(
-      (event) => getEventStatus(event.date) === filter
-    );
+    return events.filter((event) => getEventStatus(event.date) === filter);
   }, [events, filter]);
 
-  // Fetch events
   const fetchEvents = async () => {
     try {
       setFetching(true);
@@ -86,33 +80,38 @@ export default function Events() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="px-4 sm:px-6 py-6 max-w-6xl mx-auto">
+
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm sm:text-base"
         >
           <FaArrowLeft /> Subira Inyuma
         </button>
 
-        <h1 className="text-2xl font-bold text-blue-600">Ibikorwa</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center">
+          Ibikorwa
+        </h1>
 
         <button
           onClick={() => setShowForm((prev) => !prev)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition w-full sm:w-auto"
         >
           <FaPlus /> {showForm ? "Funga" : "Igikorwa gishya"}
         </button>
+
       </div>
 
-      {/* 🔥 FILTER TABS */}
-      <div className="flex gap-3 mb-6 flex-wrap">
+      {/* FILTER */}
+      <div className="flex gap-2 sm:gap-3 mb-6 overflow-x-auto pb-2">
         {["all", "today", "upcoming", "completed"].map((type) => (
           <button
             key={type}
             onClick={() => setFilter(type)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+            className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition ${
               filter === type
                 ? "bg-blue-600 text-white"
                 : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -131,17 +130,17 @@ export default function Events() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-100 text-red-600 p-3 rounded mb-4">
+        <div className="bg-red-100 text-red-600 p-3 rounded mb-4 text-sm">
           {error}
         </div>
       )}
 
-      {/* Create Form */}
+      {/* Form */}
       {showForm && (
         <form
           onSubmit={handleSubmit}
           autoComplete="off"
-          className="bg-white p-6 rounded-xl shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+          className="bg-white p-4 sm:p-6 rounded-xl shadow mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           <input
             type="text"
@@ -150,7 +149,7 @@ export default function Events() {
             value={formData.title}
             onChange={handleChange}
             required
-            className="border p-3 rounded focus:ring-2 focus:ring-blue-500"
+            className="border p-3 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
           />
 
           <input
@@ -159,7 +158,7 @@ export default function Events() {
             value={formData.date}
             onChange={handleChange}
             required
-            className="border p-3 rounded focus:ring-2 focus:ring-blue-500"
+            className="border p-3 rounded focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
           />
 
           <textarea
@@ -168,7 +167,7 @@ export default function Events() {
             value={formData.description}
             onChange={handleChange}
             required
-            className="border p-3 rounded md:col-span-2 focus:ring-2 focus:ring-blue-500"
+            className="border p-3 rounded md:col-span-2 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
           />
 
           <button
@@ -181,15 +180,17 @@ export default function Events() {
         </form>
       )}
 
-      {/* Events Grid */}
+      {/* Events */}
       {fetching ? (
         <p className="text-center text-gray-500">Kureba ibikorwa...</p>
       ) : filteredEvents.length === 0 ? (
         <p className="text-center text-gray-500">
-          Nta bikorwa byabonetse {filter !== "all" ? `by'${filter === "today" ? "uyu munsi" : filter === "upcoming" ? "ibitegenyijwe" : "byarangiye"}'` : ""}
+          Nta bikorwa byabonetse
         </p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
           {filteredEvents.map((event) => {
             const status = getEventStatus(event.date);
 
@@ -197,10 +198,11 @@ export default function Events() {
               <div
                 key={event._id}
                 onClick={() => navigate(`/events/${event._id}`)}
-                className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition cursor-pointer"
+                className="bg-white p-5 rounded-xl shadow hover:shadow-lg transition cursor-pointer"
               >
+
                 <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-lg font-semibold text-gray-800">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-800">
                     {event.title}
                   </h2>
 
@@ -221,7 +223,7 @@ export default function Events() {
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-500 mb-2 line-clamp-2">
+                <p className="text-sm text-gray-500 mb-3 line-clamp-2">
                   {event.description}
                 </p>
 
@@ -229,9 +231,11 @@ export default function Events() {
                   <FaCalendarAlt />
                   {new Date(event.date).toLocaleDateString()}
                 </div>
+
               </div>
             );
           })}
+
         </div>
       )}
     </div>

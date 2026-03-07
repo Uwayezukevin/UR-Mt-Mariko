@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  FaUser,
-  FaPhone,
-  FaCalendar,
-  FaUsers,
-  FaArrowLeft,
-  FaIdCard,
-} from "react-icons/fa";
+import { FaUser, FaPhone, FaCalendar, FaArrowLeft, FaIdCard } from "react-icons/fa";
 import api from "../api/axios";
 
 export default function UpdateMember() {
@@ -46,33 +39,32 @@ export default function UpdateMember() {
         const m = memberRes.data;
 
         setFormData({
-          fullName: m.fullName ?? "",
-          category: m.category ?? "",
-          nationalId: m.nationalId ?? "",
+          fullName: m.fullName || "",
+          category: m.category || "",
+          nationalId: m.nationalId || "",
           dateOfBirth: m.dateOfBirth ? m.dateOfBirth.split("T")[0] : "",
-          phone: m.phone ?? "",
+          phone: m.phone || "",
           parent: m.parent?._id || m.parent || "",
-          gender: m.gender ?? "",
+          gender: m.gender || "",
           subgroup: m.subgroup?._id || m.subgroup || "",
-          sakraments: Array.isArray(m.sakraments)
-            ? m.sakraments.map((s) => s._id || s)
-            : [],
+          sakraments: Array.isArray(m.sakraments) ? m.sakraments.map((s) => s._id || s) : [],
         });
 
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
 
+        // Filter adult parents
         const adultParents = membersRes.data.filter(
           (p) => p.category === "adult" && p._id !== id
         );
 
+        // If member is child and parent not in adultParents, add it
         if (m.category === "child" && m.parent) {
           const existingParentId = m.parent?._id || m.parent;
-          const parentExists = adultParents.find((p) => p._id === existingParentId);
-          if (!parentExists) {
+          if (!adultParents.find((p) => p._id === existingParentId)) {
             adultParents.push({
               _id: existingParentId,
-              fullName: m.parent.fullName || "Parent Current",
+              fullName: m.parent.fullName || "Current Parent",
             });
           }
         }
@@ -91,7 +83,7 @@ export default function UpdateMember() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => {
-      let updated = { ...prev, [name]: value };
+      const updated = { ...prev, [name]: value };
       if (name === "category" && value !== "child") updated.parent = "";
       return updated;
     });
@@ -131,7 +123,7 @@ export default function UpdateMember() {
   // ================= UI =================
   return (
     <div className="min-h-screen bg-blue-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-8">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6 md:p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
@@ -141,10 +133,10 @@ export default function UpdateMember() {
           >
             <FaArrowLeft /> Subira Inyuma
           </button>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-600">
+          <h1 className="text-2xl md:text-3xl font-bold text-blue-600 text-center flex-1">
             Hindura Umunyamuryango
           </h1>
-          <div></div>
+          <div className="w-6" /> {/* Empty space for alignment */}
         </div>
 
         {error && (
@@ -152,7 +144,7 @@ export default function UpdateMember() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4">
             {/* Full Name */}
             <div className="relative">
               <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
@@ -286,13 +278,12 @@ export default function UpdateMember() {
             </div>
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
             className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-              loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {loading ? "Birimo guhindurwa..." : "Hindura Umunyamuryango"}

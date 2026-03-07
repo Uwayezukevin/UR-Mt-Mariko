@@ -59,6 +59,7 @@ export default function CreateMember() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -112,18 +113,19 @@ export default function CreateMember() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-8 relative">
-        
-        {/* Subira inyuma */}
+    <div className="min-h-screen bg-blue-50 py-6 sm:py-10 px-3 sm:px-4">
+
+      <div className="max-w-2xl mx-auto bg-white rounded-xl sm:rounded-2xl shadow-lg p-5 sm:p-8 relative">
+
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="absolute left-4 top-4 flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4 text-sm"
         >
           <FaArrowLeft /> Subira inyuma
         </button>
 
-        <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-blue-600 mb-6">
           Andika Umunyamuryango Mushya
         </h1>
 
@@ -134,10 +136,10 @@ export default function CreateMember() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
-          
+
           {/* Amazina yose */}
           <div className="relative">
-            <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <input
               type="text"
               name="fullName"
@@ -145,19 +147,19 @@ export default function CreateMember() {
               value={formData.fullName}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
           </div>
 
           {/* Icyiciro */}
           <div className="relative">
-            <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             >
               <option value="">Hitamo Icyiciro</option>
               <option value="child">Umwana</option>
@@ -166,16 +168,16 @@ export default function CreateMember() {
             </select>
           </div>
 
-          {/* Umubyeyi */}
+          {/* Parent */}
           {formData.category === "child" && (
             <div className="relative">
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
               <select
                 name="parent"
                 value={formData.parent}
                 onChange={handleChange}
                 required
-                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               >
                 <option value="">Hitamo Umubyeyi</option>
                 {parents.map((p) => (
@@ -187,53 +189,53 @@ export default function CreateMember() {
             </div>
           )}
 
-          {/* Indangamuntu */}
+          {/* National ID */}
           <div className="relative">
-            <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <input
               type="text"
               name="nationalId"
               placeholder="Indangamuntu"
               value={formData.nationalId}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
           </div>
 
-          {/* Itariki y'amavuko */}
+          {/* DOB */}
           <div className="relative">
-            <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <input
               type="date"
               name="dateOfBirth"
               value={formData.dateOfBirth}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
           </div>
 
-          {/* Telefoni */}
+          {/* Phone */}
           <div className="relative">
-            <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <input
               type="tel"
               name="phone"
               placeholder="Telefoni"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
           </div>
 
-          {/* Igitsina */}
+          {/* Gender */}
           <div className="relative">
-            <FaVenusMars className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaVenusMars className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <select
               name="gender"
               value={formData.gender}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             >
               <option value="">Hitamo Igitsina</option>
               <option value="male">Gabo</option>
@@ -241,15 +243,15 @@ export default function CreateMember() {
             </select>
           </div>
 
-          {/* Umuryango remezo */}
+          {/* Subgroup */}
           <div className="relative">
-            <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
+            <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
             <select
               name="subgroup"
               value={formData.subgroup}
               onChange={handleChange}
               required
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-9 pr-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             >
               <option value="">Hitamo Umuryango Remezo</option>
               {subgroups.map((s) => (
@@ -260,18 +262,19 @@ export default function CreateMember() {
             </select>
           </div>
 
-          {/* Sakramentu */}
+          {/* Sakraments */}
           <div className="space-y-2">
-            <p className="font-semibold text-gray-700">
+            <p className="font-semibold text-gray-700 text-sm sm:text-base">
               Amasakramentu:
             </p>
+
             <div className="flex flex-wrap gap-2">
               {sakraments.map((s) => (
                 <button
                   type="button"
                   key={s._id}
                   onClick={() => handleSakramentToggle(s._id)}
-                  className={`px-3 py-1 rounded border ${
+                  className={`px-3 py-1 text-sm rounded border ${
                     formData.sakraments.includes(s._id)
                       ? "bg-blue-600 text-white"
                       : "bg-white text-gray-700"
@@ -286,7 +289,7 @@ export default function CreateMember() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-60"
+            className="w-full bg-blue-600 text-white py-2.5 sm:py-3 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base disabled:opacity-60"
           >
             {loading
               ? "Turimo kurema umunyamuryango..."

@@ -64,10 +64,10 @@ export default function MemberDetails() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      {/* Back */}
+      {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-blue-600 mb-6"
+        className="flex items-center gap-2 text-blue-600 mb-6 hover:underline"
       >
         <FaArrowLeft /> Subira Inyuma
       </button>
@@ -77,43 +77,18 @@ export default function MemberDetails() {
         <h1 className="text-2xl font-bold text-blue-600">{member.fullName}</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-gray-700">
-          <p>
-            <span className="font-semibold">Icyiciro:</span>{" "}
-            <span className="capitalize">{member.category}</span>
-          </p>
-
-          <p>
-            <span className="font-semibold">Igitsina:</span>{" "}
-            {member.gender || "N/A"}
-          </p>
-
-          <p>
-            <span className="font-semibold">Telefone:</span>{" "}
-            {member.phone || member.userphoneNumber || "Nta telefone yatanzwe"}
-          </p>
-
-          <p>
-            <span className="font-semibold">Itariki y'amavuko:</span>{" "}
-            {member.dateOfBirth
-              ? new Date(member.dateOfBirth).toLocaleDateString()
-              : "Nta tariki yatanzwe"}
-          </p>
-
-          <p>
-            <span className="font-semibold">Itsinda rito:</span>{" "}
-            {member.subgroup?.name || "Nta tsinda ryashyizweho"}
-          </p>
-
+          <p><span className="font-semibold">Icyiciro:</span> {member.category}</p>
+          <p><span className="font-semibold">Igitsina:</span> {member.gender || "N/A"}</p>
+          <p><span className="font-semibold">Telefone:</span> {member.phone || member.userphoneNumber || "Nta telefone yatanzwe"}</p>
+          <p><span className="font-semibold">Itariki y'amavuko:</span> {member.dateOfBirth ? new Date(member.dateOfBirth).toLocaleDateString() : "Nta tariki yatanzwe"}</p>
+          <p><span className="font-semibold">Itsinda rito:</span> {member.subgroup?.name || "Nta tsinda ryashyizweho"}</p>
           <p className="md:col-span-2">
-            <span className="font-semibold">Sakraments:</span>{" "}
-            {member.sakraments?.length > 0
-              ? member.sakraments.map((s) => s.name).join(", ")
-              : "Nta Sakramenti"}
+            <span className="font-semibold">Sakraments:</span> {member.sakraments?.length > 0 ? member.sakraments.map((s) => s.name).join(", ") : "Nta Sakramenti"}
           </p>
 
           <button
             onClick={() => navigate(`/members/edit/${member._id}`)}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition mt-2 md:col-span-2"
           >
             Hindura Amakuru
           </button>
@@ -128,7 +103,6 @@ export default function MemberDetails() {
               ) : (
                 <FaUserTimes className="text-red-500" />
               )}
-
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
                   decision.status === "ACTIVE"
@@ -140,18 +114,14 @@ export default function MemberDetails() {
               </span>
             </>
           ) : (
-            <span className="text-gray-400 text-sm">
-              Nta cyemezo ku kwitabira kigezeho
-            </span>
+            <span className="text-gray-400 text-sm">Nta cyemezo ku kwitabira kigezeho</span>
           )}
         </div>
       </div>
 
       {/* Attendance History */}
       <div className="bg-white rounded-xl shadow p-6">
-        <h2 className="text-xl font-semibold text-blue-600 mb-4">
-          Amateka yo kwitabira
-        </h2>
+        <h2 className="text-xl font-semibold text-blue-600 mb-4">Amateka yo kwitabira</h2>
 
         {attendance.length === 0 ? (
           <p className="text-gray-500">Nta mateka yo kwitabira yabonetse.</p>
@@ -168,10 +138,7 @@ export default function MemberDetails() {
               <tbody>
                 {attendance.map((record) => (
                   <tr key={record._id} className="border-b">
-                    <td className="p-3">
-                      {record.event?.title || "Igikorwa nticyamenyekanye"}
-                    </td>
-
+                    <td className="p-3">{record.event?.title || "Igikorwa nticyamenyekanye"}</td>
                     <td className="p-3 capitalize">
                       <span
                         className={`px-2 py-1 rounded text-sm ${
@@ -183,11 +150,8 @@ export default function MemberDetails() {
                         {record.status === "present" ? "Yitabiriye" : "Ntacyitabiriye"}
                       </span>
                     </td>
-
                     <td className="p-3 text-gray-500">
-                      {record.createdAt
-                        ? new Date(record.createdAt).toLocaleDateString()
-                        : "-"}
+                      {record.createdAt ? new Date(record.createdAt).toLocaleDateString() : "-"}
                     </td>
                   </tr>
                 ))}
