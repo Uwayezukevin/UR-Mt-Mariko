@@ -143,24 +143,6 @@ export default function Dashboard() {
 
             {/* Right section - Actions */}
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
-              {/* Search - visible on tablet and up */}
-              <div className="hidden sm:flex items-center bg-gray-100 rounded-xl px-3 py-2 w-auto lg:w-64 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-200 focus-within:bg-white">
-                <FaSearch className="text-gray-400 text-sm mr-2 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Shakisha..."
-                  className="bg-transparent border-none outline-none text-sm w-full placeholder-gray-400"
-                />
-              </div>
-
-              {/* Notifications */}
-              <button className="relative p-2 sm:p-2.5 hover:bg-blue-50 rounded-xl transition-all duration-200 group">
-                <FaBell className="text-gray-600 text-base sm:text-lg group-hover:text-blue-600 transition-colors" />
-                {unreadMessages > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
-                )}
-              </button>
-
               {/* Time - hidden on small mobile, visible on tablet */}
               <div className="hidden md:flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-xl">
                 <FaClock className="text-blue-500 text-sm" />
