@@ -25,11 +25,13 @@ export default function Dashboard() {
     navigate("/");
   };
 
+  // Update clock every second
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  // Fetch stats from backend
   useEffect(() => {
     axios
       .get("https://ur-mt-mariko.onrender.com/dashboard/stats")
@@ -38,13 +40,10 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Socket for unread messages
   useEffect(() => {
     const socket = io("https://ur-mt-mariko.onrender.com");
-
-    socket.on("newMessage", () => {
-      setUnreadMessages((prev) => prev + 1);
-    });
-
+    socket.on("newMessage", () => setUnreadMessages((prev) => prev + 1));
     return () => socket.disconnect();
   }, []);
 
@@ -56,6 +55,7 @@ export default function Dashboard() {
           <h1 className="text-base sm:text-xl font-bold text-blue-600 text-center sm:text-left">
             Sisitemu y'Umuryangoremezo Mutagatifu Mariko
           </h1>
+
           <div className="flex flex-wrap justify-center sm:justify-end items-center gap-4 text-sm text-gray-700">
             <Link to="/" className="hover:text-blue-600 transition">
               Ahabanza
@@ -145,12 +145,14 @@ export default function Dashboard() {
       {/* MAIN CONTENT */}
       <div className="flex-1 md:ml-64">
         <header className="bg-white shadow px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-4 mt-16 md:mt-0">
+          {/* HAMBURGER BUTTON ALWAYS VISIBLE ON PHONES */}
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden text-blue-600"
+            className="text-blue-600 md:hidden"
           >
             <FaBars size={22} />
           </button>
+
           <h1 className="text-lg sm:text-xl font-semibold text-blue-600">
             Incamake y'Imbonerahamwe
           </h1>
