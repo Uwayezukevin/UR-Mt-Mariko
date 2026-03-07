@@ -168,23 +168,6 @@ export default function Dashboard() {
                   {time.toLocaleTimeString()}
                 </span>
               </div>
-
-              {/* User Avatar */}
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105">
-                AD
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Search - visible only on mobile */}
-          <div className="sm:hidden pb-3">
-            <div className="flex items-center bg-gray-100 rounded-xl px-3 py-2.5 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-200 focus-within:bg-white">
-              <FaSearch className="text-gray-400 mr-2 flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="Shakisha..."
-                className="bg-transparent border-none outline-none text-sm w-full placeholder-gray-400"
-              />
             </div>
           </div>
         </div>
@@ -250,7 +233,6 @@ export default function Dashboard() {
               <SidebarButton
                 icon={<FaCalendarAlt />}
                 label="Ibikorwa"
-                badge="3"
                 onClick={() => {
                   navigate("/events");
                   setSidebarOpen(false);
