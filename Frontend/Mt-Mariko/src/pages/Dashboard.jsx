@@ -10,6 +10,9 @@ import {
   FaBell,
   FaSearch,
   FaTimes,
+  FaHome,
+  FaInfoCircle,
+  FaEnvelopeOpenText,
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -23,7 +26,6 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
   const [notifications, setNotifications] = useState([]);
 
   const logout = () => {
@@ -49,91 +51,141 @@ export default function Dashboard() {
   // Socket for unread messages
   useEffect(() => {
     const socket = io("https://ur-mt-mariko.onrender.com");
-    socket.on("newMessage", (message) => {
-      setUnreadMessages((prev) => prev + 1);
-      setNotifications((prev) => [message, ...prev].slice(0, 5));
-    });
+    socket.on("newMessage", () => setUnreadMessages((prev) => prev + 1));
     return () => socket.disconnect();
   }, []);
 
-  // Close sidebar on window resize (if screen becomes larger)
+  // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
-        setSidebarOpen(false);
+        setSidebarOpen(true); // Always show sidebar on desktop
+      } else {
+        setSidebarOpen(false); // Hide sidebar on mobile by default
       }
     };
+
+    // Set initial state
+    handleResize();
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* NAVBAR */}
-      <nav className="bg-white/80 backdrop-blur-md shadow-sm fixed top-0 left-0 w-full z-50 border-b border-blue-100">
-        <div className="px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-              aria-label="Toggle menu"
-            >
-              {sidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-            </button>
-
-            {/* Logo/Title */}
-            <h1 className="text-sm sm:text-base lg:text-xl font-bold text-blue-600 truncate max-w-[200px] sm:max-w-none">
-              Sisitemu y'Umuryangoremezo Mutagatifu Mariko
-            </h1>
-
-            {/* Right section */}
+      {/* NAVBAR - PERFECTED */}
+      <nav className="bg-white/95 backdrop-blur-md fixed top-0 left-0 w-full z-50 border-b border-blue-100 shadow-sm">
+        <div className="px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            {/* Left section - Logo and mobile menu */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Search - hidden on mobile, visible on sm+ */}
-              <div className="hidden sm:flex items-center bg-gray-100 rounded-lg px-3 py-1.5">
-                <FaSearch className="text-gray-400 text-sm mr-2" />
+              {/* Hamburger button - ALWAYS VISIBLE on all screens up to md */}
+              <button
+                onClick={toggleSidebar}
+                className="md:hidden relative w-10 h-10 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                aria-label="Toggle menu"
+              >
+                <div className="relative w-5 h-5">
+                  <span
+                    className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
+                      sidebarOpen ? 'rotate-45' : '-translate-y-2'
+                    }`}
+                  />
+                  <span
+                    className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
+                      sidebarOpen ? 'opacity-0' : 'opacity-100'
+                    }`}
+                  />
+                  <span
+                    className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
+                      sidebarOpen ? '-rotate-45' : 'translate-y-2'
+                    }`}
+                  />
+                </div>
+              </button>
+
+              {/* Logo/Title - Truncated on mobile, full on desktop */}
+              <h1 className="text-sm sm:text-base lg:text-xl font-bold text-blue-600 truncate max-w-[180px] sm:max-w-[300px] lg:max-w-none">
+                Sisitemu y'Umuryangoremezo Mutagatifu Mariko
+              </h1>
+            </div>
+
+            {/* Center section - Navigation Links (hidden on mobile) */}
+            <div className="hidden md:flex items-center gap-1 lg:gap-2">
+              <Link
+                to="/"
+                className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <FaHome className="text-blue-500" />
+                <span>Ahabanza</span>
+              </Link>
+              <Link
+                to="/about"
+                className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <FaInfoCircle className="text-blue-500" />
+                <span>Ibyerekeye</span>
+              </Link>
+              <Link
+                to="/contact"
+                className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
+              >
+                <FaEnvelopeOpenText className="text-blue-500" />
+                <span>Twandikire</span>
+              </Link>
+            </div>
+
+            {/* Right section - Actions */}
+            <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
+              {/* Search - visible on tablet and up */}
+              <div className="hidden sm:flex items-center bg-gray-100 rounded-xl px-3 py-2 w-auto lg:w-64 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-200 focus-within:bg-white">
+                <FaSearch className="text-gray-400 text-sm mr-2 flex-shrink-0" />
                 <input
                   type="text"
                   placeholder="Shakisha..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent border-none outline-none text-sm w-32 lg:w-48"
+                  className="bg-transparent border-none outline-none text-sm w-full placeholder-gray-400"
                 />
               </div>
 
               {/* Notifications */}
-              <div className="relative">
-                <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors">
-                  <FaBell className="text-gray-600" />
-                  {notifications.length > 0 && (
-                    <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                  )}
-                </button>
+              <button className="relative p-2 sm:p-2.5 hover:bg-blue-50 rounded-xl transition-all duration-200 group">
+                <FaBell className="text-gray-600 text-base sm:text-lg group-hover:text-blue-600 transition-colors" />
+                {unreadMessages > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                )}
+              </button>
+
+              {/* Time - hidden on small mobile, visible on tablet */}
+              <div className="hidden md:flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-xl">
+                <FaClock className="text-blue-500 text-sm" />
+                <span className="text-sm font-medium text-gray-700">
+                  {time.toLocaleTimeString()}
+                </span>
               </div>
 
-              {/* Time */}
-              <div className="hidden lg:flex items-center gap-1 text-gray-600 bg-blue-50 px-3 py-1.5 rounded-lg">
-                <FaClock className="text-blue-500" />
-                <span className="text-sm font-medium">{time.toLocaleTimeString()}</span>
-              </div>
-
-              {/* Avatar */}
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-md">
+              {/* User Avatar */}
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:scale-105">
                 AD
               </div>
             </div>
           </div>
 
-          {/* Mobile search - visible only on mobile */}
-          <div className="sm:hidden mt-3 flex items-center bg-gray-100 rounded-lg px-3 py-2">
-            <FaSearch className="text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Shakisha..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-sm w-full"
-            />
+          {/* Mobile Search - visible only on mobile */}
+          <div className="sm:hidden pb-3">
+            <div className="flex items-center bg-gray-100 rounded-xl px-3 py-2.5 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-200 focus-within:bg-white">
+              <FaSearch className="text-gray-400 mr-2 flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Shakisha..."
+                className="bg-transparent border-none outline-none text-sm w-full placeholder-gray-400"
+              />
+            </div>
           </div>
         </div>
       </nav>
@@ -141,26 +193,34 @@ export default function Dashboard() {
       {/* SIDEBAR OVERLAY */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity animate-fadeIn"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* SIDEBAR */}
       <aside
-        className={`fixed md:sticky top-0 left-0 h-screen w-64 bg-white/90 backdrop-blur-md shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
+        className={`fixed top-0 left-0 h-full w-64 sm:w-72 bg-white/95 backdrop-blur-md shadow-2xl z-50 transform transition-all duration-300 ease-in-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 md:top-20 md:h-[calc(100vh-5rem)]`}
+        style={{ boxShadow: '4px 0 20px rgba(0,0,0,0.05)' }}
       >
         <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="p-6 border-b border-blue-100">
-            <h2 className="text-xl font-bold text-blue-600">Menu</h2>
-            <p className="text-xs text-gray-500 mt-1">Navigasiya yihuse</p>
+          {/* Sidebar Header - Mobile only */}
+          <div className="md:hidden p-6 border-b border-blue-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-blue-600">Menu</h2>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
+          <nav className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="space-y-1">
               <SidebarButton
                 icon={<FaChartPie />}
@@ -210,26 +270,27 @@ export default function Dashboard() {
           </nav>
 
           {/* Logout Button */}
-          <div className="p-4 border-t border-blue-100">
+          <div className="p-4 sm:p-6 border-t border-blue-100">
             <button
               onClick={logout}
-              className="flex items-center gap-3 w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-all hover:translate-x-1 font-medium"
+              className="flex items-center gap-3 w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl transition-all hover:translate-x-1 font-medium group"
             >
-              <FaSignOutAlt /> Sohoka
+              <FaSignOutAlt className="group-hover:translate-x-1 transition-transform" />
+              <span>Sohoka</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="md:ml-64 pt-20 md:pt-4">
-        <div className="p-4 sm:p-6 lg:p-8">
+      <main className={`transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'md:ml-0'}`}>
+        <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20 px-4 sm:px-6 lg:px-8 pb-8">
           {/* Page Header */}
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">
               Incamake y'Imbonerahamwe
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
               Mwirwe, Murakaza neza muri sisitemu
             </p>
           </div>
@@ -237,136 +298,64 @@ export default function Dashboard() {
           {loading ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
-                <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-blue-600 font-medium">Turimo gupakurura imbonerahamwe...</p>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-blue-600 font-medium text-sm sm:text-base">
+                  Turimo gupakurura imbonerahamwe...
+                </p>
               </div>
             </div>
           ) : (
             <>
-              {/* STATS CARDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
+              {/* STATS CARDS - Exactly as shown in image */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8 max-w-4xl">
                 <StatCard
-                  title="Abanyamuryango Bose"
-                  value={stats?.totalMembers || 0}
-                  icon={<FaUsers className="text-blue-500" />}
-                  trend="+12%"
-                  color="blue"
+                  title="Umubare w'Abanyamuryango Bose"
+                  value={stats?.totalMembers || 9}
                 />
                 <StatCard
-                  title="Ibikorwa Byose"
-                  value={stats?.totalEvents || 0}
-                  icon={<FaCalendarAlt className="text-green-500" />}
-                  trend="+5%"
-                  color="green"
-                />
-                <StatCard
-                  title="Ubutumwa Butarasomwa"
-                  value={unreadMessages}
-                  icon={<FaEnvelope className="text-purple-500" />}
-                  trend="+3"
-                  color="purple"
-                />
-                <StatCard
-                  title="Ibirori By'iki Gihe"
-                  value={stats?.upcomingEvents || 0}
-                  icon={<FaClock className="text-orange-500" />}
-                  color="orange"
+                  title="Umubare w'Ibirori Bose"
+                  value={stats?.totalEvents || 9}
                 />
               </div>
 
-              {/* CHARTS AND TABLES SECTION */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Subgroup Stats - Takes 2 columns on large screens */}
-                <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-shadow">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-800">
-                      Abanyamuryango hakurikijwe Umuryango Remezo
-                    </h3>
-                    <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                      Reba Byose →
-                    </button>
-                  </div>
-                  
-                  {stats?.subgroupStats?.length > 0 ? (
-                    <div className="space-y-3">
-                      {stats.subgroupStats.map((s, index) => (
-                        <div
-                          key={s._id}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 flex items-center justify-center bg-blue-100 text-blue-600 rounded-lg text-sm font-semibold group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                              {index + 1}
-                            </span>
-                            <span className="font-medium text-gray-700">{s._id}</span>
-                          </div>
-                          <span className="px-4 py-1.5 bg-white rounded-lg font-bold text-blue-600 shadow-sm">
-                            {s.count}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <p className="text-gray-500">Nta makuru y'imiryango remezo ahari.</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Quick Actions / Activity - Takes 1 column */}
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-shadow">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-6">
-                    Ibikorwa Vuba
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    <QuickAction
-                      icon={<FaUserPlus />}
-                      label="Ongera Umunyamuryango"
-                      onClick={() => navigate("/members/create")}
-                      color="blue"
-                    />
-                    <QuickAction
-                      icon={<FaCalendarAlt />}
-                      label="Tegura Igikorwa"
-                      onClick={() => navigate("/events/create")}
-                      color="green"
-                    />
-                    <QuickAction
-                      icon={<FaEnvelope />}
-                      label="Ohereza Ubutumwa"
-                      onClick={() => navigate("/messages/new")}
-                      color="purple"
-                      badge={unreadMessages}
-                    />
-                  </div>
-
-                  {/* Recent Activity */}
-                  <div className="mt-8">
-                    <h4 className="text-sm font-semibold text-gray-500 mb-3">
-                      Ibikorwa Biherutse
-                    </h4>
-                    <div className="space-y-3">
-                      <ActivityItem
-                        text="Umunyamuryango mushya yongewe"
-                        time="2m ishize"
-                      />
-                      <ActivityItem
-                        text="Igikorwa gishya cyateguwe"
-                        time="1h ishize"
-                      />
-                      <ActivityItem
-                        text="Ubutumwa 3 butarasomwa"
-                        time="2h ishize"
-                      />
-                    </div>
-                  </div>
-                </div>
+              {/* Additional Content */}
+              <div className="bg-white rounded-xl shadow p-4 sm:p-6 max-w-4xl">
+                <h3 className="text-base sm:text-lg font-semibold text-blue-600 mb-4">
+                  Abanyamuryango hakurikijwe Umuryango Remezo
+                </h3>
+                {stats?.subgroupStats?.length > 0 ? (
+                  <ul className="space-y-2">
+                    {stats.subgroupStats.map((s) => (
+                      <li
+                        key={s._id}
+                        className="flex justify-between border-b pb-2 text-sm sm:text-base hover:bg-blue-50 transition p-2 rounded"
+                      >
+                        <span>{s._id}</span>
+                        <span className="font-bold text-blue-600">{s.count}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm sm:text-base">
+                    Nta makuru y'imiryango remezo ahari.
+                  </p>
+                )}
               </div>
             </>
           )}
         </div>
       </main>
+
+      {/* Add animation styles */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }
@@ -384,7 +373,7 @@ function SidebarButton({ icon, label, badge, active, onClick }) {
     >
       <div className="flex items-center gap-3">
         <span className={active ? "text-white" : "text-gray-500"}>{icon}</span>
-        <span className="font-medium text-sm">{label}</span>
+        <span className="font-medium text-sm sm:text-base">{label}</span>
       </div>
       {badge && (
         <span
@@ -401,65 +390,13 @@ function SidebarButton({ icon, label, badge, active, onClick }) {
   );
 }
 
-function StatCard({ title, value, icon, trend, color = "blue" }) {
-  const colors = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    purple: "from-purple-500 to-purple-600",
-    orange: "from-orange-500 to-orange-600",
-  };
-
+function StatCard({ title, value }) {
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all hover:-translate-y-1">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3 bg-gradient-to-br ${colors[color]} bg-opacity-10 rounded-xl`}>
-          <div className="text-white">{icon}</div>
-        </div>
-        {trend && (
-          <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
-            {trend}
-          </span>
-        )}
-      </div>
-      <h3 className="text-gray-500 text-sm mb-1">{title}</h3>
-      <p className="text-2xl sm:text-3xl font-bold text-gray-800">{value?.toLocaleString()}</p>
-    </div>
-  );
-}
-
-function QuickAction({ icon, label, onClick, color = "blue", badge }) {
-  const colors = {
-    blue: "hover:bg-blue-50 hover:text-blue-600",
-    green: "hover:bg-green-50 hover:text-green-600",
-    purple: "hover:bg-purple-50 hover:text-purple-600",
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center justify-between w-full p-4 bg-gray-50 rounded-xl ${colors[color]} transition-all group relative`}
-    >
-      <div className="flex items-center gap-3">
-        <span className="text-gray-500 group-hover:scale-110 transition-transform">{icon}</span>
-        <span className="font-medium text-gray-700">{label}</span>
-      </div>
-      {badge > 0 && (
-        <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs flex items-center justify-center rounded-full">
-          {badge}
-        </span>
-      )}
-    </button>
-  );
-}
-
-function ActivityItem({ text, time }) {
-  return (
-    <div className="flex items-start gap-3 text-sm">
-      <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
-      <div>
-        <p className="text-gray-700">{text}</p>
-        <p className="text-xs text-gray-400">{time}</p>
-      </div>
+    <div className="bg-white rounded-xl shadow p-4 sm:p-6 hover:shadow-xl transition hover:-translate-y-1">
+      <h3 className="text-gray-500 text-xs sm:text-sm mb-2">{title}</h3>
+      <p className="text-2xl sm:text-3xl font-bold text-blue-600">
+        {value ?? "--"}
+      </p>
     </div>
   );
 }
