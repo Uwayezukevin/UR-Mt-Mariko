@@ -156,7 +156,7 @@ function MemberCard({ member, decision, onClick }) {
 
   const translateStatus = (status) => {
     if (status === "ACTIVE") return "AKORA";
-    if (status === "INACTIVE") return "NTAKORA";
+    if (status === "Not ACTIVE") return "NTAKORA";
     return status;
   };
 

@@ -98,7 +98,7 @@ export default function EventDetailsPublic() {
 
         {attendance.length === 0 ? (
           <p className="text-gray-500 text-sm sm:text-base">
-            Nta bitabiriye byanditswe kuri iki gikorwa.
+            Nta bitabiriye banditswe kuri iki gikorwa.
           </p>
         ) : (
           <div className="overflow-x-auto">
