@@ -1,6 +1,22 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaUser, FaPhone, FaCalendar, FaArrowLeft, FaIdCard } from "react-icons/fa";
+import { 
+  FaUser, 
+  FaPhone, 
+  FaCalendarAlt, 
+  FaArrowLeft, 
+  FaIdCard,
+  FaVenusMars,
+  FaUsers,
+  FaLayerGroup,
+  FaCross,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaSave,
+  FaTimes,
+  FaInfoCircle,
+  FaUserCheck
+} from "react-icons/fa";
 import api from "../api/axios";
 
 export default function UpdateMember() {
@@ -23,12 +39,18 @@ export default function UpdateMember() {
   const [subgroups, setSubgroups] = useState([]);
   const [sakraments, setSakraments] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
 
   // ================= FETCH DATA =================
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setFetchLoading(true);
+        
         const [memberRes, subRes, sakRes, membersRes] = await Promise.all([
           api.get(`/members/${id}`),
           api.get("/subgroups"),
@@ -70,9 +92,12 @@ export default function UpdateMember() {
         }
 
         setParents(adultParents);
+        setError("");
       } catch (err) {
         console.error(err);
         setError("Ntibyashoboye gupakira amakuru y'umunyamuryango");
+      } finally {
+        setFetchLoading(false);
       }
     };
 
@@ -82,11 +107,81 @@ export default function UpdateMember() {
   // ================= HANDLE INPUT =================
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: "" }));
+    }
+    
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       if (name === "category" && value !== "child") updated.parent = "";
       return updated;
     });
+  };
+
+  const handleBlur = (field) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+    validateField(field, formData[field]);
+  };
+
+  const validateField = (field, value) => {
+    const errors = { ...validationErrors };
+    
+    switch(field) {
+      case "fullName":
+        if (!value.trim()) {
+          errors.fullName = "Amazina ni ngombwa";
+        } else if (value.trim().length < 3) {
+          errors.fullName = "Amazina agomba kuba byibura 3";
+        }
+        break;
+        
+      case "category":
+        if (!value) {
+          errors.category = "Icyiciro ni ngombwa";
+        }
+        break;
+        
+      case "gender":
+        if (!value) {
+          errors.gender = "Igitsina ni ngombwa";
+        }
+        break;
+        
+      case "phone":
+        if (value && !/^(\+250|0)7[0-9]{8}$/.test(value.replace(/\s/g, ''))) {
+          errors.phone = "Telefone igomba gutangira na 07 cyangwa +2507";
+        }
+        break;
+        
+      case "parent":
+        if (formData.category === "child" && !value) {
+          errors.parent = "Umubyeyi ni ngombwa ku mwana";
+        }
+        break;
+        
+      default:
+        break;
+    }
+    
+    setValidationErrors(errors);
+    return !errors[field];
+  };
+
+  const validateForm = () => {
+    const fields = ["fullName", "category", "gender"];
+    if (formData.category === "child") fields.push("parent");
+    
+    let isValid = true;
+    
+    fields.forEach(field => {
+      if (!validateField(field, formData[field])) {
+        isValid = false;
+      }
+    });
+    
+    return isValid;
   };
 
   const handleSakramentToggle = (sakId) => {
@@ -101,8 +196,22 @@ export default function UpdateMember() {
   // ================= SUBMIT =================
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Mark all fields as touched
+    const allTouched = {};
+    Object.keys(formData).forEach(key => allTouched[key] = true);
+    setTouchedFields(allTouched);
+    
+    // Validate all fields
+    if (!validateForm()) {
+      // Scroll to top to show errors
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setLoading(true);
     setError("");
+    setSuccess(false);
 
     try {
       const cleanedData = { ...formData };
@@ -111,7 +220,14 @@ export default function UpdateMember() {
       });
 
       await api.put(`/members/${id}`, cleanedData);
-      navigate("/members");
+      
+      setSuccess(true);
+      
+      // Show success message and redirect
+      setTimeout(() => {
+        navigate("/members");
+      }, 1500);
+      
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Ntibyashoboye guhindura amakuru");
@@ -120,175 +236,476 @@ export default function UpdateMember() {
     }
   };
 
-  // ================= UI =================
+  const handleCancel = () => {
+    navigate(-1);
+  };
+
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      return date.toISOString().split('T')[0];
+    } catch {
+      return "";
+    }
+  };
+
+  if (fetchLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 
+                          border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+            <FaUser className="absolute top-1/2 left-1/2 transform 
+                             -translate-x-1/2 -translate-y-1/2 
+                             text-blue-600 text-lg sm:text-xl" />
+          </div>
+          <p className="text-gray-600 text-sm sm:text-base mt-4">
+            Birimo gupakira amakuru y'umunyamuryango...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-blue-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-xl p-6 md:p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 px-3 sm:px-4 md:px-6">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Header with Back Button */}
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition"
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 
+                     transition-colors active:opacity-70 px-2 py-2 -ml-2 
+                     rounded-lg active:bg-blue-50 group"
           >
-            <FaArrowLeft /> Subira Inyuma
+            <FaArrowLeft className="text-sm sm:text-base group-hover:-translate-x-1 transition-transform" /> 
+            <span className="font-medium text-sm sm:text-base">Subira Inyuma</span>
           </button>
-          <h1 className="text-2xl md:text-3xl font-bold text-blue-600 text-center flex-1">
+          
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-center 
+                       bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
             Hindura Umunyamuryango
           </h1>
-          <div className="w-6" /> {/* Empty space for alignment */}
+          
+          <div className="w-16 sm:w-20"></div> {/* Spacer for alignment */}
         </div>
 
-        {error && (
-          <p className="bg-red-100 text-red-600 text-sm p-3 rounded mb-6">{error}</p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Full Name */}
-            <div className="relative">
-              <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                required
-                placeholder="Izina ryuzuye"
-                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-              />
+        {/* Main Form Card */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden">
+          
+          {/* Header with Gradient */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4 sm:py-5">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 rounded-full p-2">
+                <FaUserCheck className="text-white text-lg sm:text-xl" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-white">
+                  Hindura amakuru ya {formData.fullName || 'Umunyamuryango'}
+                </h2>
+                <p className="text-blue-100 text-xs sm:text-sm mt-1">
+                  Uzuza neza amakuru yose ukeneye guhindura
+                </p>
+              </div>
             </div>
+          </div>
 
-            {/* National ID */}
-            <div className="relative">
-              <FaIdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-              <input
-                type="text"
-                name="nationalId"
-                value={formData.nationalId}
-                onChange={handleChange}
-                placeholder="Indangamuntu"
-                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-              />
-            </div>
-
-            {/* Category */}
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              required
-              className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-            >
-              <option value="">Hitamo Icyiciro</option>
-              <option value="child">Umwana</option>
-              <option value="youth">Urubyiruko</option>
-              <option value="adult">Umukuru</option>
-            </select>
-
-            {/* Gender */}
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              required
-              className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-            >
-              <option value="">Hitamo Igitsina</option>
-              <option value="male">Gabo</option>
-              <option value="female">Gore</option>
-            </select>
-
-            {/* Parent */}
-            {formData.category === "child" && (
-              <select
-                name="parent"
-                value={formData.parent}
-                onChange={handleChange}
-                required
-                className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-              >
-                <option value="">Hitamo Umubyeyi</option>
-                {parents.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.fullName}
-                  </option>
-                ))}
-              </select>
+          {/* Form Container */}
+          <div className="p-4 sm:p-6 md:p-8">
+            
+            {/* Success Message */}
+            {success && (
+              <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 
+                            rounded-xl p-3 sm:p-4 flex items-start gap-3">
+                <FaCheckCircle className="text-green-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-green-700 text-sm sm:text-base font-medium">
+                    Amakuru yahinduwe neza!
+                  </p>
+                  <p className="text-green-600 text-xs sm:text-sm mt-1">
+                    Turongera tujya ku rutonde...
+                  </p>
+                </div>
+              </div>
             )}
 
-            {/* Date of Birth */}
-            <div className="relative">
-              <FaCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-              <input
-                type="date"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
-                onChange={handleChange}
-                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-              />
-            </div>
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 
+                            rounded-xl p-3 sm:p-4 flex items-start gap-3">
+                <FaExclamationCircle className="text-red-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-700 text-sm sm:text-base font-medium">
+                    Habayemo ikibazo
+                  </p>
+                  <p className="text-red-600 text-xs sm:text-sm mt-1">{error}</p>
+                </div>
+              </div>
+            )}
 
-            {/* Phone */}
-            <div className="relative">
-              <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="Telefone"
-                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+              
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                
+                {/* Full Name - Required */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Amazina yose <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                      text-sm sm:text-base
+                                      ${touchedFields.fullName && validationErrors.fullName 
+                                        ? 'text-red-400' 
+                                        : touchedFields.fullName && formData.fullName 
+                                        ? 'text-green-500'
+                                        : 'text-blue-400'}`} />
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("fullName")}
+                      required
+                      placeholder="Andika amazina yose"
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border-2 rounded-xl text-sm sm:text-base
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                                 transition-all duration-200
+                                 ${touchedFields.fullName && validationErrors.fullName 
+                                   ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                   : touchedFields.fullName && formData.fullName && !validationErrors.fullName
+                                   ? 'border-green-300 bg-green-50'
+                                   : 'border-gray-200 focus:border-blue-500'}`}
+                    />
+                    {touchedFields.fullName && formData.fullName && !validationErrors.fullName && (
+                      <FaCheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-sm" />
+                    )}
+                  </div>
+                  {touchedFields.fullName && validationErrors.fullName && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" />
+                      {validationErrors.fullName}
+                    </p>
+                  )}
+                </div>
 
-            {/* Subgroup */}
-            <select
-              name="subgroup"
-              value={formData.subgroup}
-              onChange={handleChange}
-              className="w-full py-3 px-4 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
-            >
-              <option value="">Hitamo Itsinda rito</option>
-              {subgroups.map((s) => (
-                <option key={s._id} value={s._id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+                {/* National ID */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Indangamuntu
+                  </label>
+                  <div className="relative">
+                    <FaIdCard className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm sm:text-base" />
+                    <input
+                      type="text"
+                      name="nationalId"
+                      value={formData.nationalId}
+                      onChange={handleChange}
+                      placeholder="Indangamuntu"
+                      className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                               border-2 border-gray-200 rounded-xl text-sm sm:text-base
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 
+                               focus:border-blue-500 transition-all duration-200"
+                    />
+                  </div>
+                </div>
 
-          {/* Sakraments */}
-          <div className="border rounded-xl p-5 bg-gray-50">
-            <h3 className="font-semibold text-gray-700 mb-4">Sakraments</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {sakraments.map((s) => (
-                <label
-                  key={s._id}
-                  className="flex items-center gap-2 bg-white px-3 py-2 rounded-lg shadow-sm cursor-pointer hover:bg-blue-50 transition"
+                {/* Category - Required */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Icyiciro <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <FaUsers className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                       text-sm sm:text-base
+                                       ${touchedFields.category && validationErrors.category 
+                                         ? 'text-red-400' 
+                                         : 'text-blue-400'}`} />
+                    <select
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("category")}
+                      required
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border-2 rounded-xl text-sm sm:text-base
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                                 transition-all duration-200 appearance-none bg-white
+                                 ${touchedFields.category && validationErrors.category 
+                                   ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                   : touchedFields.category && formData.category
+                                   ? 'border-green-300 bg-green-50'
+                                   : 'border-gray-200 focus:border-blue-500'}`}
+                    >
+                      <option value="">Hitamo Icyiciro</option>
+                      <option value="child">Umwana</option>
+                      <option value="youth">Urubyiruko</option>
+                      <option value="adult">Umukuru</option>
+                    </select>
+                  </div>
+                  {touchedFields.category && validationErrors.category && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" />
+                      {validationErrors.category}
+                    </p>
+                  )}
+                </div>
+
+                {/* Gender - Required */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Igitsina <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <FaVenusMars className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                           text-sm sm:text-base
+                                           ${touchedFields.gender && validationErrors.gender 
+                                             ? 'text-red-400' 
+                                             : 'text-blue-400'}`} />
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("gender")}
+                      required
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border-2 rounded-xl text-sm sm:text-base
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                                 transition-all duration-200 appearance-none bg-white
+                                 ${touchedFields.gender && validationErrors.gender 
+                                   ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                   : touchedFields.gender && formData.gender
+                                   ? 'border-green-300 bg-green-50'
+                                   : 'border-gray-200 focus:border-blue-500'}`}
+                    >
+                      <option value="">Hitamo Igitsina</option>
+                      <option value="male">Gabo</option>
+                      <option value="female">Gore</option>
+                    </select>
+                  </div>
+                  {touchedFields.gender && validationErrors.gender && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" />
+                      {validationErrors.gender}
+                    </p>
+                  )}
+                </div>
+
+                {/* Parent - Conditional */}
+                {formData.category === "child" && (
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Umubyeyi <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                        text-sm sm:text-base
+                                        ${touchedFields.parent && validationErrors.parent 
+                                          ? 'text-red-400' 
+                                          : 'text-blue-400'}`} />
+                      <select
+                        name="parent"
+                        value={formData.parent}
+                        onChange={handleChange}
+                        onBlur={() => handleBlur("parent")}
+                        required
+                        className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                   border-2 rounded-xl text-sm sm:text-base
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500
+                                   transition-all duration-200 appearance-none bg-white
+                                   ${touchedFields.parent && validationErrors.parent 
+                                     ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                     : touchedFields.parent && formData.parent
+                                     ? 'border-green-300 bg-green-50'
+                                     : 'border-gray-200 focus:border-blue-500'}`}
+                      >
+                        <option value="">Hitamo Umubyeyi</option>
+                        {parents.map((p) => (
+                          <option key={p._id} value={p._id}>
+                            {p.fullName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {touchedFields.parent && validationErrors.parent && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <FaExclamationCircle className="text-xs" />
+                        {validationErrors.parent}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Date of Birth */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Itariki y'Amavuko
+                  </label>
+                  <div className="relative">
+                    <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm sm:text-base" />
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                      className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                               border-2 border-gray-200 rounded-xl text-sm sm:text-base
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 
+                               focus:border-blue-500 transition-all duration-200"
+                    />
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Telefone
+                  </label>
+                  <div className="relative">
+                    <FaPhone className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                        text-sm sm:text-base
+                                        ${touchedFields.phone && validationErrors.phone 
+                                          ? 'text-red-400' 
+                                          : 'text-blue-400'}`} />
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      onBlur={() => handleBlur("phone")}
+                      placeholder="07XXXXXXXX"
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border-2 rounded-xl text-sm sm:text-base
+                                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                                 transition-all duration-200
+                                 ${touchedFields.phone && validationErrors.phone 
+                                   ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                   : 'border-gray-200 focus:border-blue-500'}`}
+                    />
+                  </div>
+                  {touchedFields.phone && validationErrors.phone && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" />
+                      {validationErrors.phone}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    Urugero: 0788123456 cyangwa +250788123456
+                  </p>
+                </div>
+
+                {/* Subgroup */}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Umuryango remezo
+                  </label>
+                  <div className="relative">
+                    <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm sm:text-base" />
+                    <select
+                      name="subgroup"
+                      value={formData.subgroup}
+                      onChange={handleChange}
+                      className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                               border-2 border-gray-200 rounded-xl text-sm sm:text-base
+                               focus:outline-none focus:ring-2 focus:ring-blue-500 
+                               focus:border-blue-500 transition-all duration-200
+                               appearance-none bg-white"
+                    >
+                      <option value="">Hitamo Umuryango remezo</option>
+                      {subgroups.map((s) => (
+                        <option key={s._id} value={s._id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sakraments */}
+              <div className="border-2 border-gray-100 rounded-xl p-4 sm:p-5 bg-gray-50">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                  <FaCross className="text-blue-600" />
+                  Amasakramentu
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                  {sakraments.map((s) => (
+                    <button
+                      type="button"
+                      key={s._id}
+                      onClick={() => handleSakramentToggle(s._id)}
+                      className={`px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm 
+                                 font-medium transition-all duration-200 border-2
+                                 ${formData.sakraments.includes(s._id)
+                                   ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                                   : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+                                 }`}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+                {sakraments.length === 0 && (
+                  <p className="text-center text-gray-500 text-sm py-4">
+                    Nta masakramentu abonetse
+                  </p>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={loading || success}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 
+                           text-white py-3 sm:py-4 rounded-xl
+                           hover:from-blue-700 hover:to-blue-800 
+                           transition-all duration-300 transform hover:scale-[1.02]
+                           text-sm sm:text-base font-medium
+                           disabled:opacity-60 disabled:cursor-not-allowed
+                           disabled:hover:scale-100 shadow-md hover:shadow-lg
+                           flex items-center justify-center gap-2"
                 >
-                  <input
-                    type="checkbox"
-                    checked={formData.sakraments.includes(s._id)}
-                    onChange={() => handleSakramentToggle(s._id)}
-                  />
-                  {s.name}
-                </label>
-              ))}
-            </div>
-          </div>
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 
+                                    border-2 border-white border-t-transparent"></div>
+                      <span>Birimo guhindurwa...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaSave className="text-sm sm:text-base" />
+                      <span>Hindura Umunyamuryango</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-6 py-3 sm:py-4 border-2 border-gray-300 
+                           rounded-xl hover:bg-gray-50 transition-colors
+                           text-sm sm:text-base font-medium
+                           flex items-center justify-center gap-2"
+                >
+                  <FaTimes className="text-sm sm:text-base" />
+                  <span>Gusiba</span>
+                </button>
+              </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3 rounded-lg text-white font-semibold transition ${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {loading ? "Birimo guhindurwa..." : "Hindura Umunyamuryango"}
-          </button>
-        </form>
+              {/* Required Fields Note */}
+              <p className="text-xs text-gray-400 text-center mt-4">
+                <span className="text-red-500">*</span> Ibyanditswe n'inyuguti zitukura birakenewe
+              </p>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );
