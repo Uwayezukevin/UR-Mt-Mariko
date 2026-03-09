@@ -263,7 +263,7 @@ export default function EventsPublic() {
                     : type === "today"
                     ? "Uyu munsi"
                     : type === "upcoming"
-                    ? "Ibitegenyijwe"
+                    ? "Ibiteganyijwe"
                     : "Byarangiye"}
                 </button>
               ))}
@@ -273,7 +273,7 @@ export default function EventsPublic() {
           {/* Active Filters */}
           {(searchTerm || selectedCategory !== "all") && (
             <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-              <span className="text-xs text-gray-500">Ifilitero:</span>
+              <span className="text-xs text-gray-500">Inyuguti:</span>
               {selectedCategory !== "all" && (
                 <span className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg 
                                text-xs font-medium">
@@ -334,7 +334,7 @@ export default function EventsPublic() {
             </p>
             <p className="text-xs sm:text-sm text-gray-500 mb-6">
               {searchTerm || selectedCategory !== "all" 
-                ? "Ongera ugerageze ukoresheje ifilitero zinyuranye"
+                ? "Ongera ugerageze"
                 : "Hari igikorwa kizagaragara vuba"}
             </p>
             {(searchTerm || selectedCategory !== "all") && (
@@ -343,7 +343,7 @@ export default function EventsPublic() {
                 className="bg-blue-600 text-white px-6 py-2.5 rounded-xl 
                          hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Siba ifilitero
+                Siba
               </button>
             )}
           </div>

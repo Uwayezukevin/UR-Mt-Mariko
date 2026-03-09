@@ -443,14 +443,14 @@ export default function Members() {
               Nta munyamuryango wabonetse
             </p>
             <p className="text-xs sm:text-sm text-gray-500 mb-6">
-              Gerageza gukoresha ifilitero zinyuranye
+              Ongera ugerageze
             </p>
             <button
               onClick={clearFilters}
               className="bg-blue-600 text-white px-6 py-2.5 rounded-xl 
                        hover:bg-blue-700 transition-colors text-sm font-medium"
             >
-              Siba ifilitero
+              Siba 
             </button>
           </div>
         ) : (
@@ -480,8 +480,8 @@ function MemberCard({ member, decision, onClick }) {
   };
 
   const translateStatus = (status) => {
-    if (status === "ACTIVE") return "Akora";
-    if (status === "NOT ACTIVE") return "Ntakora";
+    if (status === "ACTIVE") return "Aritabira";
+    if (status === "NOT ACTIVE") return "Ntiyitabira";
     return status;
   };
 

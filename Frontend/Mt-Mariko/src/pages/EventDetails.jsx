@@ -194,7 +194,7 @@ export default function EventDetails() {
                        transition-colors text-sm sm:text-base"
             >
               <FaShare className="text-sm" />
-              <span className="hidden sm:inline">Sangira</span>
+              <span className="hidden sm:inline">Share</span>
             </button>
             
             <button
@@ -204,7 +204,7 @@ export default function EventDetails() {
                        transition-colors text-sm sm:text-base"
             >
               <FaDownload className="text-sm" />
-              <span className="hidden sm:inline">Eksporera</span>
+              <span className="hidden sm:inline">Download</span>
             </button>
           </div>
         </div>

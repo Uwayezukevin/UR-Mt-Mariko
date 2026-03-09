@@ -162,7 +162,7 @@ export default function Home() {
             <div className="flex items-center">
               <FaChurch className="text-blue-600 text-xl sm:text-2xl mr-2" />
               <h1 className="text-sm sm:text-base md:text-lg font-bold text-blue-600 truncate max-w-[200px] sm:max-w-none">
-                Umuryango Mutagatifu Mariko
+                Umuryangoremezo Mutagatifu Mariko
               </h1>
             </div>
 
@@ -255,12 +255,12 @@ export default function Home() {
             Murakaza neza
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-blue-600 mb-4 sm:mb-6">
-            Umuryango remezo witiriwe
+            Umuryango remezo 
             <span className="block text-gray-800">Mutagatifu Mariko</span>
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed">
             Kugenzura abanyamuryango, gukurikirana kwitabira ibikorwa, no kumenya
-            amakuru y'ibikorwa biri imbere by'umuryango witiriwe Mutagatifu Mariko.
+            amakuru y'ibikorwa biri imbere by'umuryango remezo Mutagatifu Mariko.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
             <a
@@ -455,7 +455,7 @@ export default function Home() {
                               ? "text-green-700" 
                               : "text-red-700"
                           }`}>
-                            {member.decision.status === "ACTIVE" ? "Akiriho" : "Ntahari"}
+                            {member.decision.status === "ACTIVE" ? "Aritabia" : "Ntiyitabira"}
                           </span>
                         </div>
                         <span className="text-sm font-bold text-blue-600">

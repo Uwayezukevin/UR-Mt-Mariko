@@ -211,7 +211,7 @@ export default function Events() {
                     : type === "today"
                     ? "Uyu munsi"
                     : type === "upcoming"
-                    ? "Ibitegenyijwe"
+                    ? "Ibiteganyijwe"
                     : "Byarangiye"}
                 </button>
               ))}
@@ -240,7 +240,7 @@ export default function Events() {
                     : type === "today"
                     ? "Uyu munsi"
                     : type === "upcoming"
-                    ? "Ibitegenyijwe"
+                    ? "Ibiteganyijwe"
                     : "Byarangiye"}
                 </button>
               ))}
@@ -401,7 +401,7 @@ export default function Events() {
             </p>
             <p className="text-xs sm:text-sm text-gray-500 mb-6">
               {searchTerm || filter !== "all" 
-                ? "Ongera ugerageze ukoresheje ifilitero zinyuranye"
+                ? "Ongera ugerageze"
                 : "Tangira ukore igikorwa gishya"}
             </p>
             {(searchTerm || filter !== "all") && (
@@ -410,7 +410,7 @@ export default function Events() {
                 className="bg-blue-600 text-white px-6 py-2.5 rounded-xl 
                          hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                Siba ifilitero
+                Siba
               </button>
             )}
           </div>
@@ -524,7 +524,7 @@ export default function Events() {
                 <p className="text-lg sm:text-xl font-bold text-blue-600">
                   {events.filter(e => getEventStatus(e.date) === "upcoming").length}
                 </p>
-                <p className="text-xs text-gray-500">Ibitegenyijwe</p>
+                <p className="text-xs text-gray-500">Ibiteganyijwe</p>
               </div>
               <div className="text-center">
                 <p className="text-lg sm:text-xl font-bold text-gray-600">
