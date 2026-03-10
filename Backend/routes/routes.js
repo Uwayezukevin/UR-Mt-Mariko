@@ -61,8 +61,6 @@ router.get("/members/search", searchMembers);
 // Create
 router.post(
   "/members",
-  protect,
-  adminOnly,
   createMemberSchema,
   validate,
   createMember

@@ -274,11 +274,11 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8 max-w-4xl">
                 <StatCard
                   title="Umubare w'Abanyamuryango Bose"
-                  value={stats?.totalMembers || 9}
+                  value={stats?.totalMembers || 0}
                 />
                 <StatCard
                   title="Umubare w'Ibirori Bose"
-                  value={stats?.totalEvents || 9}
+                  value={stats?.totalEvents || 0}
                 />
               </div>
 

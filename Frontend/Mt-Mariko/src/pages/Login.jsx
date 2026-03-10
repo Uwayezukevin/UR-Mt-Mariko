@@ -296,7 +296,7 @@ export default function Login() {
                   />
                   <span className="text-xs sm:text-sm text-gray-600 group-hover:text-blue-600 
                                  transition-colors">
-                    Mibuke
+                    Munyibuke
                   </span>
                 </label>
               </div>

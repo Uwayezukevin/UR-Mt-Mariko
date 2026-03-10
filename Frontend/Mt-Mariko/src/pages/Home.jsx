@@ -18,7 +18,14 @@ import {
   FaInfoCircle,
   FaCheckCircle,
   FaExclamationCircle,
-  FaArrowRight
+  FaArrowRight,
+  FaUserPlus,
+  FaIdBadge,
+  FaVenusMars,
+  FaLayerGroup,
+  FaLock,
+  FaEye,
+  FaEyeSlash
 } from "react-icons/fa";
 
 export default function Home() {
@@ -45,6 +52,29 @@ export default function Home() {
   const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [contactError, setContactError] = useState("");
+
+  // SELF-REGISTRATION STATES
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [registerData, setRegisterData] = useState({
+    fullName: "",
+    nationalId: "",
+    dateOfBirth: "",
+    phone: "",
+    gender: "",
+    subgroup: "",
+    sakraments: [],
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [registerError, setRegisterError] = useState("");
+  const [registerValidation, setRegisterValidation] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   // MOBILE MENU
   const [menuOpen, setMenuOpen] = useState(false);
@@ -108,6 +138,20 @@ export default function Home() {
     return () => clearTimeout(delay);
   }, [searchTerm, selectedSubgroup]);
 
+  // Password strength checker
+  useEffect(() => {
+    const password = registerData.password;
+    let strength = 0;
+    
+    if (password.length >= 8) strength += 25;
+    if (password.match(/[a-z]/)) strength += 25;
+    if (password.match(/[A-Z]/)) strength += 25;
+    if (password.match(/[0-9]/)) strength += 15;
+    if (password.match(/[^a-zA-Z0-9]/)) strength += 10;
+    
+    setPasswordStrength(Math.min(strength, 100));
+  }, [registerData.password]);
+
   // CONTACT HANDLER
   const handleContactChange = (e) => {
     setContactData({ ...contactData, [e.target.name]: e.target.value });
@@ -133,12 +177,190 @@ export default function Home() {
       setSuccessMsg("Ubutumwa bwoherejwe neza!");
       setContactData({ name: "", email: "", phone: "", message: "" });
       
-      // Clear success message after 5 seconds
       setTimeout(() => setSuccessMsg(""), 5000);
     } catch (err) {
       setContactError("Ntibyashoboye koherezwa ubutumwa. Ongera ugerageze.");
     } finally {
       setSending(false);
+    }
+  };
+
+  // REGISTRATION HANDLERS
+  const handleRegisterChange = (e) => {
+    const { name, value } = e.target;
+    setRegisterData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear validation error for this field
+    if (registerValidation[name]) {
+      setRegisterValidation(prev => ({ ...prev, [name]: "" }));
+    }
+    if (registerError) setRegisterError("");
+  };
+
+  const handleRegisterBlur = (field) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+    validateRegisterField(field, registerData[field]);
+  };
+
+  const validateRegisterField = (field, value) => {
+    const errors = { ...registerValidation };
+    
+    switch(field) {
+      case "fullName":
+        if (!value?.trim()) {
+          errors.fullName = "Amazina ni ngombwa";
+        } else if (value.trim().length < 3) {
+          errors.fullName = "Amazina agomba kuba byibura 3";
+        }
+        break;
+        
+      case "gender":
+        if (!value) {
+          errors.gender = "Igitsina ni ngombwa";
+        }
+        break;
+        
+      case "subgroup":
+        if (!value) {
+          errors.subgroup = "Umuryango remezo ni ngombwa";
+        }
+        break;
+        
+      case "phone":
+        if (!value) {
+          errors.phone = "Telefone ni ngombwa";
+        } else if (!/^(\+250|0)7[0-9]{8}$/.test(value.replace(/\s/g, ''))) {
+          errors.phone = "Telefone igomba gutangira na 07 cyangwa +2507";
+        }
+        break;
+        
+      case "email":
+        if (!value) {
+          errors.email = "Email ni ngombwa";
+        } else if (!/\S+@\S+\.\S+/.test(value)) {
+          errors.email = "Email itari mu buryo bukwiriye";
+        }
+        break;
+        
+      case "password":
+        if (!value) {
+          errors.password = "Ijambobanga ni ngombwa";
+        } else if (value.length < 6) {
+          errors.password = "Ijambobanga rigomba kuba byibura 6";
+        }
+        break;
+        
+      case "confirmPassword":
+        if (value !== registerData.password) {
+          errors.confirmPassword = "Ijambobanga ntirihwanye";
+        }
+        break;
+        
+      case "nationalId":
+        if (value && value.length < 16) {
+          errors.nationalId = "Indangamuntu igomba kuba byibura 16";
+        }
+        break;
+        
+      default:
+        break;
+    }
+    
+    setRegisterValidation(errors);
+    return !errors[field];
+  };
+
+  const validateRegisterForm = () => {
+    const fields = ["fullName", "gender", "subgroup", "phone", "email", "password", "confirmPassword"];
+    
+    let isValid = true;
+    fields.forEach(field => {
+      if (!validateRegisterField(field, registerData[field])) {
+        isValid = false;
+      }
+    });
+    
+    return isValid;
+  };
+
+  const handleSakramentToggle = (id) => {
+    setRegisterData(prev => ({
+      ...prev,
+      sakraments: prev.sakraments.includes(id)
+        ? prev.sakraments.filter(s => s !== id)
+        : [...prev.sakraments, id]
+    }));
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Mark all fields as touched
+    const allTouched = {};
+    Object.keys(registerData).forEach(key => allTouched[key] = true);
+    setTouchedFields(allTouched);
+    
+    if (!validateRegisterForm()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setRegisterLoading(true);
+    setRegisterError("");
+
+    try {
+      // First create user account
+      const userRes = await api.post("/users/register", {
+        username: registerData.fullName,
+        userphonenumber: registerData.phone,
+        useremail: registerData.email,
+        userpassword: registerData.password,
+      });
+
+      // Then create member profile linked to user
+      const memberData = {
+        fullName: registerData.fullName,
+        nationalId: registerData.nationalId || undefined,
+        dateOfBirth: registerData.dateOfBirth || undefined,
+        phone: registerData.phone,
+        gender: registerData.gender,
+        subgroup: registerData.subgroup,
+        sakraments: registerData.sakraments,
+        category: "adult", // Default to adult for self-registration
+        userId: userRes.data.userId, // Link to user account
+      };
+
+      await api.post("/members", memberData);
+      
+      setRegisterSuccess(true);
+      
+      // Reset form
+      setRegisterData({
+        fullName: "",
+        nationalId: "",
+        dateOfBirth: "",
+        phone: "",
+        gender: "",
+        subgroup: "",
+        sakraments: [],
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+      
+      // Hide form after 3 seconds
+      setTimeout(() => {
+        setShowRegistration(false);
+        setRegisterSuccess(false);
+      }, 3000);
+      
+    } catch (err) {
+      const message = err.response?.data?.message || 
+                     err.response?.data?.errors?.map(e => e.msg).join(", ") ||
+                     "Kwiyandikisha byanze. Ongera ugerageze.";
+      setRegisterError(message);
+    } finally {
+      setRegisterLoading(false);
     }
   };
 
@@ -162,7 +384,7 @@ export default function Home() {
             <div className="flex items-center">
               <FaChurch className="text-blue-600 text-xl sm:text-2xl mr-2" />
               <h1 className="text-sm sm:text-base md:text-lg font-bold text-blue-600 truncate max-w-[200px] sm:max-w-none">
-                Umuryangoremezo Mutagatifu Mariko
+                Umuryango Mutagatifu Mariko
               </h1>
             </div>
 
@@ -177,6 +399,15 @@ export default function Home() {
               <a href="#contact" className="hover:text-blue-600 transition-colors text-sm font-medium">
                 Twandikire
               </a>
+              <button
+                onClick={() => setShowRegistration(!showRegistration)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
+                         transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg
+                         flex items-center gap-2"
+              >
+                <FaUserPlus />
+                Kwiyandikisha
+              </button>
               <button
                 onClick={() => navigate("/login")}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 
@@ -225,7 +456,19 @@ export default function Home() {
             >
               Twandikire
             </a>
-            <div className="px-6 py-3 border-t border-blue-100">
+            <div className="px-6 py-3 border-t border-blue-100 space-y-2">
+              <button
+                onClick={() => {
+                  setShowRegistration(!showRegistration);
+                  setMenuOpen(false);
+                }}
+                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg 
+                         hover:bg-green-700 transition-colors text-sm font-medium
+                         flex items-center justify-center gap-2"
+              >
+                <FaUserPlus />
+                Kwiyandikisha
+              </button>
               <button
                 onClick={() => {
                   navigate("/login");
@@ -255,14 +498,24 @@ export default function Home() {
             Murakaza neza
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-blue-600 mb-4 sm:mb-6">
-            Umuryango remezo 
+            Umuryango remezo witiriwe
             <span className="block text-gray-800">Mutagatifu Mariko</span>
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed">
             Kugenzura abanyamuryango, gukurikirana kwitabira ibikorwa, no kumenya
-            amakuru y'ibikorwa biri imbere by'umuryango remezo Mutagatifu Mariko.
+            amakuru y'ibikorwa biri imbere by'umuryango witiriwe Mutagatifu Mariko.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+            <button
+              onClick={() => setShowRegistration(true)}
+              className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 
+                       transition-all duration-300 transform hover:scale-105
+                       text-sm sm:text-base font-medium shadow-md hover:shadow-lg
+                       flex items-center justify-center gap-2"
+            >
+              <FaUserPlus />
+              Kwiyandikisha ubu
+            </button>
             <a
               href="#search"
               className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 
@@ -272,16 +525,6 @@ export default function Home() {
             >
               <FaSearch />
               Shakisha umunyamuryango
-            </a>
-            <a
-              href="#events"
-              className="bg-white text-blue-600 px-6 py-3 rounded-xl hover:bg-blue-50 
-                       transition-all duration-300 transform hover:scale-105
-                       text-sm sm:text-base font-medium border-2 border-blue-600
-                       flex items-center justify-center gap-2"
-            >
-              <FaCalendarAlt />
-              Reba ibikorwa
             </a>
           </div>
         </div>
@@ -294,8 +537,376 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SELF-REGISTRATION SECTION */}
+      {showRegistration && (
+        <section className="px-4 sm:px-6 pb-16 max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-green-200">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-5">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 rounded-full p-3">
+                  <FaUserPlus className="text-white text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Kwiyandikisha</h3>
+                  <p className="text-green-100 text-sm">Uzuza amakuru yawe wiyandikishe</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="p-6">
+              {/* Success Message */}
+              {registerSuccess && (
+                <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                  <FaCheckCircle className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-green-700 font-medium">Kwiyandikisha byagenze neza!</p>
+                    <p className="text-green-600 text-sm mt-1">Ubu ushobora kwinjira muri konti yawe.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {registerError && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                  <FaExclamationCircle className="text-red-500 text-xl flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-red-700 font-medium">Habayemo ikibazo</p>
+                    <p className="text-red-600 text-sm mt-1">{registerError}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleRegisterSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  
+                  {/* Full Name */}
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Amazina yose <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                        ${touchedFields.fullName && registerValidation.fullName 
+                                          ? 'text-red-400' : 'text-green-600'}`} />
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={registerData.fullName}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("fullName")}
+                        placeholder="Andika amazina yose"
+                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.fullName && registerValidation.fullName 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      />
+                    </div>
+                    {touchedFields.fullName && registerValidation.fullName && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.fullName}</p>
+                    )}
+                  </div>
+
+                  {/* Gender */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Igitsina <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaVenusMars className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <select
+                        name="gender"
+                        value={registerData.gender}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("gender")}
+                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.gender && registerValidation.gender 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      >
+                        <option value="">Hitamo Igitsina</option>
+                        <option value="male">Gabo</option>
+                        <option value="female">Gore</option>
+                      </select>
+                    </div>
+                    {touchedFields.gender && registerValidation.gender && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.gender}</p>
+                    )}
+                  </div>
+
+                  {/* Subgroup */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Umuryango remezo <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <select
+                        name="subgroup"
+                        value={registerData.subgroup}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("subgroup")}
+                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.subgroup && registerValidation.subgroup 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      >
+                        <option value="">Hitamo Umuryango</option>
+                        {subgroups.map(s => (
+                          <option key={s._id} value={s._id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {touchedFields.subgroup && registerValidation.subgroup && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.subgroup}</p>
+                    )}
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Telefone <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={registerData.phone}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("phone")}
+                        placeholder="07XXXXXXXX"
+                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.phone && registerValidation.phone 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      />
+                    </div>
+                    {touchedFields.phone && registerValidation.phone && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.phone}</p>
+                    )}
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <input
+                        type="email"
+                        name="email"
+                        value={registerData.email}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("email")}
+                        placeholder="email@example.com"
+                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.email && registerValidation.email 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      />
+                    </div>
+                    {touchedFields.email && registerValidation.email && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.email}</p>
+                    )}
+                  </div>
+
+                  {/* National ID (Optional) */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Indangamuntu (Ntayo)
+                    </label>
+                    <div className="relative">
+                      <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <input
+                        type="text"
+                        name="nationalId"
+                        value={registerData.nationalId}
+                        onChange={handleRegisterChange}
+                        placeholder="Indangamuntu"
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl
+                                 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date of Birth (Optional) */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Itariki y'Amavuko (Ntayo)
+                    </label>
+                    <div className="relative">
+                      <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <input
+                        type="date"
+                        name="dateOfBirth"
+                        value={registerData.dateOfBirth}
+                        onChange={handleRegisterChange}
+                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl
+                                 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Ijambobanga <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                        ${touchedFields.password && registerValidation.password 
+                                          ? 'text-red-400' : 'text-green-600'}`} />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="password"
+                        value={registerData.password}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("password")}
+                        placeholder="••••••••"
+                        className={`w-full pl-10 pr-12 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.password && registerValidation.password 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    
+                    {/* Password Strength */}
+                    {registerData.password && (
+                      <div className="mt-2">
+                        <div className="flex gap-1 h-1">
+                          <div className={`flex-1 rounded-full ${
+                            passwordStrength > 0 ? 'bg-red-500' : 'bg-gray-200'
+                          }`}></div>
+                          <div className={`flex-1 rounded-full ${
+                            passwordStrength > 25 ? 'bg-yellow-500' : 'bg-gray-200'
+                          }`}></div>
+                          <div className={`flex-1 rounded-full ${
+                            passwordStrength > 50 ? 'bg-blue-500' : 'bg-gray-200'
+                          }`}></div>
+                          <div className={`flex-1 rounded-full ${
+                            passwordStrength > 75 ? 'bg-green-500' : 'bg-gray-200'
+                          }`}></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {touchedFields.password && registerValidation.password && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.password}</p>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Emeza Ijambobanga <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                        ${touchedFields.confirmPassword && registerValidation.confirmPassword 
+                                          ? 'text-red-400' : 'text-green-600'}`} />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmPassword"
+                        value={registerData.confirmPassword}
+                        onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("confirmPassword")}
+                        placeholder="••••••••"
+                        className={`w-full pl-10 pr-12 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.confirmPassword && registerValidation.confirmPassword 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                      >
+                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                    {touchedFields.confirmPassword && registerValidation.confirmPassword && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.confirmPassword}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sakraments (Optional) */}
+                <div className="border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                    <FaCross className="text-green-600" />
+                    Amasakramentu (Ntayo)
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {sakraments.map(s => (
+                      <button
+                        type="button"
+                        key={s._id}
+                        onClick={() => handleSakramentToggle(s._id)}
+                        className={`px-3 py-2 rounded-lg text-sm transition-all
+                                  ${registerData.sakraments.includes(s._id)
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-green-400'}`}
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={registerLoading}
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 
+                             text-white py-3 rounded-xl hover:from-green-700 
+                             hover:to-green-800 transition-all disabled:opacity-60
+                             flex items-center justify-center gap-2"
+                  >
+                    {registerLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        Birimo kwiyandikisha...
+                      </>
+                    ) : (
+                      <>
+                        <FaUserPlus />
+                        Kwiyandikisha
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowRegistration(false)}
+                    className="px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50"
+                  >
+                    Gusiba
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-400 text-center">
+                  <span className="text-red-500">*</span> Ibyanditswe n'inyuguti zitukura birakenewe
+                </p>
+              </form>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* SEARCH MEMBERS SECTION */}
-      <section id="search" className="px-4 sm:px-6 pb-16 sm:pb-20 max-w-5xl mx-auto">
+      <section id="search" className="px-4 sm:px-6 pb-16 max-w-5xl mx-auto">
         <div className="text-center mb-8">
           <h3 className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
             Shakisha Umunyamuryango
@@ -348,221 +959,22 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Loading State */}
-        {searchLoading && (
-          <div className="mt-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-200 border-t-blue-600"></div>
-            <p className="text-gray-500 text-sm mt-2">Turimo gushakisha...</p>
-          </div>
-        )}
-
         {/* Search Results */}
-        {searchResults.length > 0 && !searchLoading && (
-          <div className="mt-8 space-y-6">
-            <div className="flex justify-between items-center">
-              <h4 className="text-lg font-semibold text-blue-600">
-                Abanyamuryango babonetse ({searchResults.length})
-              </h4>
-              <button
-                onClick={() => setSearchResults([])}
-                className="text-sm text-red-500 hover:text-red-700"
-              >
-                Siba byose
-              </button>
-            </div>
-
+        {searchResults.length > 0 && (
+          <div className="mt-8 space-y-4">
             {searchResults.map((member) => (
-              <div
+              <MemberCard
                 key={member._id}
-                className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100"
-              >
-                {/* Member Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white/20 rounded-full p-3">
-                      <FaUser className="text-white text-xl" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold text-white">
-                        {member.fullName}
-                      </h3>
-                      <p className="text-blue-100 text-sm">
-                        {member.category === 'child' ? 'Umwana' : 
-                         member.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Member Details */}
-                <div className="p-4 sm:p-6 space-y-4">
-                  {/* Info Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                      <FaUsers className="text-blue-600" />
-                      <div>
-                        <p className="text-xs text-gray-500">Umuryango remezo</p>
-                        <p className="text-sm font-medium">{member.subgroup?.name || "Nta tsinda"}</p>
-                      </div>
-                    </div>
-
-                    {member.category === "child" && member.parent && (
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                        <FaUser className="text-blue-600" />
-                        <div>
-                          <p className="text-xs text-gray-500">Umubyeyi</p>
-                          <p className="text-sm font-medium">{member.parent.fullName}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                      <FaPhone className="text-blue-600" />
-                      <div>
-                        <p className="text-xs text-gray-500">Telefone</p>
-                        <p className="text-sm font-medium">{member.phone || "Nta telefone"}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                      <FaCross className="text-blue-600" />
-                      <div>
-                        <p className="text-xs text-gray-500">Amasakramentu</p>
-                        <p className="text-sm font-medium">
-                          {member.sakraments?.length > 0
-                            ? member.sakraments.map((s) => s.name).join(", ")
-                            : "Nta Sakramenti"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Decision Status */}
-                  {member.decision && (
-                    <div className={`p-4 rounded-xl ${
-                      member.decision.status === "ACTIVE" 
-                        ? "bg-green-50 border border-green-200" 
-                        : "bg-red-50 border border-red-200"
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {member.decision.status === "ACTIVE" 
-                            ? <FaCheckCircle className="text-green-600" />
-                            : <FaExclamationCircle className="text-red-600" />
-                          }
-                          <span className={`font-medium ${
-                            member.decision.status === "ACTIVE" 
-                              ? "text-green-700" 
-                              : "text-red-700"
-                          }`}>
-                            {member.decision.status === "ACTIVE" ? "Aritabia" : "Ntiyitabira"}
-                          </span>
-                        </div>
-                        <span className="text-sm font-bold text-blue-600">
-                          {member.decision.attendancePercentage}%
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Attendance History */}
-                  {member.attendance?.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold text-blue-600 mb-3 flex items-center gap-2">
-                        <FaCalendarAlt />
-                        Amateka yo kwitabira
-                      </h4>
-                      
-                      {/* Mobile Card View */}
-                      <div className="block sm:hidden space-y-3">
-                        {member.attendance.slice(0, 3).map((record) => (
-                          <div key={record._id} className="bg-gray-50 rounded-xl p-3">
-                            <div className="flex justify-between items-start mb-2">
-                              <p className="font-medium text-sm">{record.event?.title || "N/A"}</p>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium
-                                  ${record.status === "present"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-red-100 text-red-700"
-                                  }`}
-                              >
-                                {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              {record.createdAt ? formatDate(record.createdAt) : "-"}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Desktop Table View */}
-                      <div className="hidden sm:block overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="bg-gray-50">
-                              <th className="p-3 text-left">Igikorwa</th>
-                              <th className="p-3 text-left">Uko yitabiriye</th>
-                              <th className="p-3 text-left">Itariki</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {member.attendance.slice(0, 3).map((record) => (
-                              <tr key={record._id} className="border-b">
-                                <td className="p-3">{record.event?.title || "N/A"}</td>
-                                <td className="p-3">
-                                  <span
-                                    className={`px-2 py-1 rounded-full text-xs font-medium
-                                      ${record.status === "present"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
-                                      }`}
-                                  >
-                                    {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
-                                  </span>
-                                </td>
-                                <td className="p-3 text-gray-500">
-                                  {record.createdAt ? formatDate(record.createdAt) : "-"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {member.attendance.length > 3 && (
-                        <button
-                          onClick={() => setSelectedMember(member)}
-                          className="mt-3 text-sm text-blue-600 hover:text-blue-800 
-                                   flex items-center gap-1"
-                        >
-                          Reba byose <FaChevronRight className="text-xs" />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+                member={member}
+                onClick={() => navigate(`/members/public/${member._id}`)}
+              />
             ))}
-          </div>
-        )}
-
-        {/* No Results */}
-        {searchTerm && selectedSubgroup && searchResults.length === 0 && !searchLoading && (
-          <div className="mt-8 text-center py-12 bg-white rounded-2xl shadow">
-            <FaUser className="text-gray-300 text-4xl mx-auto mb-4" />
-            <p className="text-gray-500 text-sm sm:text-base">
-              Nta munyamuryango wabonetse
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              Gerageza ukoresheje izina ritandukanye
-            </p>
           </div>
         )}
       </section>
 
       {/* EVENTS SECTION */}
-      <section id="events" className="px-4 sm:px-6 pb-16 sm:pb-20 max-w-7xl mx-auto">
+      <section id="events" className="px-4 sm:px-6 pb-16 max-w-7xl mx-auto">
         <div className="text-center mb-8">
           <h3 className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
             Ibikorwa biri imbere
@@ -580,39 +992,11 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {events.map((event) => (
-              <div
+              <EventCard
                 key={event._id}
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-xl 
-                         transition-all duration-300 overflow-hidden transform hover:-translate-y-1
-                         border border-gray-100"
-              >
-                <div className="h-2 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-                <div className="p-5 sm:p-6">
-                  <h4 className="text-lg font-semibold text-gray-800 mb-3 group-hover:text-blue-600 
-                               transition-colors line-clamp-2">
-                    {event.title}
-                  </h4>
-                  
-                  <div className="flex items-center gap-2 text-blue-600 text-sm mb-4">
-                    <FaCalendarAlt className="text-sm" />
-                    <span className="font-medium">{formatDate(event.date)}</span>
-                  </div>
-
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {event.description || "Nta bisobanuro byatanzwe"}
-                  </p>
-
-                  <button
-                    onClick={() => navigate(`/events-public/${event._id}`)}
-                    className="w-full bg-blue-50 text-blue-600 px-4 py-2 rounded-xl
-                             hover:bg-blue-100 transition-colors text-sm font-medium
-                             flex items-center justify-center gap-2 group"
-                  >
-                    <span>Reba ibisobanuro</span>
-                    <FaArrowRight className="text-xs group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
+                event={event}
+                onClick={() => navigate(`/events-public/${event._id}`)}
+              />
             ))}
           </div>
         )}
@@ -784,6 +1168,54 @@ export default function Home() {
       >
         <FaArrowRight className="rotate-[-90deg]" />
       </button>
+    </div>
+  );
+}
+
+// Member Card Component
+function MemberCard({ member, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-4"
+    >
+      <div className="flex items-center gap-3">
+        <div className="bg-blue-100 rounded-full p-3">
+          <FaUser className="text-blue-600" />
+        </div>
+        <div>
+          <h4 className="font-semibold text-gray-800">{member.fullName}</h4>
+          <p className="text-sm text-gray-500">{member.subgroup?.name}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Event Card Component
+function EventCard({ event, onClick }) {
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('rw-TZ', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-5"
+    >
+      <h4 className="font-semibold text-gray-800 mb-2">{event.title}</h4>
+      <div className="flex items-center gap-2 text-blue-600 text-sm mb-3">
+        <FaCalendarAlt />
+        {formatDate(event.date)}
+      </div>
+      <p className="text-gray-600 text-sm line-clamp-2">
+        {event.description || "Nta bisobanuro"}
+      </p>
     </div>
   );
 }
