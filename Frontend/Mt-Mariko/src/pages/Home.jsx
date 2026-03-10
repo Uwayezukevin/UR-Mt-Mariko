@@ -22,10 +22,7 @@ import {
   FaUserPlus,
   FaIdBadge,
   FaVenusMars,
-  FaLayerGroup,
-  FaLock,
-  FaEye,
-  FaEyeSlash
+  FaLayerGroup
 } from "react-icons/fa";
 
 export default function Home() {
@@ -52,31 +49,27 @@ export default function Home() {
   const [successMsg, setSuccessMsg] = useState("");
   const [contactError, setContactError] = useState("");
 
-  // SAKRAMENTS STATE - FIXED: Added this missing state
+  // SAKRAMENTS STATE
   const [sakraments, setSakraments] = useState([]);
+  const [parents, setParents] = useState([]);
 
-  // SELF-REGISTRATION STATES
+  // MEMBER REGISTRATION STATES - Matches CreateMember component
   const [showRegistration, setShowRegistration] = useState(false);
   const [registerData, setRegisterData] = useState({
     fullName: "",
+    category: "",
     nationalId: "",
     dateOfBirth: "",
     phone: "",
+    parent: "",
     gender: "",
     subgroup: "",
     sakraments: [],
-    email: "",
-    password: "",
-    confirmPassword: "",
   });
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [registerError, setRegisterError] = useState("");
-  const [registerValidation, setRegisterValidation] = useState({});
-  const [touchedFields, setTouchedFields] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // MOBILE MENU
   const [menuOpen, setMenuOpen] = useState(false);
@@ -103,16 +96,24 @@ export default function Home() {
     fetchEvents();
   }, []);
 
-  // FETCH SUBGROUPS AND SAKRAMENTS - FIXED: Added sakraments fetch
+  // FETCH SUBGROUPS, SAKRAMENTS, AND PARENTS
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subgroupsRes, sakramentsRes] = await Promise.all([
+        const [subgroupsRes, sakramentsRes, membersRes] = await Promise.all([
           api.get("/subgroups"),
-          api.get("/sakraments")
+          api.get("/sakraments"),
+          api.get("/members")
         ]);
+
         setSubgroups(subgroupsRes.data);
         setSakraments(sakramentsRes.data);
+
+        // Filter adult parents
+        const adults = membersRes.data.filter(
+          (member) => member.category === "adult"
+        );
+        setParents(adults);
       } catch (err) {
         console.error(err);
       }
@@ -143,20 +144,6 @@ export default function Home() {
     const delay = setTimeout(searchMembers, 400);
     return () => clearTimeout(delay);
   }, [searchTerm, selectedSubgroup]);
-
-  // Password strength checker
-  useEffect(() => {
-    const password = registerData.password;
-    let strength = 0;
-    
-    if (password?.length >= 8) strength += 25;
-    if (password?.match(/[a-z]/)) strength += 25;
-    if (password?.match(/[A-Z]/)) strength += 25;
-    if (password?.match(/[0-9]/)) strength += 15;
-    if (password?.match(/[^a-zA-Z0-9]/)) strength += 10;
-    
-    setPasswordStrength(Math.min(strength, 100));
-  }, [registerData.password]);
 
   // CONTACT HANDLER
   const handleContactChange = (e) => {
@@ -191,122 +178,60 @@ export default function Home() {
     }
   };
 
-  // REGISTRATION HANDLERS
+  // REGISTRATION HANDLERS - Matches CreateMember component
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
-    setRegisterData(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear validation error for this field
-    if (registerValidation[name]) {
-      setRegisterValidation(prev => ({ ...prev, [name]: "" }));
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }
-    if (registerError) setRegisterError("");
-  };
 
-  const handleRegisterBlur = (field) => {
-    setTouchedFields(prev => ({ ...prev, [field]: true }));
-    validateRegisterField(field, registerData[field]);
-  };
-
-  const validateRegisterField = (field, value) => {
-    const errors = { ...registerValidation };
-    
-    switch(field) {
-      case "fullName":
-        if (!value?.trim()) {
-          errors.fullName = "Amazina ni ngombwa";
-        } else if (value.trim().length < 3) {
-          errors.fullName = "Amazina agomba kuba byibura 3";
-        }
-        break;
-        
-      case "gender":
-        if (!value) {
-          errors.gender = "Igitsina ni ngombwa";
-        }
-        break;
-        
-      case "subgroup":
-        if (!value) {
-          errors.subgroup = "Umuryango remezo ni ngombwa";
-        }
-        break;
-        
-      case "phone":
-        if (!value) {
-          errors.phone = "Telefone ni ngombwa";
-        } else if (!/^(\+250|0)7[0-9]{8}$/.test(value.replace(/\s/g, ''))) {
-          errors.phone = "Telefone igomba gutangira na 07 cyangwa +2507";
-        }
-        break;
-        
-      case "email":
-        if (!value) {
-          errors.email = "Email ni ngombwa";
-        } else if (!/\S+@\S+\.\S+/.test(value)) {
-          errors.email = "Email itari mu buryo bukwiriye";
-        }
-        break;
-        
-      case "password":
-        if (!value) {
-          errors.password = "Ijambobanga ni ngombwa";
-        } else if (value.length < 6) {
-          errors.password = "Ijambobanga rigomba kuba byibura 6";
-        }
-        break;
-        
-      case "confirmPassword":
-        if (value !== registerData.password) {
-          errors.confirmPassword = "Ijambobanga ntirihwanye";
-        }
-        break;
-        
-      case "nationalId":
-        if (value && value.length < 16) {
-          errors.nationalId = "Indangamuntu igomba kuba byibura 16";
-        }
-        break;
-        
-      default:
-        break;
-    }
-    
-    setRegisterValidation(errors);
-    return !errors[field];
-  };
-
-  const validateRegisterForm = () => {
-    const fields = ["fullName", "gender", "subgroup", "phone", "email", "password", "confirmPassword"];
-    
-    let isValid = true;
-    fields.forEach(field => {
-      if (!validateRegisterField(field, registerData[field])) {
-        isValid = false;
-      }
-    });
-    
-    return isValid;
+    setRegisterData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "category" && value !== "child" ? { parent: "" } : {}),
+    }));
   };
 
   const handleSakramentToggle = (id) => {
-    setRegisterData(prev => ({
+    setRegisterData((prev) => ({
       ...prev,
       sakraments: prev.sakraments.includes(id)
-        ? prev.sakraments.filter(s => s !== id)
-        : [...prev.sakraments, id]
+        ? prev.sakraments.filter((s) => s !== id)
+        : [...prev.sakraments, id],
     }));
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!registerData.fullName?.trim()) {
+      errors.fullName = "Amazina yose arafuzwe";
+    }
+    if (!registerData.category) {
+      errors.category = "Icyiciro arafuzwe";
+    }
+    if (!registerData.gender) {
+      errors.gender = "Igitsina arafuzwe";
+    }
+    if (!registerData.subgroup) {
+      errors.subgroup = "Umuryango remezo arafuzwe";
+    }
+    if (registerData.category === "child" && !registerData.parent) {
+      errors.parent = "Umubyeyi arafuzwe ku mwana";
+    }
+
+    return errors;
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     
-    // Mark all fields as touched
-    const allTouched = {};
-    Object.keys(registerData).forEach(key => allTouched[key] = true);
-    setTouchedFields(allTouched);
-    
-    if (!validateRegisterForm()) {
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -315,43 +240,36 @@ export default function Home() {
     setRegisterError("");
 
     try {
-      // First create user account
-      const userRes = await api.post("/users/register", {
-        username: registerData.fullName,
-        userphonenumber: registerData.phone,
-        useremail: registerData.email,
-        userpassword: registerData.password,
-      });
-
-      // Then create member profile linked to user
-      const memberData = {
-        fullName: registerData.fullName,
-        nationalId: registerData.nationalId || undefined,
-        dateOfBirth: registerData.dateOfBirth || undefined,
-        phone: registerData.phone,
+      const payload = {
+        fullName: registerData.fullName.trim(),
+        category: registerData.category,
         gender: registerData.gender,
-        subgroup: registerData.subgroup,
-        sakraments: registerData.sakraments,
-        category: "adult", // Default to adult for self-registration
-        userId: userRes.data.userId, // Link to user account
+        ...(registerData.nationalId?.trim() ? { nationalId: registerData.nationalId.trim() } : {}),
+        ...(registerData.dateOfBirth ? { dateOfBirth: registerData.dateOfBirth } : {}),
+        ...(registerData.phone?.trim() ? { phone: registerData.phone.trim() } : {}),
+        ...(registerData.category === "child" && registerData.parent
+          ? { parent: registerData.parent }
+          : {}),
+        ...(registerData.subgroup ? { subgroup: registerData.subgroup } : {}),
+        ...(registerData.sakraments.length > 0
+          ? { sakraments: registerData.sakraments }
+          : {}),
       };
 
-      await api.post("/members", memberData);
-      
+      await api.post("/members", payload);
       setRegisterSuccess(true);
       
       // Reset form
       setRegisterData({
         fullName: "",
+        category: "",
         nationalId: "",
         dateOfBirth: "",
         phone: "",
+        parent: "",
         gender: "",
         subgroup: "",
         sakraments: [],
-        email: "",
-        password: "",
-        confirmPassword: "",
       });
       
       // Hide form after 3 seconds
@@ -361,10 +279,13 @@ export default function Home() {
       }, 3000);
       
     } catch (err) {
-      const message = err.response?.data?.message || 
-                     err.response?.data?.errors?.map(e => e.msg).join(", ") ||
-                     "Kwiyandikisha byanze. Ongera ugerageze.";
+      const message =
+        err.response?.data?.errors?.map((e) => e.msg).join(", ") ||
+        err.response?.data?.message ||
+        "Kwiyandikisha byanze";
+
       setRegisterError(message);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setRegisterLoading(false);
     }
@@ -407,7 +328,12 @@ export default function Home() {
                 Twandikire
               </a>
               <button
-                onClick={() => setShowRegistration(!showRegistration)}
+                onClick={() => {
+                  setShowRegistration(!showRegistration);
+                  setTimeout(() => {
+                    document.getElementById('registration')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 
                          transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg
                          flex items-center gap-2"
@@ -516,7 +442,6 @@ export default function Home() {
             <button
               onClick={() => {
                 setShowRegistration(true);
-                // Scroll to registration form
                 setTimeout(() => {
                   document.getElementById('registration')?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
@@ -550,388 +475,343 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SELF-REGISTRATION SECTION */}
+      {/* MEMBER REGISTRATION SECTION - Matches CreateMember exactly */}
       {showRegistration && (
-        <section id="registration" className="px-4 sm:px-6 pb-16 max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-green-200">
+        <section id="registration" className="px-4 sm:px-6 pb-16 max-w-2xl mx-auto">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl 
+                        transition-shadow duration-300 overflow-hidden border-2 border-green-200">
             
-            {/* Header */}
-            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-5">
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 rounded-full p-3">
-                  <FaUserPlus className="text-white text-xl" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white">Kwiyandikisha</h3>
-                  <p className="text-green-100 text-sm">Uzuza amakuru yawe wiyandikishe</p>
-                </div>
-              </div>
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 sm:px-6 md:px-8 py-4 sm:py-5">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
+                Kwiyandikisha nk'Umunyamuryango
+              </h1>
+              <p className="text-green-100 text-xs sm:text-sm text-center mt-1">
+                Uzuza neza amakuru yawe wiyandikishe
+              </p>
             </div>
 
-            {/* Form */}
-            <div className="p-6">
+            {/* Form Container */}
+            <div className="p-4 sm:p-6 md:p-8">
+              
               {/* Success Message */}
               {registerSuccess && (
-                <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-                  <FaCheckCircle className="text-green-500 text-xl flex-shrink-0 mt-0.5" />
+                <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 
+                              rounded-lg p-3 sm:p-4 flex items-start gap-3">
+                  <FaCheckCircle className="text-green-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-green-700 font-medium">Kwiyandikisha byagenze neza!</p>
-                    <p className="text-green-600 text-sm mt-1">Ubu ushobora kwinjira muri konti yawe.</p>
+                    <p className="text-green-700 text-sm sm:text-base font-medium">
+                      Kwiyandikisha byagenze neza!
+                    </p>
+                    <p className="text-green-600 text-xs sm:text-sm mt-1">
+                      Ubu uri umunyamuryango w'umuryango.
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* Error Message */}
               {registerError && (
-                <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-                  <FaExclamationCircle className="text-red-500 text-xl flex-shrink-0 mt-0.5" />
+                <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 
+                              rounded-lg p-3 sm:p-4 flex items-start gap-3">
+                  <FaExclamationCircle className="text-red-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-red-700 font-medium">Habayemo ikibazo</p>
-                    <p className="text-red-600 text-sm mt-1">{registerError}</p>
+                    <p className="text-red-700 text-sm sm:text-base font-medium">
+                      Habayemo ikibazo
+                    </p>
+                    <p className="text-red-600 text-xs sm:text-sm mt-1">{registerError}</p>
                   </div>
                 </div>
               )}
 
-              <form onSubmit={handleRegisterSubmit} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  
-                  {/* Full Name */}
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">
-                      Amazina yose <span className="text-red-500">*</span>
+              <form onSubmit={handleRegisterSubmit} className="space-y-4 sm:space-y-5" autoComplete="off">
+                
+                {/* Full Name - Required */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Amazina yose <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 
+                                      text-green-400 text-sm sm:text-base" />
+                    <input
+                      type="text"
+                      name="fullName"
+                      placeholder="Andika amazina yose"
+                      value={registerData.fullName}
+                      onChange={handleRegisterChange}
+                      required
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border rounded-lg sm:rounded-xl 
+                                 focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                 text-sm sm:text-base transition-all
+                                 ${validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  {validationErrors.fullName && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.fullName}</p>
+                  )}
+                </div>
+
+                {/* Category - Required */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Icyiciro <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 
+                                      text-green-400 text-sm sm:text-base" />
+                    <select
+                      name="category"
+                      value={registerData.category}
+                      onChange={handleRegisterChange}
+                      required
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border rounded-lg sm:rounded-xl 
+                                 focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                 text-sm sm:text-base appearance-none bg-white
+                                 ${validationErrors.category ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                    >
+                      <option value="">Hitamo Icyiciro</option>
+                      <option value="child">Umwana</option>
+                      <option value="youth">Urubyiruko</option>
+                      <option value="adult">Umukuru</option>
+                    </select>
+                  </div>
+                  {validationErrors.category && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.category}</p>
+                  )}
+                </div>
+
+                {/* Parent - Conditional */}
+                {registerData.category === "child" && (
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Umubyeyi <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
-                                        ${touchedFields.fullName && registerValidation.fullName 
-                                          ? 'text-red-400' : 'text-green-600'}`} />
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={registerData.fullName}
+                      <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 
+                                        text-green-400 text-sm sm:text-base" />
+                      <select
+                        name="parent"
+                        value={registerData.parent}
                         onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("fullName")}
-                        placeholder="Andika amazina yose"
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.fullName && registerValidation.fullName 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      />
+                        required
+                        className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                   border rounded-lg sm:rounded-xl 
+                                   focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                   text-sm sm:text-base appearance-none bg-white
+                                   ${validationErrors.parent ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                      >
+                        <option value="">Hitamo Umubyeyi</option>
+                        {parents.length === 0 ? (
+                          <option value="" disabled>Nta babyeyi babonetse</option>
+                        ) : (
+                          parents.map((p) => (
+                            <option key={p._id} value={p._id}>
+                              {p.fullName}
+                            </option>
+                          ))
+                        )}
+                      </select>
                     </div>
-                    {touchedFields.fullName && registerValidation.fullName && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.fullName}</p>
+                    {validationErrors.parent && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.parent}</p>
                     )}
                   </div>
+                )}
 
-                  {/* Gender */}
+                {/* Two Column Layout for larger screens */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  
+                  {/* National ID */}
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Indangamuntu
+                    </label>
+                    <div className="relative">
+                      <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 
+                                          text-green-400 text-sm sm:text-base" />
+                      <input
+                        type="text"
+                        name="nationalId"
+                        placeholder="Indangamuntu"
+                        value={registerData.nationalId}
+                        onChange={handleRegisterChange}
+                        className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border border-gray-200 rounded-lg sm:rounded-xl 
+                                 focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                 text-sm sm:text-base transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone */}
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Telefoni
+                    </label>
+                    <div className="relative">
+                      <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 
+                                        text-green-400 text-sm sm:text-base" />
+                      <input
+                        type="tel"
+                        name="phone"
+                        placeholder="0788 123 456"
+                        value={registerData.phone}
+                        onChange={handleRegisterChange}
+                        className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border border-gray-200 rounded-lg sm:rounded-xl 
+                                 focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                 text-sm sm:text-base transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Itariki y'Amavuko
+                    </label>
+                    <div className="relative">
+                      <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 
+                                              text-green-400 text-sm sm:text-base" />
+                      <input
+                        type="date"
+                        name="dateOfBirth"
+                        value={registerData.dateOfBirth}
+                        onChange={handleRegisterChange}
+                        className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border border-gray-200 rounded-lg sm:rounded-xl 
+                                 focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                 text-sm sm:text-base transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Gender - Required */}
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                       Igitsina <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <FaVenusMars className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
+                      <FaVenusMars className="absolute left-3 top-1/2 -translate-y-1/2 
+                                            text-green-400 text-sm sm:text-base" />
                       <select
                         name="gender"
                         value={registerData.gender}
                         onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("gender")}
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.gender && registerValidation.gender 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
+                        required
+                        className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                   border rounded-lg sm:rounded-xl 
+                                   focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                   text-sm sm:text-base appearance-none bg-white
+                                   ${validationErrors.gender ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                       >
                         <option value="">Hitamo Igitsina</option>
                         <option value="male">Gabo</option>
                         <option value="female">Gore</option>
                       </select>
                     </div>
-                    {touchedFields.gender && registerValidation.gender && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.gender}</p>
-                    )}
-                  </div>
-
-                  {/* Subgroup */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Umuryango remezo <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
-                      <select
-                        name="subgroup"
-                        value={registerData.subgroup}
-                        onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("subgroup")}
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.subgroup && registerValidation.subgroup 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      >
-                        <option value="">Hitamo Umuryango</option>
-                        {subgroups.map(s => (
-                          <option key={s._id} value={s._id}>{s.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {touchedFields.subgroup && registerValidation.subgroup && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.subgroup}</p>
-                    )}
-                  </div>
-
-                  {/* Phone */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Telefone <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={registerData.phone}
-                        onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("phone")}
-                        placeholder="07XXXXXXXX"
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.phone && registerValidation.phone 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      />
-                    </div>
-                    {touchedFields.phone && registerValidation.phone && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.phone}</p>
-                    )}
-                  </div>
-
-                  {/* Email */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Email <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
-                      <input
-                        type="email"
-                        name="email"
-                        value={registerData.email}
-                        onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("email")}
-                        placeholder="email@example.com"
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.email && registerValidation.email 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      />
-                    </div>
-                    {touchedFields.email && registerValidation.email && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.email}</p>
-                    )}
-                  </div>
-
-                  {/* National ID (Optional) */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Indangamuntu (Ntayo)
-                    </label>
-                    <div className="relative">
-                      <FaIdBadge className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
-                      <input
-                        type="text"
-                        name="nationalId"
-                        value={registerData.nationalId}
-                        onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("nationalId")}
-                        placeholder="Indangamuntu"
-                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.nationalId && registerValidation.nationalId 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      />
-                    </div>
-                    {touchedFields.nationalId && registerValidation.nationalId && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.nationalId}</p>
-                    )}
-                  </div>
-
-                  {/* Date of Birth (Optional) */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Itariki y'Amavuko (Ntayo)
-                    </label>
-                    <div className="relative">
-                      <FaCalendarAlt className="absolute left-3 top-1/2 -translate-y-1/2 text-green-600" />
-                      <input
-                        type="date"
-                        name="dateOfBirth"
-                        value={registerData.dateOfBirth}
-                        onChange={handleRegisterChange}
-                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl
-                                 focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Password */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Ijambobanga <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 
-                                        ${touchedFields.password && registerValidation.password 
-                                          ? 'text-red-400' : 'text-green-600'}`} />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        value={registerData.password}
-                        onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("password")}
-                        placeholder="••••••••"
-                        className={`w-full pl-10 pr-12 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.password && registerValidation.password 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600"
-                      >
-                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                    
-                    {/* Password Strength */}
-                    {registerData.password && (
-                      <div className="mt-2">
-                        <div className="flex gap-1 h-1">
-                          <div className={`flex-1 rounded-full ${
-                            passwordStrength > 0 ? 'bg-red-500' : 'bg-gray-200'
-                          }`}></div>
-                          <div className={`flex-1 rounded-full ${
-                            passwordStrength > 25 ? 'bg-yellow-500' : 'bg-gray-200'
-                          }`}></div>
-                          <div className={`flex-1 rounded-full ${
-                            passwordStrength > 50 ? 'bg-blue-500' : 'bg-gray-200'
-                          }`}></div>
-                          <div className={`flex-1 rounded-full ${
-                            passwordStrength > 75 ? 'bg-green-500' : 'bg-gray-200'
-                          }`}></div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {passwordStrength < 40 ? 'Ijambobanga rike' :
-                           passwordStrength < 70 ? 'Ijambobanga ririmo' :
-                           'Ijambobanga rikomeye'}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {touchedFields.password && registerValidation.password && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.password}</p>
-                    )}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700">
-                      Emeza Ijambobanga <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 
-                                        ${touchedFields.confirmPassword && registerValidation.confirmPassword 
-                                          ? 'text-red-400' : 'text-green-600'}`} />
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        name="confirmPassword"
-                        value={registerData.confirmPassword}
-                        onChange={handleRegisterChange}
-                        onBlur={() => handleRegisterBlur("confirmPassword")}
-                        placeholder="••••••••"
-                        className={`w-full pl-10 pr-12 py-3 border-2 rounded-xl
-                                  focus:outline-none focus:ring-2 focus:ring-green-500
-                                  ${touchedFields.confirmPassword && registerValidation.confirmPassword 
-                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600"
-                      >
-                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                    {touchedFields.confirmPassword && registerValidation.confirmPassword && (
-                      <p className="text-red-500 text-xs mt-1">{registerValidation.confirmPassword}</p>
-                    )}
-                    {touchedFields.confirmPassword && registerData.confirmPassword && 
-                     registerData.confirmPassword === registerData.password && !registerValidation.confirmPassword && (
-                      <p className="text-green-500 text-xs mt-1 flex items-center gap-1">
-                        <FaCheckCircle className="text-xs" />
-                        Ijambobanga rirahwanye
-                      </p>
+                    {validationErrors.gender && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.gender}</p>
                     )}
                   </div>
                 </div>
 
-                {/* Sakraments (Optional) */}
-                {sakraments.length > 0 && (
-                  <div className="border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
-                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                      <FaCross className="text-green-600" />
-                      Amasakramentu (Ntayo)
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {sakraments.map(s => (
-                        <button
-                          type="button"
-                          key={s._id}
-                          onClick={() => handleSakramentToggle(s._id)}
-                          className={`px-3 py-2 rounded-lg text-sm transition-all duration-200
-                                    ${registerData.sakraments.includes(s._id)
-                                      ? 'bg-green-600 text-white'
-                                      : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-green-400'}`}
-                        >
+                {/* Subgroup - Required */}
+                <div className="space-y-1">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Umuryango Remezo <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 
+                                            text-green-400 text-sm sm:text-base" />
+                    <select
+                      name="subgroup"
+                      value={registerData.subgroup}
+                      onChange={handleRegisterChange}
+                      required
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                 border rounded-lg sm:rounded-xl 
+                                 focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                 text-sm sm:text-base appearance-none bg-white
+                                 ${validationErrors.subgroup ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                    >
+                      <option value="">Hitamo Umuryango Remezo</option>
+                      {subgroups.map((s) => (
+                        <option key={s._id} value={s._id}>
                           {s.name}
-                        </button>
+                        </option>
                       ))}
-                    </div>
+                    </select>
                   </div>
-                )}
+                  {validationErrors.subgroup && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.subgroup}</p>
+                  )}
+                </div>
 
-                {/* Submit Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                {/* Sakraments */}
+                <div className="space-y-2 sm:space-y-3">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Amasakramentu
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {sakraments.map((s) => (
+                      <button
+                        type="button"
+                        key={s._id}
+                        onClick={() => handleSakramentToggle(s._id)}
+                        className={`px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-full 
+                                   border-2 transition-all duration-200 font-medium
+                                   ${registerData.sakraments.includes(s._id)
+                                     ? 'bg-green-600 text-white border-green-600 hover:bg-green-700'
+                                     : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-600'
+                                   }`}
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-4 sm:pt-6">
                   <button
                     type="submit"
-                    disabled={registerLoading}
-                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 
-                             text-white py-3 rounded-xl hover:from-green-700 
-                             hover:to-green-800 transition-all duration-300
+                    disabled={registerLoading || registerSuccess}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 
+                             text-white py-3.5 sm:py-4 rounded-lg sm:rounded-xl 
+                             hover:from-green-700 hover:to-green-800 
+                             transition-all duration-300 transform hover:scale-[1.02]
+                             text-sm sm:text-base font-medium
                              disabled:opacity-60 disabled:cursor-not-allowed
-                             flex items-center justify-center gap-2 font-medium"
+                             disabled:hover:scale-100 shadow-md hover:shadow-lg"
                   >
                     {registerLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                        Birimo kwiyandikisha...
-                      </>
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 
+                                      border-2 border-white border-t-transparent"></div>
+                        Turimo kwiyandikisha...
+                      </span>
                     ) : (
-                      <>
-                        <FaUserPlus />
-                        Kwiyandikisha
-                      </>
+                      "Kwiyandikisha"
                     )}
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setShowRegistration(false)}
-                    className="px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 
-                             transition-colors font-medium"
-                  >
-                    Gusiba
                   </button>
                 </div>
 
-                <p className="text-xs text-gray-400 text-center">
+                {/* Cancel Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowRegistration(false)}
+                  className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 
+                           transition-colors mt-2"
+                >
+                  Gusiba
+                </button>
+
+                {/* Required Fields Note */}
+                <p className="text-xs text-gray-500 text-center mt-4">
                   <span className="text-red-500">*</span> Ibyanditswe n'inyuguti zitukura birakenewe
                 </p>
               </form>
