@@ -40,7 +40,6 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
 
   // CONTACT STATES
   const [contactData, setContactData] = useState({
@@ -52,6 +51,9 @@ export default function Home() {
   const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [contactError, setContactError] = useState("");
+
+  // SAKRAMENTS STATE - FIXED: Added this missing state
+  const [sakraments, setSakraments] = useState([]);
 
   // SELF-REGISTRATION STATES
   const [showRegistration, setShowRegistration] = useState(false);
@@ -101,17 +103,21 @@ export default function Home() {
     fetchEvents();
   }, []);
 
-  // FETCH SUBGROUPS
+  // FETCH SUBGROUPS AND SAKRAMENTS - FIXED: Added sakraments fetch
   useEffect(() => {
-    const fetchSubgroups = async () => {
+    const fetchData = async () => {
       try {
-        const res = await api.get("/subgroups");
-        setSubgroups(res.data);
+        const [subgroupsRes, sakramentsRes] = await Promise.all([
+          api.get("/subgroups"),
+          api.get("/sakraments")
+        ]);
+        setSubgroups(subgroupsRes.data);
+        setSakraments(sakramentsRes.data);
       } catch (err) {
         console.error(err);
       }
     };
-    fetchSubgroups();
+    fetchData();
   }, []);
 
   // AUTO SEARCH
@@ -143,11 +149,11 @@ export default function Home() {
     const password = registerData.password;
     let strength = 0;
     
-    if (password.length >= 8) strength += 25;
-    if (password.match(/[a-z]/)) strength += 25;
-    if (password.match(/[A-Z]/)) strength += 25;
-    if (password.match(/[0-9]/)) strength += 15;
-    if (password.match(/[^a-zA-Z0-9]/)) strength += 10;
+    if (password?.length >= 8) strength += 25;
+    if (password?.match(/[a-z]/)) strength += 25;
+    if (password?.match(/[A-Z]/)) strength += 25;
+    if (password?.match(/[0-9]/)) strength += 15;
+    if (password?.match(/[^a-zA-Z0-9]/)) strength += 10;
     
     setPasswordStrength(Math.min(strength, 100));
   }, [registerData.password]);
@@ -365,6 +371,7 @@ export default function Home() {
   };
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return "";
     const date = new Date(dateStr);
     return date.toLocaleDateString('rw-TZ', {
       weekday: 'short',
@@ -434,7 +441,7 @@ export default function Home() {
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden bg-white shadow-lg border-t border-blue-100 animate-slideDown">
+          <div className="md:hidden bg-white shadow-lg border-t border-blue-100">
             <a 
               href="#home" 
               className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700"
@@ -507,7 +514,13 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
             <button
-              onClick={() => setShowRegistration(true)}
+              onClick={() => {
+                setShowRegistration(true);
+                // Scroll to registration form
+                setTimeout(() => {
+                  document.getElementById('registration')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
               className="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 
                        transition-all duration-300 transform hover:scale-105
                        text-sm sm:text-base font-medium shadow-md hover:shadow-lg
@@ -539,7 +552,7 @@ export default function Home() {
 
       {/* SELF-REGISTRATION SECTION */}
       {showRegistration && (
-        <section className="px-4 sm:px-6 pb-16 max-w-4xl mx-auto">
+        <section id="registration" className="px-4 sm:px-6 pb-16 max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-green-200">
             
             {/* Header */}
@@ -726,11 +739,17 @@ export default function Home() {
                         name="nationalId"
                         value={registerData.nationalId}
                         onChange={handleRegisterChange}
+                        onBlur={() => handleRegisterBlur("nationalId")}
                         placeholder="Indangamuntu"
-                        className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl
-                                 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl
+                                  focus:outline-none focus:ring-2 focus:ring-green-500
+                                  ${touchedFields.nationalId && registerValidation.nationalId 
+                                    ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                       />
                     </div>
+                    {touchedFields.nationalId && registerValidation.nationalId && (
+                      <p className="text-red-500 text-xs mt-1">{registerValidation.nationalId}</p>
+                    )}
                   </div>
 
                   {/* Date of Birth (Optional) */}
@@ -775,7 +794,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600"
                       >
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
@@ -798,6 +817,11 @@ export default function Home() {
                             passwordStrength > 75 ? 'bg-green-500' : 'bg-gray-200'
                           }`}></div>
                         </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {passwordStrength < 40 ? 'Ijambobanga rike' :
+                           passwordStrength < 70 ? 'Ijambobanga ririmo' :
+                           'Ijambobanga rikomeye'}
+                        </p>
                       </div>
                     )}
                     
@@ -830,7 +854,7 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600"
                       >
                         {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
@@ -838,31 +862,40 @@ export default function Home() {
                     {touchedFields.confirmPassword && registerValidation.confirmPassword && (
                       <p className="text-red-500 text-xs mt-1">{registerValidation.confirmPassword}</p>
                     )}
+                    {touchedFields.confirmPassword && registerData.confirmPassword && 
+                     registerData.confirmPassword === registerData.password && !registerValidation.confirmPassword && (
+                      <p className="text-green-500 text-xs mt-1 flex items-center gap-1">
+                        <FaCheckCircle className="text-xs" />
+                        Ijambobanga rirahwanye
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Sakraments (Optional) */}
-                <div className="border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                    <FaCross className="text-green-600" />
-                    Amasakramentu (Ntayo)
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {sakraments.map(s => (
-                      <button
-                        type="button"
-                        key={s._id}
-                        onClick={() => handleSakramentToggle(s._id)}
-                        className={`px-3 py-2 rounded-lg text-sm transition-all
-                                  ${registerData.sakraments.includes(s._id)
-                                    ? 'bg-green-600 text-white'
-                                    : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-green-400'}`}
-                      >
-                        {s.name}
-                      </button>
-                    ))}
+                {sakraments.length > 0 && (
+                  <div className="border-2 border-gray-100 rounded-xl p-4 bg-gray-50">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                      <FaCross className="text-green-600" />
+                      Amasakramentu (Ntayo)
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {sakraments.map(s => (
+                        <button
+                          type="button"
+                          key={s._id}
+                          onClick={() => handleSakramentToggle(s._id)}
+                          className={`px-3 py-2 rounded-lg text-sm transition-all duration-200
+                                    ${registerData.sakraments.includes(s._id)
+                                      ? 'bg-green-600 text-white'
+                                      : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-green-400'}`}
+                        >
+                          {s.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Submit Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-4">
@@ -871,8 +904,9 @@ export default function Home() {
                     disabled={registerLoading}
                     className="flex-1 bg-gradient-to-r from-green-600 to-green-700 
                              text-white py-3 rounded-xl hover:from-green-700 
-                             hover:to-green-800 transition-all disabled:opacity-60
-                             flex items-center justify-center gap-2"
+                             hover:to-green-800 transition-all duration-300
+                             disabled:opacity-60 disabled:cursor-not-allowed
+                             flex items-center justify-center gap-2 font-medium"
                   >
                     {registerLoading ? (
                       <>
@@ -890,7 +924,8 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setShowRegistration(false)}
-                    className="px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50"
+                    className="px-6 py-3 border-2 border-gray-300 rounded-xl hover:bg-gray-50 
+                             transition-colors font-medium"
                   >
                     Gusiba
                   </button>
@@ -959,8 +994,16 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {searchLoading && (
+          <div className="mt-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-200 border-t-blue-600"></div>
+            <p className="text-gray-500 text-sm mt-2">Turimo gushakisha...</p>
+          </div>
+        )}
+
         {/* Search Results */}
-        {searchResults.length > 0 && (
+        {searchResults.length > 0 && !searchLoading && (
           <div className="mt-8 space-y-4">
             {searchResults.map((member) => (
               <MemberCard
@@ -969,6 +1012,14 @@ export default function Home() {
                 onClick={() => navigate(`/members/public/${member._id}`)}
               />
             ))}
+          </div>
+        )}
+
+        {/* No Results */}
+        {searchTerm && selectedSubgroup && searchResults.length === 0 && !searchLoading && (
+          <div className="mt-8 text-center py-8 bg-white rounded-2xl shadow">
+            <FaUser className="text-gray-300 text-4xl mx-auto mb-4" />
+            <p className="text-gray-500">Nta munyamuryango wabonetse</p>
           </div>
         )}
       </section>
@@ -1174,19 +1225,29 @@ export default function Home() {
 
 // Member Card Component
 function MemberCard({ member, onClick }) {
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-4"
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-4 border border-gray-100"
     >
       <div className="flex items-center gap-3">
-        <div className="bg-blue-100 rounded-full p-3">
-          <FaUser className="text-blue-600" />
+        <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center">
+          <span className="text-blue-600 font-bold">{getInitials(member.fullName)}</span>
         </div>
-        <div>
+        <div className="flex-1">
           <h4 className="font-semibold text-gray-800">{member.fullName}</h4>
-          <p className="text-sm text-gray-500">{member.subgroup?.name}</p>
+          <p className="text-sm text-gray-500">{member.subgroup?.name || "Nta muryango"}</p>
         </div>
+        <FaChevronRight className="text-gray-400" />
       </div>
     </div>
   );
@@ -1195,6 +1256,7 @@ function MemberCard({ member, onClick }) {
 // Event Card Component
 function EventCard({ event, onClick }) {
   const formatDate = (dateStr) => {
+    if (!dateStr) return "";
     const date = new Date(dateStr);
     return date.toLocaleDateString('rw-TZ', {
       day: 'numeric',
@@ -1206,9 +1268,9 @@ function EventCard({ event, onClick }) {
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-5"
+      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-5 border border-gray-100"
     >
-      <h4 className="font-semibold text-gray-800 mb-2">{event.title}</h4>
+      <h4 className="font-semibold text-gray-800 mb-2 line-clamp-2">{event.title}</h4>
       <div className="flex items-center gap-2 text-blue-600 text-sm mb-3">
         <FaCalendarAlt />
         {formatDate(event.date)}
