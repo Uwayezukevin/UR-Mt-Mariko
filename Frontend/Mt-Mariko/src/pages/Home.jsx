@@ -22,7 +22,10 @@ import {
   FaUserPlus,
   FaIdBadge,
   FaVenusMars,
-  FaLayerGroup
+  FaLayerGroup,
+  FaUserCheck,
+  FaUserTimes,
+  FaChartLine
 } from "react-icons/fa";
 
 export default function Home() {
@@ -37,6 +40,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [expandedMember, setExpandedMember] = useState(null); // For toggling member details
 
   // CONTACT STATES
   const [contactData, setContactData] = useState({
@@ -53,7 +57,7 @@ export default function Home() {
   const [sakraments, setSakraments] = useState([]);
   const [parents, setParents] = useState([]);
 
-  // MEMBER REGISTRATION STATES - Matches CreateMember component
+  // MEMBER REGISTRATION STATES
   const [showRegistration, setShowRegistration] = useState(false);
   const [registerData, setRegisterData] = useState({
     fullName: "",
@@ -121,7 +125,7 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // AUTO SEARCH
+  // AUTO SEARCH - Enhanced to fetch full member details including attendance and decision
   useEffect(() => {
     const searchMembers = async () => {
       if (!searchTerm || !selectedSubgroup) {
@@ -131,10 +135,48 @@ export default function Home() {
       
       setSearchLoading(true);
       try {
-        const res = await api.get(
+        // First get basic search results
+        const searchRes = await api.get(
           `/members/search?name=${searchTerm}&subgroup=${selectedSubgroup}`
         );
-        setSearchResults(res.data);
+        
+        // For each member, fetch their attendance and decision data
+        const membersWithDetails = await Promise.all(
+          searchRes.data.map(async (member) => {
+            try {
+              const [attendanceRes, decisionRes] = await Promise.all([
+                api.get(`/attendance/member/${member._id}`),
+                api.get(`/decision/member/${member._id}`)
+              ]);
+              
+              // Calculate stats
+              const attendanceData = attendanceRes.data || [];
+              const present = attendanceData.filter(a => a.status === "present").length;
+              const absent = attendanceData.filter(a => a.status === "absent").length;
+              
+              return {
+                ...member,
+                attendance: attendanceData,
+                decision: decisionRes.data || null,
+                stats: {
+                  present,
+                  absent,
+                  total: attendanceData.length
+                }
+              };
+            } catch (err) {
+              console.error(err);
+              return {
+                ...member,
+                attendance: [],
+                decision: null,
+                stats: { present: 0, absent: 0, total: 0 }
+              };
+            }
+          })
+        );
+        
+        setSearchResults(membersWithDetails);
       } catch (err) {
         console.error(err);
       } finally {
@@ -178,11 +220,10 @@ export default function Home() {
     }
   };
 
-  // REGISTRATION HANDLERS - Matches CreateMember component
+  // REGISTRATION HANDLERS
   const handleRegisterChange = (e) => {
     const { name, value } = e.target;
 
-    // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }
@@ -207,19 +248,19 @@ export default function Home() {
     const errors = {};
     
     if (!registerData.fullName?.trim()) {
-      errors.fullName = "Amazina yose arafuzwe";
+      errors.fullName = "Amazina yose arakenewe";
     }
     if (!registerData.category) {
-      errors.category = "Icyiciro arafuzwe";
+      errors.category = "Icyiciro kirakenewe";
     }
     if (!registerData.gender) {
-      errors.gender = "Igitsina arafuzwe";
+      errors.gender = "Igitsina kirakenewe";
     }
     if (!registerData.subgroup) {
-      errors.subgroup = "Umuryango remezo arafuzwe";
+      errors.subgroup = "Umuryango remezo urakenewe";
     }
     if (registerData.category === "child" && !registerData.parent) {
-      errors.parent = "Umubyeyi arafuzwe ku mwana";
+      errors.parent = "Umubyeyi arakenewe ku mwana";
     }
 
     return errors;
@@ -228,7 +269,6 @@ export default function Home() {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate form
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -259,7 +299,6 @@ export default function Home() {
       await api.post("/members", payload);
       setRegisterSuccess(true);
       
-      // Reset form
       setRegisterData({
         fullName: "",
         category: "",
@@ -272,7 +311,6 @@ export default function Home() {
         sakraments: [],
       });
       
-      // Hide form after 3 seconds
       setTimeout(() => {
         setShowRegistration(false);
         setRegisterSuccess(false);
@@ -292,14 +330,30 @@ export default function Home() {
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('rw-TZ', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
+    try {
+      if (!dateStr) return "-";
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('rw-TZ', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return "-";
+    }
+  };
+
+  const getAttendancePercentage = (stats) => {
+    if (stats.total === 0) return 0;
+    return Math.round((stats.present / stats.total) * 100);
+  };
+
+  const toggleMemberDetails = (memberId) => {
+    if (expandedMember === memberId) {
+      setExpandedMember(null);
+    } else {
+      setExpandedMember(memberId);
+    }
   };
 
   return (
@@ -312,7 +366,7 @@ export default function Home() {
             <div className="flex items-center">
               <FaChurch className="text-blue-600 text-xl sm:text-2xl mr-2" />
               <h1 className="text-sm sm:text-base md:text-lg font-bold text-blue-600 truncate max-w-[200px] sm:max-w-none">
-                Umuryango Mutagatifu Mariko
+                Umuryangoremezo Mutagatifu Mariko
               </h1>
             </div>
 
@@ -475,7 +529,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MEMBER REGISTRATION SECTION - Matches CreateMember exactly */}
+      {/* MEMBER REGISTRATION SECTION */}
       {showRegistration && (
         <section id="registration" className="px-4 sm:px-6 pb-16 max-w-2xl mx-auto">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl 
@@ -525,8 +579,7 @@ export default function Home() {
               )}
 
               <form onSubmit={handleRegisterSubmit} className="space-y-4 sm:space-y-5" autoComplete="off">
-                
-                {/* Full Name - Required */}
+                {/* Full Name */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Amazina yose <span className="text-red-500">*</span>
@@ -553,7 +606,7 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Category - Required */}
+                {/* Category */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Icyiciro <span className="text-red-500">*</span>
@@ -621,7 +674,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Two Column Layout for larger screens */}
+                {/* Two Column Layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   
                   {/* National ID */}
@@ -689,7 +742,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Gender - Required */}
+                  {/* Gender */}
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                       Igitsina <span className="text-red-500">*</span>
@@ -719,7 +772,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Subgroup - Required */}
+                {/* Subgroup */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Umuryango Remezo <span className="text-red-500">*</span>
@@ -882,14 +935,20 @@ export default function Home() {
           </div>
         )}
 
-        {/* Search Results */}
+        {/* Search Results - Enhanced with full member details */}
         {searchResults.length > 0 && !searchLoading && (
           <div className="mt-8 space-y-4">
+            <h4 className="text-lg font-semibold text-blue-600 mb-4">
+              Abanyamuryango babonetse ({searchResults.length})
+            </h4>
             {searchResults.map((member) => (
-              <MemberCard
+              <MemberDetailsCard
                 key={member._id}
                 member={member}
-                onClick={() => navigate(`/members/public/${member._id}`)}
+                isExpanded={expandedMember === member._id}
+                onToggle={() => toggleMemberDetails(member._id)}
+                formatDate={formatDate}
+                getAttendancePercentage={getAttendancePercentage}
               />
             ))}
           </div>
@@ -1103,8 +1162,15 @@ export default function Home() {
   );
 }
 
-// Member Card Component
-function MemberCard({ member, onClick }) {
+// Enhanced Member Details Card Component
+function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttendancePercentage }) {
+  const translateCategory = (category) => {
+    if (category === "child") return "Umwana";
+    if (category === "youth") return "Urubyiruko";
+    if (category === "adult") return "Umukuru";
+    return category;
+  };
+
   const getInitials = (name) => {
     return name
       .split(' ')
@@ -1115,20 +1181,236 @@ function MemberCard({ member, onClick }) {
   };
 
   return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer p-4 border border-gray-100"
-    >
-      <div className="flex items-center gap-3">
-        <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center">
-          <span className="text-blue-600 font-bold">{getInitials(member.fullName)}</span>
+    <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+      {/* Header - Always visible */}
+      <div 
+        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={onToggle}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center
+                        ${member.decision?.status === "ACTIVE" 
+                          ? "bg-green-100" 
+                          : member.decision?.status === "INACTIVE"
+                          ? "bg-red-100"
+                          : "bg-blue-100"}`}>
+            <span className={`font-bold ${
+              member.decision?.status === "ACTIVE" 
+                ? "text-green-600" 
+                : member.decision?.status === "INACTIVE"
+                ? "text-red-600"
+                : "text-blue-600"
+            }`}>
+              {getInitials(member.fullName)}
+            </span>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-gray-800">{member.fullName}</h4>
+                <p className="text-sm text-gray-500">
+                  {member.subgroup?.name || "Nta muryango"} • {translateCategory(member.category)}
+                </p>
+              </div>
+              <FaChevronRight className={`text-gray-400 transition-transform duration-300 
+                                         ${isExpanded ? 'rotate-90' : ''}`} />
+            </div>
+          </div>
         </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-gray-800">{member.fullName}</h4>
-          <p className="text-sm text-gray-500">{member.subgroup?.name || "Nta muryango"}</p>
-        </div>
-        <FaChevronRight className="text-gray-400" />
+
+        {/* Quick Stats - Always visible */}
+        {member.decision && (
+          <div className="mt-3 flex items-center gap-3">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium
+                          ${member.decision.status === "ACTIVE"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                          }`}>
+              {member.decision.status === "ACTIVE" ? "Aritabira" : "Ntiyitabira"} • {member.decision.attendancePercentage}%
+            </div>
+            <div className="text-xs text-gray-500">
+              Yitabiriye: {member.stats?.present || 0}/{member.stats?.total || 0}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Expanded Details - Similar to MemberDetails but without edit button */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 p-4 bg-gray-50">
+          {/* Personal Info Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
+              <FaVenusMars className="text-blue-600 text-lg" />
+              <div>
+                <p className="text-xs text-gray-500">Igitsina</p>
+                <p className="text-sm font-medium capitalize">
+                  {member.gender === 'male' ? 'Gabo' : member.gender === 'female' ? 'Gore' : 'N/A'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
+              <FaPhone className="text-blue-600 text-lg" />
+              <div>
+                <p className="text-xs text-gray-500">Telefone</p>
+                <p className="text-sm font-medium">
+                  {member.phone || "Nta telefone"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
+              <FaCalendarAlt className="text-blue-600 text-lg" />
+              <div>
+                <p className="text-xs text-gray-500">Itariki y'amavuko</p>
+                <p className="text-sm font-medium">
+                  {member.dateOfBirth ? formatDate(member.dateOfBirth) : "Nta tariki"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
+              <FaLayerGroup className="text-blue-600 text-lg" />
+              <div>
+                <p className="text-xs text-gray-500">Umuryango remezo</p>
+                <p className="text-sm font-medium">
+                  {member.subgroup?.name || "Nta tsinda"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-white rounded-xl sm:col-span-2">
+              <FaCross className="text-blue-600 text-lg mt-0.5" />
+              <div>
+                <p className="text-xs text-gray-500">Amasakramentu</p>
+                <p className="text-sm font-medium">
+                  {member.sakraments?.length > 0 
+                    ? member.sakraments.map((s) => s.name).join(", ")
+                    : "Nta Sakramenti"}
+                </p>
+              </div>
+            </div>
+
+            {member.category === "child" && member.parent && (
+              <div className="flex items-center gap-3 p-3 bg-white rounded-xl sm:col-span-2">
+                <FaUser className="text-blue-600 text-lg" />
+                <div>
+                  <p className="text-xs text-gray-500">Umubyeyi</p>
+                  <p className="text-sm font-medium">{member.parent.fullName}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Stats */}
+          <div className="mb-4">
+            <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              <FaChartLine className="text-blue-600" />
+              Ibarurishamibare
+            </h5>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="text-center p-2 bg-blue-50 rounded-lg">
+                <p className="text-lg font-bold text-blue-600">{member.stats?.total || 0}</p>
+                <p className="text-xs text-gray-500">Yose</p>
+              </div>
+              <div className="text-center p-2 bg-green-50 rounded-lg">
+                <p className="text-lg font-bold text-green-600">{member.stats?.present || 0}</p>
+                <p className="text-xs text-gray-500">Yitabiriye</p>
+              </div>
+              <div className="text-center p-2 bg-red-50 rounded-lg">
+                <p className="text-lg font-bold text-red-600">{member.stats?.absent || 0}</p>
+                <p className="text-xs text-gray-500">Ntiyitabiriye</p>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            {member.stats?.total > 0 && (
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Kwitabira: {getAttendancePercentage(member.stats)}%</span>
+                  <span>{member.stats.present}/{member.stats.total}</span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full transition-all duration-500"
+                    style={{ width: `${getAttendancePercentage(member.stats)}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Attendance History */}
+          {member.attendance?.length > 0 && (
+            <div>
+              <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <FaUserCheck className="text-blue-600" />
+                Amateka yo kwitabira
+              </h5>
+              
+              {/* Mobile View */}
+              <div className="block sm:hidden space-y-2">
+                {member.attendance.slice(0, 3).map((record) => (
+                  <div key={record._id} className="bg-white rounded-lg p-3">
+                    <p className="font-medium text-sm">{record.event?.title || "Igikorwa"}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium
+                        ${record.status === "present"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                        }`}>
+                        {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {record.createdAt ? formatDate(record.createdAt) : "-"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2 text-left">Igikorwa</th>
+                      <th className="p-2 text-left">Uko yitabiriye</th>
+                      <th className="p-2 text-left">Itariki</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {member.attendance.slice(0, 5).map((record) => (
+                      <tr key={record._id} className="border-b">
+                        <td className="p-2">{record.event?.title || "Igikorwa"}</td>
+                        <td className="p-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium
+                            ${record.status === "present"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                            }`}>
+                            {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
+                          </span>
+                        </td>
+                        <td className="p-2 text-gray-500">
+                          {record.createdAt ? formatDate(record.createdAt) : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {member.attendance.length > 5 && (
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  ... n'indi {member.attendance.length - 5}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

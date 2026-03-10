@@ -261,7 +261,7 @@ export default function Members() {
                        hover:bg-blue-200 transition-colors"
             >
               <FaFilter />
-              <span>Ifilitero</span>
+              <span>Filter</span>
             </button>
 
             {/* Desktop Filters */}
@@ -286,7 +286,7 @@ export default function Members() {
                          focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                          text-sm bg-white"
               >
-                <option value="all">Imiryango yose</option>
+                <option value="all">Imiryango remezo mito yose</option>
                 {subgroups.map((sg) => (
                   <option key={sg._id} value={sg._id}>
                     {sg.name}
@@ -331,7 +331,7 @@ export default function Members() {
                          focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                          text-sm bg-white"
               >
-                <option value="all">Imiryango yose</option>
+                <option value="all">Imiryangoremezo mito yose</option>
                 {subgroups.map((sg) => (
                   <option key={sg._id} value={sg._id}>
                     {sg.name}
