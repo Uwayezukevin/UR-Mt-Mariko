@@ -19,8 +19,6 @@ import {
   FaHeartbeat,
   FaSkull,
   FaTruck,
-  FaExchangeAlt,
-  FaUserSlash
 } from "react-icons/fa";
 import api from "../api/axios";
 
@@ -198,7 +196,7 @@ export default function UpdateMember() {
         
       case "accessibilityNotes":
         if (formData.accessibility !== "alive" && !value?.trim()) {
-          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
+          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
         }
         break;
         
@@ -211,19 +209,26 @@ export default function UpdateMember() {
   };
 
   const validateForm = () => {
-    const fields = ["fullName", "category", "gender"];
-    if (formData.category === "child") fields.push("parent");
-    if (formData.accessibility !== "alive") fields.push("accessibilityNotes");
+    const errors = {};
     
-    let isValid = true;
-    
-    fields.forEach(field => {
-      if (!validateField(field, formData[field])) {
-        isValid = false;
-      }
-    });
-    
-    return isValid;
+    if (!formData.fullName?.trim()) {
+      errors.fullName = "Amazina ni ngombwa";
+    }
+    if (!formData.category) {
+      errors.category = "Icyiciro ni ngombwa";
+    }
+    if (!formData.gender) {
+      errors.gender = "Igitsina ni ngombwa";
+    }
+    if (formData.category === "child" && !formData.parent) {
+      errors.parent = "Umubyeyi ni ngombwa ku mwana";
+    }
+    if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSakramentToggle = (sakId) => {
@@ -259,16 +264,15 @@ export default function UpdateMember() {
       
       // Remove empty strings
       Object.keys(cleanedData).forEach((key) => {
-        if (cleanedData[key] === "") delete cleanedData[key];
+        if (cleanedData[key] === "" || cleanedData[key] === null || cleanedData[key] === undefined) {
+          delete cleanedData[key];
+        }
       });
       
       // Don't send parent if not child
       if (cleanedData.category !== "child") {
         delete cleanedData.parent;
       }
-      
-      // Include accessibility data
-      // accessibility, accessibilityNotes, and isActive are already in cleanedData
 
       await api.put(`/members/${id}`, cleanedData);
       
@@ -281,7 +285,13 @@ export default function UpdateMember() {
       
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || "Ntibyashoboye guhindura amakuru");
+      
+      // Handle duplicate key error for nationalId
+      if (err.response?.data?.code === 11000 || err.response?.data?.message?.includes("duplicate")) {
+        setError("Indangamuntu isanzwe ikoreshwa n'undi munyamuryango");
+      } else {
+        setError(err.response?.data?.message || "Ntibyashoboye guhindura amakuru");
+      }
     } finally {
       setLoading(false);
     }
@@ -304,10 +314,20 @@ export default function UpdateMember() {
   // Get color class for accessibility status
   const getAccessibilityColor = (status) => {
     switch(status) {
-      case "alive": return "text-green-700 bg-green-50 border-green-200";
-      case "dead": return "text-gray-700 bg-gray-100 border-gray-300";
-      case "moved": return "text-orange-700 bg-orange-50 border-orange-200";
-      default: return "text-blue-700 bg-blue-50 border-blue-200";
+      case "alive": return "bg-green-50 border-green-200 text-green-700";
+      case "dead": return "bg-gray-100 border-gray-300 text-gray-700";
+      case "moved": return "bg-orange-50 border-orange-200 text-orange-700";
+      default: return "bg-blue-50 border-blue-200 text-blue-700";
+    }
+  };
+
+  // Get accessibility status in Kinyarwanda
+  const getAccessibilityLabel = (status) => {
+    switch(status) {
+      case "alive": return "Ariho";
+      case "dead": return "Yitabye Imana";
+      case "moved": return "Yimukiye ahandi";
+      default: return status;
     }
   };
 
@@ -388,7 +408,7 @@ export default function UpdateMember() {
                     Amakuru yahinduwe neza!
                   </p>
                   <p className="text-green-600 text-xs sm:text-sm mt-1">
-                    Turongera tujya ku rutonde...
+                    Turiguhindura amakuru ku rutonde...
                   </p>
                 </div>
               </div>
@@ -416,14 +436,12 @@ export default function UpdateMember() {
                   <div>
                     <p className="text-xs font-medium opacity-75">Ikimezo kiri ubu</p>
                     <p className="font-semibold">
-                      {formData.accessibility === "alive" && "Ariho"}
-                      {formData.accessibility === "dead" && "Yarapfuye"}
-                      {formData.accessibility === "moved" && "Yimukiye ahandi"}
+                      {getAccessibilityLabel(formData.accessibility)}
                     </p>
                   </div>
                 </div>
                 {formData.accessibilityNotes && (
-                  <div className="text-sm italic max-w-md text-right">
+                  <div className="text-sm italic max-w-md text-right bg-white/50 p-2 rounded-lg">
                     "{formData.accessibilityNotes}"
                   </div>
                 )}
@@ -580,15 +598,15 @@ export default function UpdateMember() {
                   )}
                 </div>
 
-                {/* Accessibility Status - NEW */}
+                {/* Accessibility Status */}
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Icyemezo cy'umunyamuryango <span className="text-red-500">*</span>
+                    Ikimezo cy'umunyamuryango <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
                       { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green" },
-                      { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray" },
+                      { value: "dead", label: "Yitabye Imana", icon: <FaSkull />, color: "gray" },
                       { value: "moved", label: "Yimukiye ahandi", icon: <FaTruck />, color: "orange" },
                     ].map((option) => (
                       <button
@@ -597,15 +615,15 @@ export default function UpdateMember() {
                         onClick={() => {
                           handleChange({ target: { name: "accessibility", value: option.value } });
                         }}
-                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 
+                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 
                                  transition-all duration-200
                                  ${formData.accessibility === option.value
                                    ? `bg-${option.color}-50 border-${option.color}-500 text-${option.color}-700`
-                                   : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                   : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                                  }`}
                       >
-                        <span className="text-lg">{option.icon}</span>
-                        <span className="text-xs font-medium">{option.label}</span>
+                        <span className="text-2xl">{option.icon}</span>
+                        <span className="text-sm font-medium">{option.label}</span>
                       </button>
                     ))}
                   </div>
@@ -627,7 +645,9 @@ export default function UpdateMember() {
                         value={formData.accessibilityNotes}
                         onChange={handleChange}
                         onBlur={() => handleBlur("accessibilityNotes")}
-                        placeholder="Andika impamvu y'ihinduka (urugero: yapfuye tariki, yimukiye ahandi, ...)"
+                        placeholder={formData.accessibility === "dead" 
+                          ? "Andika igihe n'impamvu y'urupfu (urugero: Yapfuye ku ya 15/03/2026)"
+                          : "Andika aho yimukiye n'igihe (urugero: Yimukiye i Musanze ku ya 10/01/2026)"}
                         rows="3"
                         className={`w-full pl-9 pr-4 py-3 sm:py-3.5 
                                    border-2 rounded-xl text-sm sm:text-base
@@ -646,11 +666,42 @@ export default function UpdateMember() {
                         {validationErrors.accessibilityNotes}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400 mt-1">
-                      Tanga ibisobanuro birambuye ku cyerekeye iki kimezo gishya
-                    </p>
                   </div>
                 )}
+
+                {/* isActive Status */}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Ikimezo cyo gukora
+                  </label>
+                  <div className="flex items-center gap-6 p-3 bg-gray-50 rounded-xl">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        checked={formData.isActive === true}
+                        onChange={() => setFormData(prev => ({ ...prev, isActive: true }))}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm">Arakora</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        checked={formData.isActive === false}
+                        onChange={() => setFormData(prev => ({ ...prev, isActive: false }))}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm">Ntakora</span>
+                    </label>
+                    <span className="text-xs text-gray-500 ml-auto">
+                      {formData.accessibility === "alive" 
+                        ? "✓ Ariho - ashobora gukora"
+                        : "⚠ Ntabwo ashobora gukora"}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Parent - Conditional */}
                 {formData.category === "child" && (
@@ -750,9 +801,6 @@ export default function UpdateMember() {
                       {validationErrors.phone}
                     </p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1">
-                    Urugero: 0788123456 cyangwa +250788123456
-                  </p>
                 </div>
 
                 {/* Subgroup */}
@@ -781,7 +829,6 @@ export default function UpdateMember() {
                     </select>
                   </div>
                 </div>
-                  
               </div>
 
               {/* Sakraments */}
@@ -846,7 +893,7 @@ export default function UpdateMember() {
                            flex items-center justify-center gap-2"
                 >
                   <FaTimes className="text-sm sm:text-base" />
-                  <span>Gusiba</span>
+                  <span>Kurekera aho</span>
                 </button>
               </div>
 

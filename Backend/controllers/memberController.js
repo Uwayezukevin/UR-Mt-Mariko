@@ -15,6 +15,9 @@ export const createMember = async (req, res) => {
       gender,
       subgroup,
       sakraments,
+      accessibility,
+      accessibilityNotes,
+      isActive,
     } = req.body;
 
     // Parent validation
@@ -30,6 +33,18 @@ export const createMember = async (req, res) => {
       });
     }
 
+    // Set default values for accessibility fields
+    const memberAccessibility = accessibility || "alive";
+    const memberIsActive = isActive !== undefined ? isActive : 
+                          (memberAccessibility === "alive" ? true : false);
+
+    // Validate accessibility logic
+    if (memberAccessibility !== "alive" && !accessibilityNotes) {
+      return res.status(400).json({
+        message: "Accessibility notes are required when status is not 'alive'",
+      });
+    }
+
     const member = await Member.create({
       fullName,
       category,
@@ -40,18 +55,35 @@ export const createMember = async (req, res) => {
       gender,
       subgroup,
       sakraments: sakraments || [],
+      accessibility: memberAccessibility,
+      accessibilityNotes: accessibilityNotes || "",
+      accessibilityUpdatedAt: new Date(),
+      isActive: memberIsActive,
     });
+
+    // Populate references for response
+    const populatedMember = await Member.findById(member._id)
+      .populate("parent", "fullName")
+      .populate("subgroup", "name")
+      .populate("sakraments", "name");
 
     res.status(201).json({
       message: "Member created successfully",
-      member,
+      member: populatedMember,
     });
   } catch (err) {
     console.error(err);
+    
+    // Handle duplicate key error for nationalId
+    if (err.code === 11000 && err.keyPattern?.nationalId) {
+      return res.status(400).json({ 
+        message: "National ID already exists" 
+      });
+    }
+    
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 
 // ================= GET ALL MEMBERS =================
