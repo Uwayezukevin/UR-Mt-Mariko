@@ -144,7 +144,7 @@ export default function UpdateMember() {
         setShowAccessibilityNotes(value !== "alive");
         
         // Auto-set isActive based on accessibility
-        if (value === "dead" || value === "moved" || value === "transferred" || value === "inactive") {
+        if (value === "dead" || value === "moved") {
           updated.isActive = false;
         } else if (value === "alive") {
           updated.isActive = true;
@@ -297,8 +297,6 @@ export default function UpdateMember() {
       case "alive": return <FaHeartbeat className="text-green-500" />;
       case "dead": return <FaSkull className="text-gray-600" />;
       case "moved": return <FaTruck className="text-orange-500" />;
-      case "transferred": return <FaExchangeAlt className="text-purple-500" />;
-      case "inactive": return <FaUserSlash className="text-red-500" />;
       default: return <FaInfoCircle className="text-blue-400" />;
     }
   };
@@ -309,8 +307,6 @@ export default function UpdateMember() {
       case "alive": return "text-green-700 bg-green-50 border-green-200";
       case "dead": return "text-gray-700 bg-gray-100 border-gray-300";
       case "moved": return "text-orange-700 bg-orange-50 border-orange-200";
-      case "transferred": return "text-purple-700 bg-purple-50 border-purple-200";
-      case "inactive": return "text-red-700 bg-red-50 border-red-200";
       default: return "text-blue-700 bg-blue-50 border-blue-200";
     }
   };
@@ -423,8 +419,6 @@ export default function UpdateMember() {
                       {formData.accessibility === "alive" && "Ariho"}
                       {formData.accessibility === "dead" && "Yapfuye"}
                       {formData.accessibility === "moved" && "Yimukiye ahandi"}
-                      {formData.accessibility === "transferred" && "Yimuriwe mu rindi tsinda"}
-                      {formData.accessibility === "inactive" && "Ntakora"}
                     </p>
                   </div>
                 </div>
@@ -589,15 +583,13 @@ export default function UpdateMember() {
                 {/* Accessibility Status - NEW */}
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Ikimezo cy'umunyamuryango <span className="text-red-500">*</span>
+                    Icyemezo cy'umunyamuryango <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {[
                       { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green" },
                       { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray" },
                       { value: "moved", label: "Yimukiye ahandi", icon: <FaTruck />, color: "orange" },
-                      { value: "transferred", label: "Yimuriwe", icon: <FaExchangeAlt />, color: "purple" },
-                      { value: "inactive", label: "Ntakora", icon: <FaUserSlash />, color: "red" }
                     ].map((option) => (
                       <button
                         key={option.value}
@@ -789,40 +781,7 @@ export default function UpdateMember() {
                     </select>
                   </div>
                 </div>
-
-                {/* isActive Status */}
-                <div className="space-y-1 md:col-span-2">
-                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Ikimezo cyo gukora
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="isActive"
-                        value="true"
-                        checked={formData.isActive === true}
-                        onChange={() => setFormData(prev => ({ ...prev, isActive: true }))}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <span className="text-sm">Arakora</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="isActive"
-                        value="false"
-                        checked={formData.isActive === false}
-                        onChange={() => setFormData(prev => ({ ...prev, isActive: false }))}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <span className="text-sm">Ntakora</span>
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Ibi bigaragaza niba umunyamuryango akora mu muryango cyangwa nada
-                  </p>
-                </div>
+                  
               </div>
 
               {/* Sakraments */}
