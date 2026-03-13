@@ -198,7 +198,7 @@ export default function UpdateMember() {
         
       case "accessibilityNotes":
         if (formData.accessibility !== "alive" && !value?.trim()) {
-          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
         }
         break;
         
@@ -417,7 +417,7 @@ export default function UpdateMember() {
                     <p className="text-xs font-medium opacity-75">Ikimezo kiri ubu</p>
                     <p className="font-semibold">
                       {formData.accessibility === "alive" && "Ariho"}
-                      {formData.accessibility === "dead" && "Yapfuye"}
+                      {formData.accessibility === "dead" && "Yarapfuye"}
                       {formData.accessibility === "moved" && "Yimukiye ahandi"}
                     </p>
                   </div>
