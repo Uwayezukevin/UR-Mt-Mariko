@@ -225,12 +225,14 @@ export const updateMember = async (req, res) => {
       gender,
       subgroup,
       sakraments,
+      accessibility,
+      accessibilityNotes,
+      isActive,
     } = req.body;
 
     // Determine updated values before validation
     const updatedCategory = category ?? member.category;
-    const updatedParent =
-      parent !== undefined ? parent : member.parent;
+    const updatedParent = parent !== undefined ? parent : member.parent;
 
     // Parent validation
     if (updatedCategory === "child" && !updatedParent) {
@@ -239,7 +241,7 @@ export const updateMember = async (req, res) => {
       });
     }
 
-    // Apply updates
+    // Apply basic updates
     if (fullName !== undefined) member.fullName = fullName;
     if (category !== undefined) member.category = category;
     if (nationalId !== undefined) member.nationalId = nationalId;
@@ -248,6 +250,37 @@ export const updateMember = async (req, res) => {
     if (gender !== undefined) member.gender = gender;
     if (subgroup !== undefined) member.subgroup = subgroup;
     if (sakraments !== undefined) member.sakraments = sakraments;
+    if (isActive !== undefined) member.isActive = isActive;
+
+    // Handle accessibility update
+    if (accessibility !== undefined) {
+      // Check if accessibility is being changed
+      const oldAccessibility = member.accessibility;
+      member.accessibility = accessibility;
+      
+      // Only update these fields if accessibility actually changed
+      if (oldAccessibility !== accessibility) {
+        member.accessibilityUpdatedAt = new Date();
+        
+        if (accessibilityNotes !== undefined) {
+          member.accessibilityNotes = accessibilityNotes;
+        }
+        
+        // Optional: Add auto-logic based on accessibility
+        if (accessibility === "dead" || accessibility === "moved") {
+          // Automatically set isActive to false for non-active statuses
+          member.isActive = false;
+        } else if (accessibility === "alive") {
+          // Only set isActive true if explicitly not set to false
+          if (isActive === undefined) {
+            member.isActive = true;
+          }
+        }
+      }
+    } else if (accessibilityNotes !== undefined) {
+      // Update notes without changing status
+      member.accessibilityNotes = accessibilityNotes;
+    }
 
     // Parent handling
     if (updatedCategory === "child") {
@@ -258,16 +291,21 @@ export const updateMember = async (req, res) => {
 
     await member.save();
 
+    // Populate references for response
+    const updatedMember = await Member.findById(member._id)
+      .populate("parent", "fullName")
+      .populate("subgroup", "name")
+      .populate("sakraments", "name")
+
     res.status(200).json({
       message: "Member updated successfully",
-      member,
+      member: updatedMember,
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 
 // ================= DELETE MEMBER =================

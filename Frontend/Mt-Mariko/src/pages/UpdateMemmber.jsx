@@ -15,7 +15,12 @@ import {
   FaSave,
   FaTimes,
   FaInfoCircle,
-  FaUserCheck
+  FaUserCheck,
+  FaHeartbeat,
+  FaSkull,
+  FaTruck,
+  FaExchangeAlt,
+  FaUserSlash
 } from "react-icons/fa";
 import api from "../api/axios";
 
@@ -33,6 +38,9 @@ export default function UpdateMember() {
     gender: "",
     subgroup: "",
     sakraments: [],
+    accessibility: "alive",
+    accessibilityNotes: "",
+    isActive: true,
   });
 
   const [parents, setParents] = useState([]);
@@ -44,6 +52,7 @@ export default function UpdateMember() {
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [touchedFields, setTouchedFields] = useState({});
+  const [showAccessibilityNotes, setShowAccessibilityNotes] = useState(false);
 
   // ================= FETCH DATA =================
   useEffect(() => {
@@ -70,7 +79,15 @@ export default function UpdateMember() {
           gender: m.gender || "",
           subgroup: m.subgroup?._id || m.subgroup || "",
           sakraments: Array.isArray(m.sakraments) ? m.sakraments.map((s) => s._id || s) : [],
+          accessibility: m.accessibility || "alive",
+          accessibilityNotes: m.accessibilityNotes || "",
+          isActive: m.isActive !== undefined ? m.isActive : true,
         });
+
+        // Show notes field if accessibility is not "alive"
+        if (m.accessibility && m.accessibility !== "alive") {
+          setShowAccessibilityNotes(true);
+        }
 
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
@@ -115,7 +132,25 @@ export default function UpdateMember() {
     
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      if (name === "category" && value !== "child") updated.parent = "";
+      
+      // Handle category change
+      if (name === "category" && value !== "child") {
+        updated.parent = "";
+      }
+      
+      // Handle accessibility change
+      if (name === "accessibility") {
+        // Show notes field for non-alive statuses
+        setShowAccessibilityNotes(value !== "alive");
+        
+        // Auto-set isActive based on accessibility
+        if (value === "dead" || value === "moved" || value === "transferred" || value === "inactive") {
+          updated.isActive = false;
+        } else if (value === "alive") {
+          updated.isActive = true;
+        }
+      }
+      
       return updated;
     });
   };
@@ -130,7 +165,7 @@ export default function UpdateMember() {
     
     switch(field) {
       case "fullName":
-        if (!value.trim()) {
+        if (!value?.trim()) {
           errors.fullName = "Amazina ni ngombwa";
         } else if (value.trim().length < 3) {
           errors.fullName = "Amazina agomba kuba byibura 3";
@@ -161,6 +196,12 @@ export default function UpdateMember() {
         }
         break;
         
+      case "accessibilityNotes":
+        if (formData.accessibility !== "alive" && !value?.trim()) {
+          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+        }
+        break;
+        
       default:
         break;
     }
@@ -172,6 +213,7 @@ export default function UpdateMember() {
   const validateForm = () => {
     const fields = ["fullName", "category", "gender"];
     if (formData.category === "child") fields.push("parent");
+    if (formData.accessibility !== "alive") fields.push("accessibilityNotes");
     
     let isValid = true;
     
@@ -204,7 +246,6 @@ export default function UpdateMember() {
     
     // Validate all fields
     if (!validateForm()) {
-      // Scroll to top to show errors
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -215,9 +256,19 @@ export default function UpdateMember() {
 
     try {
       const cleanedData = { ...formData };
+      
+      // Remove empty strings
       Object.keys(cleanedData).forEach((key) => {
         if (cleanedData[key] === "") delete cleanedData[key];
       });
+      
+      // Don't send parent if not child
+      if (cleanedData.category !== "child") {
+        delete cleanedData.parent;
+      }
+      
+      // Include accessibility data
+      // accessibility, accessibilityNotes, and isActive are already in cleanedData
 
       await api.put(`/members/${id}`, cleanedData);
       
@@ -225,7 +276,7 @@ export default function UpdateMember() {
       
       // Show success message and redirect
       setTimeout(() => {
-        navigate("/members");
+        navigate(`/members/${id}`);
       }, 1500);
       
     } catch (err) {
@@ -240,13 +291,27 @@ export default function UpdateMember() {
     navigate(-1);
   };
 
-  const formatDateForInput = (dateStr) => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      return date.toISOString().split('T')[0];
-    } catch {
-      return "";
+  // Get icon for accessibility status
+  const getAccessibilityIcon = (status) => {
+    switch(status) {
+      case "alive": return <FaHeartbeat className="text-green-500" />;
+      case "dead": return <FaSkull className="text-gray-600" />;
+      case "moved": return <FaTruck className="text-orange-500" />;
+      case "transferred": return <FaExchangeAlt className="text-purple-500" />;
+      case "inactive": return <FaUserSlash className="text-red-500" />;
+      default: return <FaInfoCircle className="text-blue-400" />;
+    }
+  };
+
+  // Get color class for accessibility status
+  const getAccessibilityColor = (status) => {
+    switch(status) {
+      case "alive": return "text-green-700 bg-green-50 border-green-200";
+      case "dead": return "text-gray-700 bg-gray-100 border-gray-300";
+      case "moved": return "text-orange-700 bg-orange-50 border-orange-200";
+      case "transferred": return "text-purple-700 bg-purple-50 border-purple-200";
+      case "inactive": return "text-red-700 bg-red-50 border-red-200";
+      default: return "text-blue-700 bg-blue-50 border-blue-200";
     }
   };
 
@@ -291,7 +356,7 @@ export default function UpdateMember() {
             Hindura Umunyamuryango
           </h1>
           
-          <div className="w-16 sm:w-20"></div> {/* Spacer for alignment */}
+          <div className="w-16 sm:w-20"></div>
         </div>
 
         {/* Main Form Card */}
@@ -347,12 +412,36 @@ export default function UpdateMember() {
               </div>
             )}
 
+            {/* Current Status Badge */}
+            <div className={`mb-6 p-4 rounded-xl border-2 ${getAccessibilityColor(formData.accessibility)}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {getAccessibilityIcon(formData.accessibility)}
+                  <div>
+                    <p className="text-xs font-medium opacity-75">Ikimezo kiri ubu</p>
+                    <p className="font-semibold">
+                      {formData.accessibility === "alive" && "Ariho"}
+                      {formData.accessibility === "dead" && "Yapfuye"}
+                      {formData.accessibility === "moved" && "Yimukiye ahandi"}
+                      {formData.accessibility === "transferred" && "Yimuriwe mu rindi tsinda"}
+                      {formData.accessibility === "inactive" && "Ntakora"}
+                    </p>
+                  </div>
+                </div>
+                {formData.accessibilityNotes && (
+                  <div className="text-sm italic max-w-md text-right">
+                    "{formData.accessibilityNotes}"
+                  </div>
+                )}
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               
               {/* Form Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
                 
-                {/* Full Name - Required */}
+                {/* Full Name */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Amazina yose <span className="text-red-500">*</span>
@@ -416,7 +505,7 @@ export default function UpdateMember() {
                   </div>
                 </div>
 
-                {/* Category - Required */}
+                {/* Category */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Icyiciro <span className="text-red-500">*</span>
@@ -457,7 +546,7 @@ export default function UpdateMember() {
                   )}
                 </div>
 
-                {/* Gender - Required */}
+                {/* Gender */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Igitsina <span className="text-red-500">*</span>
@@ -496,6 +585,80 @@ export default function UpdateMember() {
                     </p>
                   )}
                 </div>
+
+                {/* Accessibility Status - NEW */}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Ikimezo cy'umunyamuryango <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {[
+                      { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green" },
+                      { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray" },
+                      { value: "moved", label: "Yimukiye ahandi", icon: <FaTruck />, color: "orange" },
+                      { value: "transferred", label: "Yimuriwe", icon: <FaExchangeAlt />, color: "purple" },
+                      { value: "inactive", label: "Ntakora", icon: <FaUserSlash />, color: "red" }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          handleChange({ target: { name: "accessibility", value: option.value } });
+                        }}
+                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 
+                                 transition-all duration-200
+                                 ${formData.accessibility === option.value
+                                   ? `bg-${option.color}-50 border-${option.color}-500 text-${option.color}-700`
+                                   : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                 }`}
+                      >
+                        <span className="text-lg">{option.icon}</span>
+                        <span className="text-xs font-medium">{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Accessibility Notes - Shows when not "alive" */}
+                {showAccessibilityNotes && (
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Impamvu y'ihinduka <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaInfoCircle className={`absolute left-3 top-3 text-sm sm:text-base
+                                              ${touchedFields.accessibilityNotes && validationErrors.accessibilityNotes 
+                                                ? 'text-red-400' 
+                                                : 'text-blue-400'}`} />
+                      <textarea
+                        name="accessibilityNotes"
+                        value={formData.accessibilityNotes}
+                        onChange={handleChange}
+                        onBlur={() => handleBlur("accessibilityNotes")}
+                        placeholder="Andika impamvu y'ihinduka (urugero: yapfuye tariki, yimukiye ahandi, ...)"
+                        rows="3"
+                        className={`w-full pl-9 pr-4 py-3 sm:py-3.5 
+                                   border-2 rounded-xl text-sm sm:text-base
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500
+                                   transition-all duration-200 resize-none
+                                   ${touchedFields.accessibilityNotes && validationErrors.accessibilityNotes 
+                                     ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                     : touchedFields.accessibilityNotes && formData.accessibilityNotes
+                                     ? 'border-green-300 bg-green-50'
+                                     : 'border-gray-200 focus:border-blue-500'}`}
+                      />
+                    </div>
+                    {touchedFields.accessibilityNotes && validationErrors.accessibilityNotes && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <FaExclamationCircle className="text-xs" />
+                        {validationErrors.accessibilityNotes}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      Tanga ibisobanuro birambuye ku cyerekeye iki kimezo gishya
+                    </p>
+                  </div>
+                )}
 
                 {/* Parent - Conditional */}
                 {formData.category === "child" && (
@@ -626,6 +789,40 @@ export default function UpdateMember() {
                     </select>
                   </div>
                 </div>
+
+                {/* isActive Status */}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Ikimezo cyo gukora
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        value="true"
+                        checked={formData.isActive === true}
+                        onChange={() => setFormData(prev => ({ ...prev, isActive: true }))}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm">Arakora</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        value="false"
+                        checked={formData.isActive === false}
+                        onChange={() => setFormData(prev => ({ ...prev, isActive: false }))}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm">Ntakora</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Ibi bigaragaza niba umunyamuryango akora mu muryango cyangwa nada
+                  </p>
+                </div>
               </div>
 
               {/* Sakraments */}
@@ -651,11 +848,6 @@ export default function UpdateMember() {
                     </button>
                   ))}
                 </div>
-                {sakraments.length === 0 && (
-                  <p className="text-center text-gray-500 text-sm py-4">
-                    Nta masakramentu abonetse
-                  </p>
-                )}
               </div>
 
               {/* Action Buttons */}
