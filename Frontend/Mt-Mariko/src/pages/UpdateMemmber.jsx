@@ -207,7 +207,7 @@ export default function UpdateMember() {
         
       case "accessibilityNotes":
         if (formData.accessibility !== "alive" && !value?.trim()) {
-          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+          errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
         }
         break;
         
@@ -240,7 +240,7 @@ export default function UpdateMember() {
     }
     
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
-      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
     }
 
     setValidationErrors(errors);
@@ -473,7 +473,7 @@ export default function UpdateMember() {
                 <div className="flex items-center gap-3">
                   {getAccessibilityIcon(formData.accessibility)}
                   <div>
-                    <p className="text-xs font-medium opacity-75">Ikimezo kiri ubu</p>
+                    <p className="text-xs font-medium opacity-75">Icyemezo kiri ubu</p>
                     <p className="font-semibold">
                       {getAccessibilityLabel(formData.accessibility)}
                     </p>
@@ -674,7 +674,7 @@ export default function UpdateMember() {
                         <option value="">
                           {formData.category === "adult" 
                             ? "Hitamo Umubyeyi (Ntayo)" 
-                            : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                            : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Umukristu"}`}
                         </option>
                         {parentOptions.length === 0 ? (
                           <option value="" disabled>Nta babyeyi babonetse</option>
@@ -695,7 +695,7 @@ export default function UpdateMember() {
                     )}
                     {formData.category === "adult" && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire (ni amahitamo)
+                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire
                       </p>
                     )}
                   </div>
@@ -704,7 +704,7 @@ export default function UpdateMember() {
                 {/* Accessibility Status */}
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Ikimezo cy'umunyamuryango <span className="text-red-500">*</span>
+                    Icyemezo cy'umunyamuryango <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
@@ -775,7 +775,7 @@ export default function UpdateMember() {
                 {/* isActive Status */}
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Ikimezo cyo gukora
+                    Icyemezo cyo gukora
                   </label>
                   <div className="flex items-center gap-6 p-3 bg-gray-50 rounded-xl">
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -937,7 +937,7 @@ export default function UpdateMember() {
                   ) : (
                     <>
                       <FaSave className="text-sm sm:text-base" />
-                      <span>Hindura Umunyamuryango</span>
+                      <span>Hindura Umukristu</span>
                     </>
                   )}
                 </button>
