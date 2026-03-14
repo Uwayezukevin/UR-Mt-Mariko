@@ -206,7 +206,7 @@ export default function Dashboard() {
               />
               <SidebarButton
                 icon={<FaUserPlus />}
-                label="Andika Umunyamuryango"
+                label="Andika Umukristu"
                 onClick={() => {
                   navigate("/members/create");
                   setSidebarOpen(false);
