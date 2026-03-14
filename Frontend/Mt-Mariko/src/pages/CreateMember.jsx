@@ -150,7 +150,7 @@ export default function CreateMember() {
     // For adults, parent is optional - no validation needed
     
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
-      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
     }
 
     return errors;
@@ -406,7 +406,7 @@ export default function CreateMember() {
                       <option value="">
                         {formData.category === "adult" 
                           ? "Hitamo Umubyeyi (Ntayo)" 
-                          : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                          : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Umukristu"}`}
                       </option>
                       {parentOptions.length === 0 ? (
                         <option value="" disabled>Nta babyeyi babonetse</option>
@@ -424,7 +424,7 @@ export default function CreateMember() {
                   )}
                   {formData.category === "adult" && (
                     <p className="text-xs text-gray-400 mt-1">
-                      Umukuru ashobora kugira umubyeyi cyangwa ntamugire (ni amahitamo)
+                      Umukuru ashobora kugira umubyeyi cyangwa ntamugire
                     </p>
                   )}
                 </div>
@@ -563,7 +563,7 @@ export default function CreateMember() {
               {/* Accessibility Status */}
               <div className="space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                  Ikimezo cy'Umukristu <span className="text-red-500">*</span>
+                  Icyemezo cy'Umukristu <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -622,7 +622,7 @@ export default function CreateMember() {
               {/* isActive Status */}
               <div className={`space-y-2 p-4 rounded-xl border-2 ${getAccessibilityColor(formData.accessibility)}`}>
                 <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                  Ikimezo cyo gukora
+                  Icyemezo cyo gukora
                 </label>
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -698,7 +698,7 @@ export default function CreateMember() {
                     <span className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 
                                     border-2 border-white border-t-transparent"></div>
-                      Turimo kurema...
+                      Turimo kwandika ...
                     </span>
                   ) : (
                     "Andika Umukristu"
