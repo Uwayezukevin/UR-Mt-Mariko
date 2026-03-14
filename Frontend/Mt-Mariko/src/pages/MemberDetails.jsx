@@ -266,7 +266,7 @@ export default function MemberDetails() {
                     <div className="flex items-center gap-3">
                       {accessibilityInfo.icon}
                       <div>
-                        <p className="text-xs font-medium opacity-75">Ikimezo</p>
+                        <p className="text-xs font-medium opacity-75">Icyemezo</p>
                         <p className="font-semibold">{accessibilityInfo.label}</p>
                       </div>
                     </div>
@@ -398,7 +398,7 @@ export default function MemberDetails() {
                       <FaUser className="text-gray-400 text-lg" />
                       <div>
                         <p className="text-xs text-gray-500">Umubyeyi</p>
-                        <p className="text-sm text-gray-500 italic">Nta mubyeyi wanditswe (Umukuru ashobora kudafite umubyeyi)</p>
+                        <p className="text-sm text-gray-500 italic">Nta mubyeyi wanditswe</p>
                       </div>
                     </div>
                   )}
@@ -506,7 +506,7 @@ export default function MemberDetails() {
                         {member.gender === 'male' ? 'Gabo' : member.gender === 'female' ? 'Gore' : 'N/A'}
                       </p>
                       <p className="text-sm text-gray-600 mt-2">
-                        <span className="font-semibold">Ikimezo:</span>{" "}
+                        <span className="font-semibold">Icyemezo:</span>{" "}
                         <span className={accessibilityInfo.color.split(' ')[2]}>
                           {accessibilityInfo.label}
                         </span>
@@ -527,7 +527,7 @@ export default function MemberDetails() {
                         Nta mateka yo kwitabira
                       </p>
                       <p className="text-xs sm:text-sm text-gray-400">
-                        Uyu munyamuryango ntabwo yitabiriye ibikorwa
+                        Uyu mukristu ntabwo yitabiriye ibikorwa
                       </p>
                     </div>
                   ) : (

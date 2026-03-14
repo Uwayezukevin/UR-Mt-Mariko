@@ -405,7 +405,7 @@ export default function CreateMember() {
                     >
                       <option value="">
                         {formData.category === "adult" 
-                          ? "Hitamo Umubyeyi (Ntayo)" 
+                          ? "Hitamo Umubyeyi (Ntawe)" 
                           : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Umukristu"}`}
                       </option>
                       {parentOptions.length === 0 ? (
@@ -568,7 +568,7 @@ export default function CreateMember() {
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green" },
-                    { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray" },
+                    { value: "dead", label: "Yitabye Imana", icon: <FaSkull />, color: "gray" },
                     { value: "moved", label: "Yimukiye", icon: <FaTruck />, color: "orange" },
                   ].map((option) => (
                     <button

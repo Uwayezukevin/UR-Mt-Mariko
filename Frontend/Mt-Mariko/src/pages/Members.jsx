@@ -227,11 +227,11 @@ export default function Members() {
             <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{stats.total}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Aritabira</p>
+            <p className="text-xs sm:text-sm text-gray-500">Abitabira</p>
             <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-600">{stats.active}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Ntiyitabira</p>
+            <p className="text-xs sm:text-sm text-gray-500">Abatitabira</p>
             <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-600">{stats.inactive}</p>
           </div>
         </div>
@@ -480,8 +480,8 @@ function MemberCard({ member, decision, onClick }) {
   };
 
   const translateStatus = (status) => {
-    if (status === "ACTIVE") return "Abitabira";
-    if (status === "NOT ACTIVE") return "Abatitabira";
+    if (status === "ACTIVE") return "Aritabira";
+    if (status === "NOT ACTIVE") return "Ntiyitabira";
     return status;
   };
 
