@@ -42,7 +42,7 @@ export default function UpdateMember() {
   });
 
   const [parents, setParents] = useState([]);
-  const [allParents, setAllParents] = useState([]); // All potential parents (adults + youth)
+  const [allParents, setAllParents] = useState([]);
   const [subgroups, setSubgroups] = useState([]);
   const [sakraments, setSakraments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -276,27 +276,33 @@ export default function UpdateMember() {
     setSuccess(false);
 
     try {
-      const cleanedData = { ...formData };
+      // Create payload from formData
+      const payload = { ...formData };
       
-      // Remove empty strings
-      Object.keys(cleanedData).forEach((key) => {
-        if (cleanedData[key] === "" || cleanedData[key] === null || cleanedData[key] === undefined) {
-          delete cleanedData[key];
+      // Handle empty fields
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === "") {
+          if (key === "parent") {
+            // For parent field, explicitly set to null to remove parent
+            payload[key] = null;
+          } else if (key !== "category" && key !== "gender" && key !== "accessibility") {
+            // Delete other empty fields except required ones
+            delete payload[key];
+          }
+        } else if (payload[key] === null || payload[key] === undefined) {
+          delete payload[key];
         }
       });
-      
-      // Handle parent based on category
-      if (cleanedData.category === "adult") {
-        // For adults, keep parent if provided, otherwise don't send
-        if (!cleanedData.parent) {
-          delete cleanedData.parent;
-        }
-      } else {
-        // For child and youth, ensure parent is included
-        // parent is already validated as required
-      }
 
-      await api.put(`/members/${id}`, cleanedData);
+      // Ensure required fields are always sent
+      if (!payload.category) payload.category = formData.category;
+      if (!payload.gender) payload.gender = formData.gender;
+      if (!payload.accessibility) payload.accessibility = formData.accessibility;
+
+      // Log for debugging
+      console.log("Submitting payload:", payload);
+
+      const response = await api.put(`/members/${id}`, payload);
       
       setSuccess(true);
       
@@ -674,7 +680,7 @@ export default function UpdateMember() {
                         <option value="">
                           {formData.category === "adult" 
                             ? "Hitamo Umubyeyi (Ntayo)" 
-                            : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Umukristu"}`}
+                            : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
                         </option>
                         {parentOptions.length === 0 ? (
                           <option value="" disabled>Nta babyeyi babonetse</option>
@@ -695,7 +701,7 @@ export default function UpdateMember() {
                     )}
                     {formData.category === "adult" && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire
+                        Hitamo umubyeyi cyangwa reka ari ubusa niba udafite
                       </p>
                     )}
                   </div>
