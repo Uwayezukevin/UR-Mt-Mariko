@@ -303,7 +303,7 @@ export default function Home() {
     
     // Accessibility notes validation
     if (registerData.accessibility !== "alive" && !registerData.accessibilityNotes?.trim()) {
-      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
     }
 
     return errors;
@@ -587,7 +587,7 @@ export default function Home() {
             <span className="block text-gray-800">Mutagatifu Mariko</span>
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base md:text-lg leading-relaxed">
-            Kugenzura abanyamuryango, gukurikirana kwitabira ibikorwa, no kumenya
+            Kugenzura abakristu, gukurikirana kwitabira ibikorwa, no kumenya
             amakuru y'ibikorwa biri imbere by'umuryango witiriwe Mutagatifu Mariko.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
@@ -761,7 +761,7 @@ export default function Home() {
                         <option value="">
                           {registerData.category === "adult" 
                             ? "Hitamo Umubyeyi (Ntayo)" 
-                            : `Hitamo Umubyeyi w'${registerData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                            : `Hitamo Umubyeyi w'${registerData.category === "child" ? "Umwana" : "Umukristu"}`}
                         </option>
                         {getParentOptions().length === 0 ? (
                           <option value="" disabled>Nta babyeyi babonetse</option>
@@ -779,7 +779,7 @@ export default function Home() {
                     )}
                     {registerData.category === "adult" && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire (ni amahitamo)
+                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire
                       </p>
                     )}
                   </div>
@@ -918,7 +918,7 @@ export default function Home() {
                 {/* Accessibility Status */}
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Ikimezo cy'Umukristu <span className="text-red-500">*</span>
+                    Icyemezo cy'Umukristu <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
@@ -983,7 +983,7 @@ export default function Home() {
                     : "border-orange-200 bg-orange-50"
                 }`}>
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Ikimezo cyo gukora
+                    Icyemezo cyo gukora
                   </label>
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -1057,7 +1057,7 @@ export default function Home() {
                       <span className="flex items-center justify-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 
                                       border-2 border-white border-t-transparent"></div>
-                        Turimo kwiyandikisha...
+                        Turimo kwandika...
                       </span>
                     ) : (
                       "Kwiyandikisha"
@@ -1092,7 +1092,7 @@ export default function Home() {
             Shakisha Umukristu
           </h3>
           <p className="text-gray-500 text-sm sm:text-base">
-            Shakisha abanyamuryango ukoresheje izina n'umuryango remezo
+            Shakisha abakristu ukoresheje izina n'umuryango remezo
           </p>
         </div>
 
@@ -1151,7 +1151,7 @@ export default function Home() {
         {searchResults.length > 0 && !searchLoading && (
           <div className="mt-8 space-y-4">
             <h4 className="text-lg font-semibold text-blue-600 mb-4">
-              Abanyamuryango babonetse ({searchResults.length})
+              Abakristu babonetse ({searchResults.length})
             </h4>
             {searchResults.map((member) => (
               <MemberDetailsCard
@@ -1170,7 +1170,7 @@ export default function Home() {
         {searchTerm && selectedSubgroup && searchResults.length === 0 && !searchLoading && (
           <div className="mt-8 text-center py-8 bg-white rounded-2xl shadow">
             <FaUser className="text-gray-300 text-4xl mx-auto mb-4" />
-            <p className="text-gray-500">Nta munyamuryango wabonetse</p>
+            <p className="text-gray-500">Nta mukristu wabonetse</p>
           </div>
         )}
       </section>
@@ -1182,7 +1182,7 @@ export default function Home() {
             Ibikorwa biri imbere
           </h3>
           <p className="text-gray-500 text-sm sm:text-base">
-            Reba ibikorwa bigiye kubaho mu muryango
+            Reba ibikorwa bigiye kubaho mu muryangoremezo
           </p>
         </div>
 
@@ -1223,12 +1223,12 @@ export default function Home() {
           </h3>
           <div className="w-20 h-1 bg-white/30 mx-auto mb-6"></div>
           <p className="text-blue-100 text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto">
-            Iyi sisitemu yashyizweho kugirango ifashe gukurikirana abanyamuryango, 
+            Iyi sisitemu yashyizweho kugirango ifashe gukurikirana abakristu, 
             amakuru yabo, n'ibikorwa byabo by'umuryango witiriwe Mutagatifu Mariko.
-            Mbere, kugenzura abanyamuryango no kubika amakuru byari inzira igoye 
+            Mbere, kugenzura abakristu no kubika amakuru byari inzira igoye 
             kandi itari yoroshye. Ku bitekerezo by'abakristu twashatse umutekinisiye 
-            wubatse iyi sisitemu ikomeye, igamije gufasha abanyamuryango no koroshya 
-            ubu buryo. Sisitemu igenewe abanyamuryango, abayobozi, ndetse n'abandi. 
+            wubatse iyi sisitemu ikomeye, igamije gufasha abakristu no koroshya 
+            ubu buryo. Sisitemu igenewe abakristu, abayobozi, ndetse n'abandi. 
             Twizeye ko muzayikoresha neza.
           </p>
         </div>
@@ -1540,7 +1540,7 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
                 <p className="text-sm font-medium">
                   {member.sakraments?.length > 0 
                     ? member.sakraments.map((s) => s.name).join(", ")
-                    : "Nta Sakramenti"}
+                    : "Nta Sakramentu"}
                 </p>
               </div>
             </div>
