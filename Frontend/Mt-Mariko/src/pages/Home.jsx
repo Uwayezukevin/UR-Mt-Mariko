@@ -25,7 +25,10 @@ import {
   FaLayerGroup,
   FaUserCheck,
   FaUserTimes,
-  FaChartLine
+  FaChartLine,
+  FaHeartbeat,
+  FaSkull,
+  FaTruck
 } from "react-icons/fa";
 
 export default function Home() {
@@ -40,7 +43,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [expandedMember, setExpandedMember] = useState(null); // For toggling member details
+  const [expandedMember, setExpandedMember] = useState(null);
 
   // CONTACT STATES
   const [contactData, setContactData] = useState({
@@ -56,6 +59,7 @@ export default function Home() {
   // SAKRAMENTS STATE
   const [sakraments, setSakraments] = useState([]);
   const [parents, setParents] = useState([]);
+  const [allParents, setAllParents] = useState([]); // All potential parents (adults + youth)
 
   // MEMBER REGISTRATION STATES
   const [showRegistration, setShowRegistration] = useState(false);
@@ -69,11 +73,15 @@ export default function Home() {
     gender: "",
     subgroup: "",
     sakraments: [],
+    accessibility: "alive",
+    accessibilityNotes: "",
+    isActive: true,
   });
   const [registerLoading, setRegisterLoading] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
   const [registerError, setRegisterError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
+  const [showNotes, setShowNotes] = useState(false);
 
   // MOBILE MENU
   const [menuOpen, setMenuOpen] = useState(false);
@@ -113,11 +121,17 @@ export default function Home() {
         setSubgroups(subgroupsRes.data);
         setSakraments(sakramentsRes.data);
 
-        // Filter adult parents
+        // Filter adult parents (for backward compatibility)
         const adults = membersRes.data.filter(
           (member) => member.category === "adult"
         );
         setParents(adults);
+
+        // All potential parents (adults and youth)
+        const potentialParents = membersRes.data.filter(
+          (member) => member.category === "adult" || member.category === "youth"
+        );
+        setAllParents(potentialParents);
       } catch (err) {
         console.error(err);
       }
@@ -125,7 +139,7 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // AUTO SEARCH - Enhanced to fetch full member details including attendance and decision
+  // AUTO SEARCH
   useEffect(() => {
     const searchMembers = async () => {
       if (!searchTerm || !selectedSubgroup) {
@@ -135,12 +149,10 @@ export default function Home() {
       
       setSearchLoading(true);
       try {
-        // First get basic search results
         const searchRes = await api.get(
           `/members/search?name=${searchTerm}&subgroup=${selectedSubgroup}`
         );
         
-        // For each member, fetch their attendance and decision data
         const membersWithDetails = await Promise.all(
           searchRes.data.map(async (member) => {
             try {
@@ -149,7 +161,6 @@ export default function Home() {
                 api.get(`/decision/member/${member._id}`)
               ]);
               
-              // Calculate stats
               const attendanceData = attendanceRes.data || [];
               const present = attendanceData.filter(a => a.status === "present").length;
               const absent = attendanceData.filter(a => a.status === "absent").length;
@@ -162,7 +173,9 @@ export default function Home() {
                   present,
                   absent,
                   total: attendanceData.length
-                }
+                },
+                accessibility: member.accessibility || "alive",
+                accessibilityNotes: member.accessibilityNotes || ""
               };
             } catch (err) {
               console.error(err);
@@ -170,7 +183,9 @@ export default function Home() {
                 ...member,
                 attendance: [],
                 decision: null,
-                stats: { present: 0, absent: 0, total: 0 }
+                stats: { present: 0, absent: 0, total: 0 },
+                accessibility: member.accessibility || "alive",
+                accessibilityNotes: member.accessibilityNotes || ""
               };
             }
           })
@@ -228,11 +243,28 @@ export default function Home() {
       setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }
 
-    setRegisterData((prev) => ({
-      ...prev,
-      [name]: value,
-      ...(name === "category" && value !== "child" ? { parent: "" } : {}),
-    }));
+    setRegisterData((prev) => {
+      const updated = { ...prev, [name]: value };
+      
+      // Handle category change - clear parent when category changes
+      if (name === "category") {
+        updated.parent = "";
+      }
+      
+      // Handle accessibility change
+      if (name === "accessibility") {
+        setShowNotes(value !== "alive");
+        
+        // Auto-set isActive based on accessibility
+        if (value === "dead" || value === "moved") {
+          updated.isActive = false;
+        } else if (value === "alive") {
+          updated.isActive = true;
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleSakramentToggle = (id) => {
@@ -259,8 +291,19 @@ export default function Home() {
     if (!registerData.subgroup) {
       errors.subgroup = "Umuryango remezo urakenewe";
     }
-    if (registerData.category === "child" && !registerData.parent) {
-      errors.parent = "Umubyeyi arakenewe ku mwana";
+    
+    // Parent validation - required for child and youth
+    if (registerData.category && registerData.category !== "adult") {
+      if (!registerData.parent) {
+        errors.parent = registerData.category === "child" 
+          ? "Umwana agomba kugira umubyeyi" 
+          : "Urubyiruko rugomba kugira umubyeyi";
+      }
+    }
+    
+    // Accessibility notes validation
+    if (registerData.accessibility !== "alive" && !registerData.accessibilityNotes?.trim()) {
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
     }
 
     return errors;
@@ -284,17 +327,24 @@ export default function Home() {
         fullName: registerData.fullName.trim(),
         category: registerData.category,
         gender: registerData.gender,
+        subgroup: registerData.subgroup,
+        accessibility: registerData.accessibility,
+        isActive: registerData.isActive,
         ...(registerData.nationalId?.trim() ? { nationalId: registerData.nationalId.trim() } : {}),
         ...(registerData.dateOfBirth ? { dateOfBirth: registerData.dateOfBirth } : {}),
         ...(registerData.phone?.trim() ? { phone: registerData.phone.trim() } : {}),
-        ...(registerData.category === "child" && registerData.parent
-          ? { parent: registerData.parent }
-          : {}),
-        ...(registerData.subgroup ? { subgroup: registerData.subgroup } : {}),
-        ...(registerData.sakraments.length > 0
-          ? { sakraments: registerData.sakraments }
-          : {}),
+        ...(registerData.sakraments.length > 0 ? { sakraments: registerData.sakraments } : {}),
+        ...(registerData.accessibilityNotes?.trim() ? { accessibilityNotes: registerData.accessibilityNotes.trim() } : {}),
       };
+
+      // Add parent based on category
+      if (registerData.category !== "adult" && registerData.parent) {
+        payload.parent = registerData.parent;
+      } else if (registerData.category === "adult" && registerData.parent) {
+        // Adults can optionally have a parent
+        payload.parent = registerData.parent;
+      }
+      // For adults without parent, don't include parent field
 
       await api.post("/members", payload);
       setRegisterSuccess(true);
@@ -309,6 +359,9 @@ export default function Home() {
         gender: "",
         subgroup: "",
         sakraments: [],
+        accessibility: "alive",
+        accessibilityNotes: "",
+        isActive: true,
       });
       
       setTimeout(() => {
@@ -354,6 +407,51 @@ export default function Home() {
     } else {
       setExpandedMember(memberId);
     }
+  };
+
+  // Get accessibility icon and color
+  const getAccessibilityInfo = (status) => {
+    switch(status) {
+      case "alive":
+        return { 
+          icon: <FaHeartbeat className="text-green-500" />,
+          color: "bg-green-50 border-green-200 text-green-700",
+          label: "Ariho"
+        };
+      case "dead":
+        return { 
+          icon: <FaSkull className="text-gray-600" />,
+          color: "bg-gray-100 border-gray-300 text-gray-700",
+          label: "Yitabye Imana"
+        };
+      case "moved":
+        return { 
+          icon: <FaTruck className="text-orange-500" />,
+          color: "bg-orange-50 border-orange-200 text-orange-700",
+          label: "Yimukiye ahandi"
+        };
+      default:
+        return { 
+          icon: <FaInfoCircle className="text-blue-400" />,
+          color: "bg-blue-50 border-blue-200 text-blue-700",
+          label: status || "Ntamakuru"
+        };
+    }
+  };
+
+  // Determine which parents to show based on category
+  const getParentOptions = () => {
+    if (registerData.category === "child") {
+      // Children can have adult or youth parents
+      return allParents;
+    } else if (registerData.category === "youth") {
+      // Youth can have adult parents (typically)
+      return parents; // adults only
+    } else if (registerData.category === "adult") {
+      // Adults can have any parent (optional)
+      return allParents;
+    }
+    return [];
   };
 
   return (
@@ -636,11 +734,15 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Parent - Conditional */}
-                {registerData.category === "child" && (
+                {/* Parent - Shows for all categories with conditional requirement */}
+                {registerData.category && (
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                      Umubyeyi <span className="text-red-500">*</span>
+                      Umubyeyi 
+                      {registerData.category !== "adult" && <span className="text-red-500 ml-1">*</span>}
+                      {registerData.category === "adult" && (
+                        <span className="text-xs text-gray-400 ml-2">(Ntayo)</span>
+                      )}
                     </label>
                     <div className="relative">
                       <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 
@@ -649,20 +751,24 @@ export default function Home() {
                         name="parent"
                         value={registerData.parent}
                         onChange={handleRegisterChange}
-                        required
+                        required={registerData.category !== "adult"}
                         className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
                                    border rounded-lg sm:rounded-xl 
                                    focus:ring-2 focus:ring-green-500 focus:border-green-500
                                    text-sm sm:text-base appearance-none bg-white
                                    ${validationErrors.parent ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                       >
-                        <option value="">Hitamo Umubyeyi</option>
-                        {parents.length === 0 ? (
+                        <option value="">
+                          {registerData.category === "adult" 
+                            ? "Hitamo Umubyeyi (Ntayo)" 
+                            : `Hitamo Umubyeyi w'${registerData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                        </option>
+                        {getParentOptions().length === 0 ? (
                           <option value="" disabled>Nta babyeyi babonetse</option>
                         ) : (
-                          parents.map((p) => (
+                          getParentOptions().map((p) => (
                             <option key={p._id} value={p._id}>
-                              {p.fullName}
+                              {p.fullName} ({p.category === "adult" ? "Umukuru" : "Urubyiruko"})
                             </option>
                           ))
                         )}
@@ -670,6 +776,11 @@ export default function Home() {
                     </div>
                     {validationErrors.parent && (
                       <p className="text-red-500 text-xs mt-1">{validationErrors.parent}</p>
+                    )}
+                    {registerData.category === "adult" && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire (ni amahitamo)
+                      </p>
                     )}
                   </div>
                 )}
@@ -804,6 +915,107 @@ export default function Home() {
                   )}
                 </div>
 
+                {/* Accessibility Status */}
+                <div className="space-y-2">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Ikimezo cy'Umukristu <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green" },
+                      { value: "dead", label: "Yitabye Imana", icon: <FaSkull />, color: "gray" },
+                      { value: "moved", label: "Yimukiye", icon: <FaTruck />, color: "orange" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleRegisterChange({ target: { name: "accessibility", value: option.value } })}
+                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 
+                                 transition-all duration-200
+                                 ${registerData.accessibility === option.value
+                                   ? `bg-${option.color}-50 border-${option.color}-500 text-${option.color}-700`
+                                   : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                                 }`}
+                      >
+                        <span className="text-lg">{option.icon}</span>
+                        <span className="text-xs font-medium">{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Accessibility Notes - Shows when not "alive" */}
+                {showNotes && (
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Impamvu y'ihinduka <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaInfoCircle className={`absolute left-3 top-3 text-sm sm:text-base
+                                              ${validationErrors.accessibilityNotes ? 'text-red-400' : 'text-blue-400'}`} />
+                      <textarea
+                        name="accessibilityNotes"
+                        value={registerData.accessibilityNotes}
+                        onChange={handleRegisterChange}
+                        placeholder={registerData.accessibility === "dead" 
+                          ? "Andika igihe n'impamvu y'urupfu..." 
+                          : "Andika aho yimukiye n'igihe..."}
+                        rows="3"
+                        className={`w-full pl-9 pr-4 py-3 sm:py-3.5 
+                                   border rounded-lg sm:rounded-xl 
+                                   focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                   text-sm sm:text-base transition-all resize-none
+                                   ${validationErrors.accessibilityNotes ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                      />
+                    </div>
+                    {validationErrors.accessibilityNotes && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.accessibilityNotes}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* isActive Status */}
+                <div className={`space-y-2 p-4 rounded-xl border-2 ${
+                  registerData.accessibility === "alive" 
+                    ? "border-green-200 bg-green-50" 
+                    : registerData.accessibility === "dead"
+                    ? "border-gray-300 bg-gray-100"
+                    : "border-orange-200 bg-orange-50"
+                }`}>
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                    Ikimezo cyo gukora
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        checked={registerData.isActive === true}
+                        onChange={() => setRegisterData(prev => ({ ...prev, isActive: true }))}
+                        className="w-4 h-4 text-green-600"
+                      />
+                      <span className="text-sm">Arakora</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="isActive"
+                        checked={registerData.isActive === false}
+                        onChange={() => setRegisterData(prev => ({ ...prev, isActive: false }))}
+                        className="w-4 h-4 text-green-600"
+                      />
+                      <span className="text-sm">Ntakora</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {registerData.accessibility === "alive" 
+                      ? "Umukristu arakora kandi ariho"
+                      : registerData.accessibility === "dead"
+                      ? "Umukristu yapfuye - ntabwo ashobora gukora"
+                      : "Umukristu yimukiye ahandi - ntabwo ashobora gukora"}
+                  </p>
+                </div>
+
                 {/* Sakraments */}
                 <div className="space-y-2 sm:space-y-3">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -935,7 +1147,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Search Results - Enhanced with full member details */}
+        {/* Search Results */}
         {searchResults.length > 0 && !searchLoading && (
           <div className="mt-8 space-y-4">
             <h4 className="text-lg font-semibold text-blue-600 mb-4">
@@ -1180,6 +1392,38 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
       .slice(0, 2);
   };
 
+  // Get accessibility info
+  const getAccessibilityInfo = (status) => {
+    switch(status) {
+      case "alive":
+        return { 
+          icon: <FaHeartbeat className="text-green-500" />,
+          color: "bg-green-50 border-green-200 text-green-700",
+          label: "Ariho"
+        };
+      case "dead":
+        return { 
+          icon: <FaSkull className="text-gray-600" />,
+          color: "bg-gray-100 border-gray-300 text-gray-700",
+          label: "Yitabye Imana"
+        };
+      case "moved":
+        return { 
+          icon: <FaTruck className="text-orange-500" />,
+          color: "bg-orange-50 border-orange-200 text-orange-700",
+          label: "Yimukiye ahandi"
+        };
+      default:
+        return { 
+          icon: <FaInfoCircle className="text-blue-400" />,
+          color: "bg-blue-50 border-blue-200 text-blue-700",
+          label: status || "Ntamakuru"
+        };
+    }
+  };
+
+  const accessibilityInfo = getAccessibilityInfo(member.accessibility);
+
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
       {/* Header - Always visible */}
@@ -1219,23 +1463,32 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
         </div>
 
         {/* Quick Stats - Always visible */}
-        {member.decision && (
-          <div className="mt-3 flex items-center gap-3">
-            <div className={`px-3 py-1 rounded-full text-xs font-medium
-                          ${member.decision.status === "ACTIVE"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                          }`}>
-              {member.decision.status === "ACTIVE" ? "Aritabira" : "Ntiyitabira"} • {member.decision.attendancePercentage}%
-            </div>
-            <div className="text-xs text-gray-500">
-              Yitabiriye: {member.stats?.present || 0}/{member.stats?.total || 0}
-            </div>
+        <div className="mt-3 flex items-center gap-3">
+          {/* Accessibility Status Badge */}
+          <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1
+                        ${accessibilityInfo.color}`}>
+            {accessibilityInfo.icon}
+            <span>{accessibilityInfo.label}</span>
           </div>
-        )}
+          
+          {member.decision && (
+            <>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium
+                            ${member.decision.status === "ACTIVE"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                            }`}>
+                {member.decision.status === "ACTIVE" ? "Aritabira" : "Ntiyitabira"} • {member.decision.attendancePercentage}%
+              </div>
+              <div className="text-xs text-gray-500">
+                Yitabiriye: {member.stats?.present || 0}/{member.stats?.total || 0}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Expanded Details - Similar to MemberDetails but without edit button */}
+      {/* Expanded Details */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50">
           {/* Personal Info Grid */}
@@ -1292,13 +1545,26 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
               </div>
             </div>
 
-            {member.category === "child" && member.parent && (
+            {/* Parent Info */}
+            {member.parent && (
               <div className="flex items-center gap-3 p-3 bg-white rounded-xl sm:col-span-2">
                 <FaUser className="text-blue-600 text-lg" />
                 <div>
                   <p className="text-xs text-gray-500">Umubyeyi</p>
                   <p className="text-sm font-medium">{member.parent.fullName}</p>
+                  <p className="text-xs text-gray-400 capitalize">
+                    {member.parent.category === 'child' ? 'Umwana' : 
+                     member.parent.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                  </p>
                 </div>
+              </div>
+            )}
+
+            {/* Accessibility Notes */}
+            {member.accessibilityNotes && (
+              <div className={`p-3 rounded-xl sm:col-span-2 ${accessibilityInfo.color}`}>
+                <p className="text-xs font-medium opacity-75">Ibisobanuro ku kimezo</p>
+                <p className="text-sm italic">"{member.accessibilityNotes}"</p>
               </div>
             )}
           </div>
