@@ -516,7 +516,7 @@ export default function Home() {
                        flex items-center justify-center gap-2"
             >
               <FaSearch />
-              Shakisha umunyamuryango
+              Shakisha Umukristu
             </a>
           </div>
         </div>
@@ -538,7 +538,7 @@ export default function Home() {
             {/* Header with gradient */}
             <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 sm:px-6 md:px-8 py-4 sm:py-5">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-                Kwiyandikisha nk'Umunyamuryango
+                Kwiyandikisha nk'Umukristu
               </h1>
               <p className="text-green-100 text-xs sm:text-sm text-center mt-1">
                 Uzuza neza amakuru yawe wiyandikishe
@@ -558,7 +558,7 @@ export default function Home() {
                       Kwiyandikisha byagenze neza!
                     </p>
                     <p className="text-green-600 text-xs sm:text-sm mt-1">
-                      Ubu uri umunyamuryango w'umuryango.
+                      Ubu uri Umukristu w'umuryango.
                     </p>
                   </div>
                 </div>
@@ -877,7 +877,7 @@ export default function Home() {
       <section id="search" className="px-4 sm:px-6 pb-16 max-w-5xl mx-auto">
         <div className="text-center mb-8">
           <h3 className="text-2xl sm:text-3xl font-bold text-blue-600 mb-2">
-            Shakisha Umunyamuryango
+            Shakisha Umukristu
           </h3>
           <p className="text-gray-500 text-sm sm:text-base">
             Shakisha abanyamuryango ukoresheje izina n'umuryango remezo

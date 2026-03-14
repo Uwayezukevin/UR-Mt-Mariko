@@ -2,6 +2,7 @@ import Member from "../mongoschema/memberschema.js";
 import Attendance from "../mongoschema/attendanceSchema.js";
 import Event from "../mongoschema/eventschema.js";
 import mongoose from "mongoose";
+
 // ================= CREATE MEMBER =================
 export const createMember = async (req, res) => {
   try {
@@ -20,18 +21,16 @@ export const createMember = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Parent validation
-    if (category === "child" && !parent) {
-      return res.status(400).json({
-        message: "Child must have a parent",
-      });
+    // Parent validation based on category
+    if (category !== "adult") {
+      // For child and youth, parent is required
+      if (!parent) {
+        return res.status(400).json({
+          message: `${category === "child" ? "Umwana" : "Urubyiruko"} agomba kugira umubyeyi`,
+        });
+      }
     }
-
-    if (category !== "child" && parent) {
-      return res.status(400).json({
-        message: "Only children can have a parent",
-      });
-    }
+    // For adults, parent is optional - no validation needed
 
     // Set default values for accessibility fields
     const memberAccessibility = accessibility || "alive";
@@ -51,7 +50,7 @@ export const createMember = async (req, res) => {
       nationalId,
       dateOfBirth,
       phone,
-      parent: parent || null,
+      parent: parent || null, // Adults can have null parent
       gender,
       subgroup,
       sakraments: sakraments || [],
@@ -63,7 +62,7 @@ export const createMember = async (req, res) => {
 
     // Populate references for response
     const populatedMember = await Member.findById(member._id)
-      .populate("parent", "fullName")
+      .populate("parent", "fullName category")
       .populate("subgroup", "name")
       .populate("sakraments", "name");
 
@@ -77,14 +76,13 @@ export const createMember = async (req, res) => {
     // Handle duplicate key error for nationalId
     if (err.code === 11000 && err.keyPattern?.nationalId) {
       return res.status(400).json({ 
-        message: "National ID already exists" 
+        message: "Indangamuntu isanzwe ikoreshwa" 
       });
     }
     
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 // ================= GET ALL MEMBERS =================
 export const getAllMembers = async (req, res) => {
@@ -100,6 +98,7 @@ export const getAllMembers = async (req, res) => {
     const members = await Member.find(filter)
       .populate("subgroup", "name")
       .populate("sakraments", "name")
+      .populate("parent", "fullName category")
       .select("-nationalId"); // hide national ID
 
     res.status(200).json(members);
@@ -110,9 +109,6 @@ export const getAllMembers = async (req, res) => {
 };
 
 // ================= SEARCH MEMBERS =================
-// GET /members/search?name=john&subgroup=123
-
-
 export const searchMembers = async (req, res) => {
   try {
     const { name, subgroup } = req.query;
@@ -130,7 +126,7 @@ export const searchMembers = async (req, res) => {
       filter.fullName = { $regex: name.trim(), $options: "i" };
     }
 
-    // 1️⃣ Get members
+    // Get members with populated fields
     const members = await Member.find(filter)
       .populate("subgroup", "name")
       .populate("sakraments", "name")
@@ -143,7 +139,7 @@ export const searchMembers = async (req, res) => {
 
     const memberIds = members.map(m => m._id);
 
-    // 2️⃣ Get past events
+    // Get past events
     const pastEvents = await Event.find({
       date: { $lte: today },
     }).select("_id");
@@ -151,14 +147,14 @@ export const searchMembers = async (req, res) => {
     const pastEventIds = pastEvents.map(e => e._id);
     const totalEvents = pastEventIds.length;
 
-    // 3️⃣ Get ALL attendance for these members in ONE query
+    // Get ALL attendance for these members in ONE query
     const allAttendance = await Attendance.find({
       member: { $in: memberIds },
     })
       .populate("event", "title date")
       .sort({ createdAt: -1 });
 
-    // 4️⃣ Group attendance by member
+    // Group attendance by member
     const attendanceMap = {};
     const attendanceCountMap = {};
 
@@ -181,7 +177,7 @@ export const searchMembers = async (req, res) => {
       }
     });
 
-    // 5️⃣ Build final result
+    // Build final result
     const results = members.map(member => {
       const memberId = member._id.toString();
       const attendedEvents = attendanceCountMap[memberId] || 0;
@@ -213,6 +209,7 @@ export const searchMembers = async (req, res) => {
     res.status(500).json({ message: "Search failed" });
   }
 };
+
 // ================= GET MEMBER BY ID =================
 export const getMemberById = async (req, res) => {
   try {
@@ -233,8 +230,6 @@ export const getMemberById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 
 // ================= UPDATE MEMBER =================
 export const updateMember = async (req, res) => {
@@ -266,12 +261,16 @@ export const updateMember = async (req, res) => {
     const updatedCategory = category ?? member.category;
     const updatedParent = parent !== undefined ? parent : member.parent;
 
-    // Parent validation
-    if (updatedCategory === "child" && !updatedParent) {
-      return res.status(400).json({
-        message: "Child must have a parent",
-      });
+    // Parent validation based on category
+    if (updatedCategory !== "adult") {
+      // For child and youth, parent is required
+      if (!updatedParent) {
+        return res.status(400).json({
+          message: `${updatedCategory === "child" ? "Umwana" : "Urubyiruko"} agomba kugira umubyeyi`,
+        });
+      }
     }
+    // For adults, parent is optional - no validation needed
 
     // Apply basic updates
     if (fullName !== undefined) member.fullName = fullName;
@@ -286,11 +285,9 @@ export const updateMember = async (req, res) => {
 
     // Handle accessibility update
     if (accessibility !== undefined) {
-      // Check if accessibility is being changed
       const oldAccessibility = member.accessibility;
       member.accessibility = accessibility;
       
-      // Only update these fields if accessibility actually changed
       if (oldAccessibility !== accessibility) {
         member.accessibilityUpdatedAt = new Date();
         
@@ -298,36 +295,35 @@ export const updateMember = async (req, res) => {
           member.accessibilityNotes = accessibilityNotes;
         }
         
-        // Optional: Add auto-logic based on accessibility
+        // Auto-logic based on accessibility
         if (accessibility === "dead" || accessibility === "moved") {
-          // Automatically set isActive to false for non-active statuses
           member.isActive = false;
         } else if (accessibility === "alive") {
-          // Only set isActive true if explicitly not set to false
           if (isActive === undefined) {
             member.isActive = true;
           }
         }
       }
     } else if (accessibilityNotes !== undefined) {
-      // Update notes without changing status
       member.accessibilityNotes = accessibilityNotes;
     }
 
-    // Parent handling
-    if (updatedCategory === "child") {
+    // Parent handling based on category
+    if (updatedCategory !== "adult") {
+      // For child and youth, set parent (already validated)
       member.parent = updatedParent;
     } else {
-      member.parent = null;
+      // For adults, parent can be null or a value
+      member.parent = updatedParent || null;
     }
 
     await member.save();
 
     // Populate references for response
     const updatedMember = await Member.findById(member._id)
-      .populate("parent", "fullName")
+      .populate("parent", "fullName category")
       .populate("subgroup", "name")
-      .populate("sakraments", "name")
+      .populate("sakraments", "name");
 
     res.status(200).json({
       message: "Member updated successfully",
@@ -335,10 +331,17 @@ export const updateMember = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
+    
+    // Handle duplicate key error for nationalId
+    if (err.code === 11000 && err.keyPattern?.nationalId) {
+      return res.status(400).json({ 
+        message: "Indangamuntu isanzwe ikoreshwa" 
+      });
+    }
+    
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 // ================= DELETE MEMBER =================
 export const deleteMember = async (req, res) => {
@@ -358,8 +361,7 @@ export const deleteMember = async (req, res) => {
 
     if (hasChildren) {
       return res.status(400).json({
-        message:
-          "Cannot delete a parent who has children registered",
+        message: "Ntushobora gusiba umubyeyi ufite abana",
       });
     }
 
@@ -373,9 +375,3 @@ export const deleteMember = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-/*
-import Member from "../mongoschema/memberschema.js";
-import Attendance from "../mongoschema/attendanceSchema.js";
-import Event from "../mongoschema/eventschema.js";
-import mongoose from "mongoose";
-*/

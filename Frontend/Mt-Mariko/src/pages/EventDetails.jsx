@@ -81,7 +81,7 @@ export default function EventDetails() {
 
   const handleExport = () => {
     // Create CSV content
-    const headers = ['Umunyamuryango', 'Uko Yitabiriye', 'Itariki'];
+    const headers = ['Umukristu', 'Uko Yitabiriye', 'Itariki'];
     const rows = attendance.map(record => [
       record.member?.fullName || 'Ntazwi',
       record.status === 'present' ? 'Yitabiriye' : 'Ntabwo yitabiriye',
@@ -387,7 +387,7 @@ export default function EventDetails() {
                         <thead>
                           <tr className="bg-blue-50">
                             <th className="p-3 text-left text-sm font-medium text-gray-700">
-                              Umunyamuryango
+                              Umukristu
                             </th>
                             <th className="p-3 text-left text-sm font-medium text-gray-700">
                               Umuryango Remezo

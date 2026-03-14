@@ -283,7 +283,7 @@ export default function EventAttendance() {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 mb-4 sm:mb-6">
           <div className="flex items-center gap-2 mb-3">
             <FaFilter className="text-blue-600 text-sm sm:text-base" />
-            <h2 className="text-sm sm:text-base font-medium text-gray-700">Tunga abanyamuryango</h2>
+            <h2 className="text-sm sm:text-base font-medium text-gray-700">Tunga abakristu</h2>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -331,7 +331,7 @@ export default function EventAttendance() {
 
           {/* Results count */}
           <p className="text-xs sm:text-sm text-gray-500 mt-3">
-            {filteredMembers.length} {filteredMembers.length === 1 ? 'umunyamuryango' : 'abanyamuryango'} babonetse
+            {filteredMembers.length} {filteredMembers.length === 1 ? 'umukristu' : 'abakristu'} babonetse
           </p>
         </div>
 
@@ -341,7 +341,7 @@ export default function EventAttendance() {
             <div className="bg-white rounded-xl shadow-lg p-8 sm:p-12 text-center">
               <FaUserTimes className="text-gray-300 text-4xl sm:text-5xl mx-auto mb-4" />
               <p className="text-gray-500 text-sm sm:text-base">
-                Nta munyamuryango uhuza n'ibyo washakishije
+                Nta mukristu uhuza n'ibyo washakishije
               </p>
               <button
                 onClick={() => {
@@ -502,7 +502,7 @@ export default function EventAttendance() {
         <div className="mt-6 sm:mt-8 text-center">
           <p className="text-xs sm:text-sm text-gray-500">
             Igiteranyo: {present} yitabiriye, {absent} ntiyitabiriye • 
-            Abanyamuryango bagize uruhare: {members.length}
+            abakristu bagize uruhare: {members.length}
           </p>
         </div>
       </div>

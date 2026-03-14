@@ -405,7 +405,7 @@ export default function EventDetailsPublic() {
                         <thead>
                           <tr className="bg-gray-50">
                             <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Umunyamuryango
+                              Umukristu
                             </th>
                             <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Umuryango

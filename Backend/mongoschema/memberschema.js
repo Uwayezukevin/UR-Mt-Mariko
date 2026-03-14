@@ -21,6 +21,18 @@ const memberSchema = new mongoose.Schema(
     parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
+      // Parent is optional for adults, required for children and youth
+      validate: {
+        validator: function(value) {
+          // If category is adult, parent is optional
+          if (this.category === "adult") {
+            return true; // Parent can be null or a value
+          }
+          // For child and youth, parent is required
+          return value != null;
+        },
+        message: props => `Parent is required for ${props.doc?.category || 'this category'}`
+      }
     },
     gender: {
       type: String,
@@ -61,6 +73,15 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Pre-save validation for parent field
+memberSchema.pre('validate', function(next) {
+  // Additional validation logic can be added here if needed
+  if (this.category !== "adult" && !this.parent) {
+    this.invalidate('parent', `Parent is required for ${this.category}`);
+  }
+  next();
+});
+
 // Optional: Add a pre-save hook to update accessibilityUpdatedAt
 memberSchema.pre('save', function(next) {
   if (this.isModified('accessibility')) {
@@ -82,6 +103,16 @@ memberSchema.methods.getAccessibilityInKinyarwanda = function() {
 // Optional: Add a method to check if member can participate in events
 memberSchema.methods.canParticipate = function() {
   return this.accessibility === "alive" && this.isActive === true;
+};
+
+// Add a method to get parent info with proper validation
+memberSchema.methods.getParentInfo = function() {
+  if (!this.parent) {
+    return this.category === "adult" 
+      ? { message: "Nta mubyeyi (umukuru ashobora kudafite umubyeyi)" }
+      : { message: "Nta mubyeyi wabonetse" };
+  }
+  return this.parent;
 };
 
 export default mongoose.model("Member", memberSchema);

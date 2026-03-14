@@ -37,6 +37,7 @@ export default function CreateMember() {
   });
 
   const [parents, setParents] = useState([]);
+  const [allParents, setAllParents] = useState([]); // Store all potential parents (adults + youth)
   const [subgroups, setSubgroups] = useState([]);
   const [sakraments, setSakraments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,7 @@ export default function CreateMember() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [subRes, sakRes, parentRes] = await Promise.all([
+        const [subRes, sakRes, membersRes] = await Promise.all([
           api.get("/subgroups"),
           api.get("/sakraments"),
           api.get("/members"),
@@ -58,7 +59,14 @@ export default function CreateMember() {
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
 
-        const adults = parentRes.data.filter(
+        // Filter adult and youth members who can be parents
+        const potentialParents = membersRes.data.filter(
+          (member) => member.category === "adult" || member.category === "youth"
+        );
+        setAllParents(potentialParents);
+        
+        // For backward compatibility, keep adults list
+        const adults = membersRes.data.filter(
           (member) => member.category === "adult"
         );
         setParents(adults);
@@ -84,9 +92,9 @@ export default function CreateMember() {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       
-      // Handle category change
-      if (name === "category" && value !== "child") {
-        updated.parent = "";
+      // Handle category change - clear parent if category changes
+      if (name === "category") {
+        updated.parent = ""; // Reset parent when category changes
       }
       
       // Handle accessibility change
@@ -129,9 +137,18 @@ export default function CreateMember() {
     if (!formData.subgroup) {
       errors.subgroup = "Umuryango remezo arafuzwe";
     }
-    if (formData.category === "child" && !formData.parent) {
-      errors.parent = "Umubyeyi arafuzwe ku mwana";
+    
+    // Parent validation based on category
+    if (formData.category && formData.category !== "adult") {
+      // For child and youth, parent is required
+      if (!formData.parent) {
+        errors.parent = formData.category === "child" 
+          ? "Umwana agomba kugira umubyeyi" 
+          : "Urubyiruko rugomba kugira umubyeyi";
+      }
     }
+    // For adults, parent is optional - no validation needed
+    
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
       errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
     }
@@ -158,20 +175,24 @@ export default function CreateMember() {
         fullName: formData.fullName.trim(),
         category: formData.category,
         gender: formData.gender,
+        subgroup: formData.subgroup,
         accessibility: formData.accessibility,
         isActive: formData.isActive,
         ...(formData.nationalId?.trim() ? { nationalId: formData.nationalId.trim() } : {}),
         ...(formData.dateOfBirth ? { dateOfBirth: formData.dateOfBirth } : {}),
         ...(formData.phone?.trim() ? { phone: formData.phone.trim() } : {}),
-        ...(formData.category === "child" && formData.parent
-          ? { parent: formData.parent }
-          : {}),
-        ...(formData.subgroup ? { subgroup: formData.subgroup } : {}),
-        ...(formData.sakraments.length > 0
-          ? { sakraments: formData.sakraments }
-          : {}),
+        ...(formData.sakraments.length > 0 ? { sakraments: formData.sakraments } : {}),
         ...(formData.accessibilityNotes?.trim() ? { accessibilityNotes: formData.accessibilityNotes.trim() } : {}),
       };
+
+      // Add parent to payload based on category
+      if (formData.category !== "adult" && formData.parent) {
+        payload.parent = formData.parent;
+      } else if (formData.category === "adult" && formData.parent) {
+        // Adults can optionally have a parent
+        payload.parent = formData.parent;
+      }
+      // For adults without parent, don't include parent field
 
       await api.post("/members", payload);
       setSuccess(true);
@@ -185,7 +206,7 @@ export default function CreateMember() {
       const message =
         err.response?.data?.errors?.map((e) => e.msg).join(", ") ||
         err.response?.data?.message ||
-        "Kurema umunyamuryango byanze";
+        "Kurema Umukristu byanze";
 
       setError(message);
       
@@ -214,6 +235,18 @@ export default function CreateMember() {
     }
   };
 
+  // Determine which parents to show based on category
+  const getParentOptions = () => {
+    if (formData.category === "child") {
+      // Children can have adult or youth parents
+      return allParents;
+    } else if (formData.category === "youth") {
+      // Youth can have adult parents (typically)
+      return parents; // adults only
+    }
+    return [];
+  };
+
   if (fetchLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
@@ -224,6 +257,8 @@ export default function CreateMember() {
       </div>
     );
   }
+
+  const parentOptions = getParentOptions();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 md:py-10 px-3 sm:px-4 md:px-6">
@@ -248,7 +283,7 @@ export default function CreateMember() {
           {/* Header with gradient */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 md:px-8 py-4 sm:py-5">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-              Andika Umunyamuryango Mushya
+              Andika Umukristu Mushya
             </h1>
             <p className="text-blue-100 text-xs sm:text-sm text-center mt-1">
               Uzuza neza amakuru yose asabwa
@@ -265,7 +300,7 @@ export default function CreateMember() {
                 <FaCheckCircle className="text-green-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-green-700 text-sm sm:text-base font-medium">
-                    Umunyamuryango yanditswe neza!
+                    Umukristu yanditswe neza!
                   </p>
                   <p className="text-green-600 text-xs sm:text-sm mt-1">
                     Turongera tujya ku rutonde...
@@ -347,11 +382,12 @@ export default function CreateMember() {
                 )}
               </div>
 
-              {/* Parent - Conditional */}
-              {formData.category === "child" && (
+              {/* Parent - Conditional based on category */}
+              {formData.category && (
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                    Umubyeyi <span className="text-red-500">*</span>
+                    Umubyeyi {formData.category !== "adult" && <span className="text-red-500">*</span>}
+                    {formData.category === "adult" && <span className="text-xs text-gray-400 ml-1">(Ntayo)</span>}
                   </label>
                   <div className="relative">
                     <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 
@@ -360,20 +396,24 @@ export default function CreateMember() {
                       name="parent"
                       value={formData.parent}
                       onChange={handleChange}
-                      required
+                      required={formData.category !== "adult"}
                       className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
                                  border rounded-lg sm:rounded-xl 
                                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                                  text-sm sm:text-base appearance-none bg-white
                                  ${validationErrors.parent ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                     >
-                      <option value="">Hitamo Umubyeyi</option>
-                      {parents.length === 0 ? (
+                      <option value="">
+                        {formData.category === "adult" 
+                          ? "Hitamo Umubyeyi (Ntayo)" 
+                          : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                      </option>
+                      {parentOptions.length === 0 ? (
                         <option value="" disabled>Nta babyeyi babonetse</option>
                       ) : (
-                        parents.map((p) => (
+                        parentOptions.map((p) => (
                           <option key={p._id} value={p._id}>
-                            {p.fullName}
+                            {p.fullName} ({p.category === "adult" ? "Umukuru" : "Urubyiruko"})
                           </option>
                         ))
                       )}
@@ -381,6 +421,11 @@ export default function CreateMember() {
                   </div>
                   {validationErrors.parent && (
                     <p className="text-red-500 text-xs mt-1">{validationErrors.parent}</p>
+                  )}
+                  {formData.category === "adult" && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Umukuru ashobora kugira umubyeyi cyangwa ntamugire (ni amahitamo)
+                    </p>
                   )}
                 </div>
               )}
@@ -515,10 +560,10 @@ export default function CreateMember() {
                 )}
               </div>
 
-              {/* Accessibility Status - NEW */}
+              {/* Accessibility Status */}
               <div className="space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                  Ikimezo cy'umunyamuryango <span className="text-red-500">*</span>
+                  Ikimezo cy'Umukristu <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -605,10 +650,10 @@ export default function CreateMember() {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   {formData.accessibility === "alive" 
-                    ? "Umunyamuryango arakora kandi ariho"
+                    ? "Umukristu arakora kandi ariho"
                     : formData.accessibility === "dead"
-                    ? "Umunyamuryango yapfuye - ntabwo ashobora gukora"
-                    : "Umunyamuryango yimukiye ahandi - ntabwo ashobora gukora"}
+                    ? "Umukristu yapfuye - ntabwo ashobora gukora"
+                    : "Umukristu yimukiye ahandi - ntabwo ashobora gukora"}
                 </p>
               </div>
 
@@ -656,7 +701,7 @@ export default function CreateMember() {
                       Turimo kurema...
                     </span>
                   ) : (
-                    "Andika Umunyamuryango"
+                    "Andika Umukristu"
                   )}
                 </button>
               </div>

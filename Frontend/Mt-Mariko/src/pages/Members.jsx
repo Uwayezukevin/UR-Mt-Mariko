@@ -68,7 +68,7 @@ export default function Members() {
         setDecisions(decisionMap);
       } catch (err) {
         console.error(err);
-        setError("Ntibishoboye gupakurura abanyamuryango.");
+        setError("Ntibishoboye gupakurura abakristu.");
       } finally {
         setLoading(false);
       }
@@ -163,7 +163,7 @@ export default function Members() {
                               text-blue-600 text-lg sm:text-xl" />
           </div>
           <p className="text-gray-600 text-sm sm:text-base mt-4">
-            Turimo gupakurura abanyamuryango...
+            Turimo gupakurura abakristu...
           </p>
         </div>
       </div>
@@ -214,7 +214,7 @@ export default function Members() {
 
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center 
                        bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            Urutonde rw'Abanyamuryango
+            Urutonde rw'Abakristu
           </h1>
 
           <div className="sm:w-32"></div> {/* Spacer for alignment */}
@@ -244,7 +244,7 @@ export default function Members() {
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
               <input
                 type="text"
-                placeholder="Shakisha abanyamuryango..."
+                placeholder="Shakisha abakristu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 sm:py-3 border border-gray-200 
@@ -356,7 +356,7 @@ export default function Members() {
           {/* Active Filters */}
           {(categoryFilter !== "all" || subgroupFilter !== "all" || genderFilter !== "all" || searchTerm) && (
             <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-              <span className="text-xs text-gray-500">Ifilitero ikoreshwa:</span>
+              <span className="text-xs text-gray-500">Inyuguti :</span>
               {categoryFilter !== "all" && (
                 <span className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg 
                                text-xs font-medium">
@@ -396,7 +396,7 @@ export default function Members() {
         {/* Sort Options */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <p className="text-xs sm:text-sm text-gray-500">
-            {filteredMembers.length} {filteredMembers.length === 1 ? 'umunyamuryango' : 'abanyamuryango'} babonetse
+            {filteredMembers.length} {filteredMembers.length === 1 ? 'umukristu' :  'abakristu'} babonetse
           </p>
           
           <div className="flex gap-2">
@@ -440,7 +440,7 @@ export default function Members() {
               <FaUser className="text-gray-400 text-3xl sm:text-4xl" />
             </div>
             <p className="text-gray-700 text-sm sm:text-base font-medium mb-2">
-              Nta munyamuryango wabonetse
+              Nta mukristu wabonetse
             </p>
             <p className="text-xs sm:text-sm text-gray-500 mb-6">
               Ongera ugerageze
@@ -480,8 +480,8 @@ function MemberCard({ member, decision, onClick }) {
   };
 
   const translateStatus = (status) => {
-    if (status === "ACTIVE") return "Aritabira";
-    if (status === "NOT ACTIVE") return "Ntiyitabira";
+    if (status === "ACTIVE") return "Abitabira";
+    if (status === "NOT ACTIVE") return "Abatitabira";
     return status;
   };
 

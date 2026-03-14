@@ -198,7 +198,7 @@ export default function Dashboard() {
               />
               <SidebarButton
                 icon={<FaUsers />}
-                label="Abanyamuryango"
+                label="Abakristu"
                 onClick={() => {
                   navigate("/members");
                   setSidebarOpen(false);
@@ -273,11 +273,11 @@ export default function Dashboard() {
               {/* STATS CARDS - Exactly as shown in image */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8 max-w-4xl">
                 <StatCard
-                  title="Umubare w'Abanyamuryango Bose"
+                  title="Umubare w'Abakristu Bose"
                   value={stats?.totalMembers || 0}
                 />
                 <StatCard
-                  title="Umubare w'Ibirori Bose"
+                  title="Umubare w'ibikorwa Bose"
                   value={stats?.totalEvents || 0}
                 />
               </div>
@@ -285,7 +285,7 @@ export default function Dashboard() {
               {/* Additional Content */}
               <div className="bg-white rounded-xl shadow p-4 sm:p-6 max-w-4xl">
                 <h3 className="text-base sm:text-lg font-semibold text-blue-600 mb-4">
-                  Abanyamuryango hakurikijwe Umuryango Remezo
+                  Abakristu hakurikijwe Umuryango Remezo
                 </h3>
                 {stats?.subgroupStats?.length > 0 ? (
                   <ul className="space-y-2">

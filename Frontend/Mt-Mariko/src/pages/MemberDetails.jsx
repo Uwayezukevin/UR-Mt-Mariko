@@ -17,7 +17,10 @@ import {
   FaCheckCircle,
   FaExclamationCircle,
   FaClock,
-  FaChevronRight
+  FaChevronRight,
+  FaHeartbeat,
+  FaSkull,
+  FaTruck
 } from "react-icons/fa";
 import api from "../api/axios";
 
@@ -62,7 +65,7 @@ export default function MemberDetails() {
         setDecision(decisionRes.data || null);
       } catch (err) {
         if (isMounted) {
-          setError("Ntibyashoboye gupakira amakuru y'umunyamuryango.");
+          setError("Ntibyashoboye gupakira amakuru y'Umukristu.");
         }
       } finally {
         if (isMounted) {
@@ -97,6 +100,36 @@ export default function MemberDetails() {
     return Math.round((stats.present / stats.total) * 100);
   };
 
+  // Get accessibility icon and color
+  const getAccessibilityInfo = (status) => {
+    switch(status) {
+      case "alive":
+        return { 
+          icon: <FaHeartbeat className="text-green-500" />,
+          color: "bg-green-50 border-green-200 text-green-700",
+          label: "Ariho"
+        };
+      case "dead":
+        return { 
+          icon: <FaSkull className="text-gray-600" />,
+          color: "bg-gray-100 border-gray-300 text-gray-700",
+          label: "Yitabye Imana"
+        };
+      case "moved":
+        return { 
+          icon: <FaTruck className="text-orange-500" />,
+          color: "bg-orange-50 border-orange-200 text-orange-700",
+          label: "Yimukiye ahandi"
+        };
+      default:
+        return { 
+          icon: <FaInfoCircle className="text-blue-400" />,
+          color: "bg-blue-50 border-blue-200 text-blue-700",
+          label: status || "Ntamakuru"
+        };
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
@@ -109,7 +142,7 @@ export default function MemberDetails() {
                              text-blue-600 text-lg sm:text-xl" />
           </div>
           <p className="text-gray-600 text-sm sm:text-base mt-4">
-            Birimo gupakira amakuru y'umunyamuryango...
+            Birimo gupakira amakuru y'Umukristu...
           </p>
         </div>
       </div>
@@ -149,10 +182,10 @@ export default function MemberDetails() {
             <FaUser className="text-yellow-500 text-2xl sm:text-3xl" />
           </div>
           <p className="text-gray-800 text-sm sm:text-base font-medium mb-2">
-            Umunyamuryango ntiyabonetse
+            Umukristu ntiyabonetse
           </p>
           <p className="text-gray-500 text-xs sm:text-sm mb-6">
-            Umunyamuryango ushaka gushakisha ashobora kuba atari mu bubiko
+            Umukristu ushaka gushakisha ashobora kuba atari mu bubiko
           </p>
           <button
             onClick={() => navigate(-1)}
@@ -165,6 +198,8 @@ export default function MemberDetails() {
       </div>
     );
   }
+
+  const accessibilityInfo = getAccessibilityInfo(member.accessibility);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 px-3 sm:px-4 md:px-6">
@@ -224,6 +259,24 @@ export default function MemberDetails() {
 
               {/* Profile Details */}
               <div className="p-5 sm:p-6 space-y-4">
+                
+                {/* Accessibility Status - NEW */}
+                <div className={`p-4 rounded-xl border-2 ${accessibilityInfo.color}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {accessibilityInfo.icon}
+                      <div>
+                        <p className="text-xs font-medium opacity-75">Ikimezo</p>
+                        <p className="font-semibold">{accessibilityInfo.label}</p>
+                      </div>
+                    </div>
+                    {member.accessibilityNotes && (
+                      <div className="text-xs italic max-w-[60%] text-right bg-white/50 p-2 rounded-lg">
+                        "{member.accessibilityNotes}"
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
                 {/* Decision Status */}
                 <div className={`p-4 rounded-xl ${
@@ -318,12 +371,34 @@ export default function MemberDetails() {
                     </div>
                   </div>
 
-                  {member.category === "child" && member.parent && (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  {/* Parent Information - Enhanced */}
+                  {member.parent && (
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
                       <FaUser className="text-blue-600 text-lg" />
-                      <div>
+                      <div className="flex-1">
                         <p className="text-xs text-gray-500">Umubyeyi</p>
                         <p className="text-sm font-medium">{member.parent.fullName}</p>
+                        <p className="text-xs text-gray-400 capitalize">
+                          {member.parent.category === 'child' ? 'Umwana' : 
+                           member.parent.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/members/${member.parent._id}`)}
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+                      >
+                        Reba <FaChevronRight className="text-xs" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Show message for adults without parent */}
+                  {member.category === "adult" && !member.parent && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <FaUser className="text-gray-400 text-lg" />
+                      <div>
+                        <p className="text-xs text-gray-500">Umubyeyi</p>
+                        <p className="text-sm text-gray-500 italic">Nta mubyeyi wanditswe (Umukuru ashobora kudafite umubyeyi)</p>
                       </div>
                     </div>
                   )}
@@ -429,6 +504,12 @@ export default function MemberDetails() {
                       <p className="text-sm text-gray-600 mt-2">
                         <span className="font-semibold">Igitsina:</span>{" "}
                         {member.gender === 'male' ? 'Gabo' : member.gender === 'female' ? 'Gore' : 'N/A'}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        <span className="font-semibold">Ikimezo:</span>{" "}
+                        <span className={accessibilityInfo.color.split(' ')[2]}>
+                          {accessibilityInfo.label}
+                        </span>
                       </p>
                     </div>
                   </div>

@@ -42,6 +42,7 @@ export default function UpdateMember() {
   });
 
   const [parents, setParents] = useState([]);
+  const [allParents, setAllParents] = useState([]); // All potential parents (adults + youth)
   const [subgroups, setSubgroups] = useState([]);
   const [sakraments, setSakraments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -90,7 +91,13 @@ export default function UpdateMember() {
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
 
-        // Filter adult parents
+        // Filter adult and youth members who can be parents
+        const potentialParents = membersRes.data.filter(
+          (p) => (p.category === "adult" || p.category === "youth") && p._id !== id
+        );
+        setAllParents(potentialParents);
+
+        // Filter adult parents for backward compatibility
         const adultParents = membersRes.data.filter(
           (p) => p.category === "adult" && p._id !== id
         );
@@ -102,6 +109,7 @@ export default function UpdateMember() {
             adultParents.push({
               _id: existingParentId,
               fullName: m.parent.fullName || "Current Parent",
+              category: m.parent.category || "adult"
             });
           }
         }
@@ -131,8 +139,8 @@ export default function UpdateMember() {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       
-      // Handle category change
-      if (name === "category" && value !== "child") {
+      // Handle category change - clear parent when category changes
+      if (name === "category") {
         updated.parent = "";
       }
       
@@ -189,8 +197,11 @@ export default function UpdateMember() {
         break;
         
       case "parent":
-        if (formData.category === "child" && !value) {
-          errors.parent = "Umubyeyi ni ngombwa ku mwana";
+        // Parent required for child and youth, optional for adult
+        if ((formData.category === "child" || formData.category === "youth") && !value) {
+          errors.parent = formData.category === "child" 
+            ? "Umwana agomba kugira umubyeyi" 
+            : "Urubyiruko rugomba kugira umubyeyi";
         }
         break;
         
@@ -220,9 +231,14 @@ export default function UpdateMember() {
     if (!formData.gender) {
       errors.gender = "Igitsina ni ngombwa";
     }
-    if (formData.category === "child" && !formData.parent) {
-      errors.parent = "Umubyeyi ni ngombwa ku mwana";
+    
+    // Parent validation for child and youth
+    if ((formData.category === "child" || formData.category === "youth") && !formData.parent) {
+      errors.parent = formData.category === "child" 
+        ? "Umwana agomba kugira umubyeyi" 
+        : "Urubyiruko rugomba kugira umubyeyi";
     }
+    
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
       errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
     }
@@ -269,9 +285,15 @@ export default function UpdateMember() {
         }
       });
       
-      // Don't send parent if not child
-      if (cleanedData.category !== "child") {
-        delete cleanedData.parent;
+      // Handle parent based on category
+      if (cleanedData.category === "adult") {
+        // For adults, keep parent if provided, otherwise don't send
+        if (!cleanedData.parent) {
+          delete cleanedData.parent;
+        }
+      } else {
+        // For child and youth, ensure parent is included
+        // parent is already validated as required
       }
 
       await api.put(`/members/${id}`, cleanedData);
@@ -331,6 +353,21 @@ export default function UpdateMember() {
     }
   };
 
+  // Determine which parents to show based on category
+  const getParentOptions = () => {
+    if (formData.category === "child") {
+      // Children can have adult or youth parents
+      return allParents;
+    } else if (formData.category === "youth") {
+      // Youth can have adult parents (typically)
+      return parents; // adults only
+    } else if (formData.category === "adult") {
+      // Adults can have any parent (optional)
+      return allParents;
+    }
+    return [];
+  };
+
   if (fetchLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
@@ -349,6 +386,8 @@ export default function UpdateMember() {
       </div>
     );
   }
+
+  const parentOptions = getParentOptions();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 px-3 sm:px-4 md:px-6">
@@ -598,6 +637,70 @@ export default function UpdateMember() {
                   )}
                 </div>
 
+                {/* Parent - Conditional based on category */}
+                {formData.category && (
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Umubyeyi 
+                      {(formData.category === "child" || formData.category === "youth") && (
+                        <span className="text-red-500 ml-1">*</span>
+                      )}
+                      {formData.category === "adult" && (
+                        <span className="text-xs text-gray-400 ml-2">(Ntayo)</span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
+                                        text-sm sm:text-base
+                                        ${touchedFields.parent && validationErrors.parent 
+                                          ? 'text-red-400' 
+                                          : 'text-blue-400'}`} />
+                      <select
+                        name="parent"
+                        value={formData.parent}
+                        onChange={handleChange}
+                        onBlur={() => handleBlur("parent")}
+                        required={formData.category === "child" || formData.category === "youth"}
+                        className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                   border-2 rounded-xl text-sm sm:text-base
+                                   focus:outline-none focus:ring-2 focus:ring-blue-500
+                                   transition-all duration-200 appearance-none bg-white
+                                   ${touchedFields.parent && validationErrors.parent 
+                                     ? 'border-red-300 bg-red-50 focus:ring-red-500' 
+                                     : touchedFields.parent && formData.parent
+                                     ? 'border-green-300 bg-green-50'
+                                     : 'border-gray-200 focus:border-blue-500'}`}
+                      >
+                        <option value="">
+                          {formData.category === "adult" 
+                            ? "Hitamo Umubyeyi (Ntayo)" 
+                            : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                        </option>
+                        {parentOptions.length === 0 ? (
+                          <option value="" disabled>Nta babyeyi babonetse</option>
+                        ) : (
+                          parentOptions.map((p) => (
+                            <option key={p._id} value={p._id}>
+                              {p.fullName} ({p.category === "adult" ? "Umukuru" : "Urubyiruko"})
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                    {touchedFields.parent && validationErrors.parent && (
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <FaExclamationCircle className="text-xs" />
+                        {validationErrors.parent}
+                      </p>
+                    )}
+                    {formData.category === "adult" && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Umukuru ashobora kugira umubyeyi cyangwa ntamugire (ni amahitamo)
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Accessibility Status */}
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -702,51 +805,6 @@ export default function UpdateMember() {
                     </span>
                   </div>
                 </div>
-
-                {/* Parent - Conditional */}
-                {formData.category === "child" && (
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                      Umubyeyi <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
-                                        text-sm sm:text-base
-                                        ${touchedFields.parent && validationErrors.parent 
-                                          ? 'text-red-400' 
-                                          : 'text-blue-400'}`} />
-                      <select
-                        name="parent"
-                        value={formData.parent}
-                        onChange={handleChange}
-                        onBlur={() => handleBlur("parent")}
-                        required
-                        className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
-                                   border-2 rounded-xl text-sm sm:text-base
-                                   focus:outline-none focus:ring-2 focus:ring-blue-500
-                                   transition-all duration-200 appearance-none bg-white
-                                   ${touchedFields.parent && validationErrors.parent 
-                                     ? 'border-red-300 bg-red-50 focus:ring-red-500' 
-                                     : touchedFields.parent && formData.parent
-                                     ? 'border-green-300 bg-green-50'
-                                     : 'border-gray-200 focus:border-blue-500'}`}
-                      >
-                        <option value="">Hitamo Umubyeyi</option>
-                        {parents.map((p) => (
-                          <option key={p._id} value={p._id}>
-                            {p.fullName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {touchedFields.parent && validationErrors.parent && (
-                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                        <FaExclamationCircle className="text-xs" />
-                        {validationErrors.parent}
-                      </p>
-                    )}
-                  </div>
-                )}
 
                 {/* Date of Birth */}
                 <div className="space-y-1">
