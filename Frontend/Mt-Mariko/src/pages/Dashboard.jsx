@@ -94,17 +94,17 @@ export default function Dashboard() {
                 <div className="relative w-5 h-5">
                   <span
                     className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
-                      sidebarOpen ? 'rotate-45' : '-translate-y-2'
+                      sidebarOpen ? "rotate-45" : "-translate-y-2"
                     }`}
                   />
                   <span
                     className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
-                      sidebarOpen ? 'opacity-0' : 'opacity-100'
+                      sidebarOpen ? "opacity-0" : "opacity-100"
                     }`}
                   />
                   <span
                     className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
-                      sidebarOpen ? '-rotate-45' : 'translate-y-2'
+                      sidebarOpen ? "-rotate-45" : "translate-y-2"
                     }`}
                   />
                 </div>
@@ -131,6 +131,9 @@ export default function Dashboard() {
               >
                 <FaInfoCircle className="text-blue-500" />
                 <span>Ibyerekeye</span>
+              </Link>
+              <Link to="/reports" className="hover:text-blue-600">
+                Raporo
               </Link>
               <Link
                 to="/contact"
@@ -168,7 +171,7 @@ export default function Dashboard() {
         className={`fixed top-0 left-0 h-full w-64 sm:w-72 bg-white/95 backdrop-blur-md shadow-2xl z-50 transform transition-all duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 md:top-20 md:h-[calc(100vh-5rem)]`}
-        style={{ boxShadow: '4px 0 20px rgba(0,0,0,0.05)' }}
+        style={{ boxShadow: "4px 0 20px rgba(0,0,0,0.05)" }}
       >
         <div className="flex flex-col h-full">
           {/* Sidebar Header - Mobile only */}
@@ -247,7 +250,9 @@ export default function Dashboard() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className={`transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'md:ml-0'}`}>
+      <main
+        className={`transition-all duration-300 ${sidebarOpen ? "md:ml-72" : "md:ml-0"}`}
+      >
         <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20 px-4 sm:px-6 lg:px-8 pb-8">
           {/* Page Header */}
           <div className="mb-6 sm:mb-8">
@@ -295,7 +300,9 @@ export default function Dashboard() {
                         className="flex justify-between border-b pb-2 text-sm sm:text-base hover:bg-blue-50 transition p-2 rounded"
                       >
                         <span>{s._id}</span>
-                        <span className="font-bold text-blue-600">{s.count}</span>
+                        <span className="font-bold text-blue-600">
+                          {s.count}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -313,8 +320,12 @@ export default function Dashboard() {
       {/* Add animation styles */}
       <style jsx>{`
         @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
@@ -342,9 +353,7 @@ function SidebarButton({ icon, label, badge, active, onClick }) {
       {badge && (
         <span
           className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-            active
-              ? "bg-white text-blue-600"
-              : "bg-blue-100 text-blue-600"
+            active ? "bg-white text-blue-600" : "bg-blue-100 text-blue-600"
           }`}
         >
           {badge}
