@@ -2,15 +2,34 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   FaArrowLeft, 
-  FaCalendarAlt, 
-  FaInfoCircle, 
   FaUserCheck, 
   FaUserTimes,
-  FaClipboardList,
-  FaDownload,
-  FaShare
+  FaUser,
+  FaCalendarAlt,
+  FaPhone,
+  FaEnvelope,
+  FaVenusMars,
+  FaLayerGroup,
+  FaCross,
+  FaEdit,
+  FaChartLine,
+  FaInfoCircle,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaClock,
+  FaChevronRight,
+  FaHeartbeat,
+  FaSkull,
+  FaTruck,
+  FaFileAlt,
+  FaImage,
+  FaMapMarkerAlt,
+  FaUsers,
+  FaPlus
 } from "react-icons/fa";
 import api from "../api/axios";
+import EventReportForm from "../components/EventReportForm";
+import EventReportView from "../components/EventReportView";
 
 export default function EventDetails() {
   const { id } = useParams();
@@ -18,112 +37,116 @@ export default function EventDetails() {
 
   const [event, setEvent] = useState(null);
   const [attendance, setAttendance] = useState([]);
+  const [decision, setDecision] = useState(null);
+  const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showShareOptions, setShowShareOptions] = useState(false);
+  const [activeTab, setActiveTab] = useState("info");
   const [stats, setStats] = useState({ present: 0, absent: 0, total: 0 });
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin (you can implement your own logic)
+  useEffect(() => {
+    const checkAdmin = () => {
+      const token = localStorage.getItem('token');
+      // Add your admin check logic here
+      // For example, decode token and check role
+      setIsAdmin(!!token); // Simplified - adjust based on your auth system
+    };
+    checkAdmin();
+  }, []);
 
   useEffect(() => {
-    const fetchEventData = async () => {
+    let isMounted = true;
+
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const [eventRes, attendanceRes] = await Promise.all([
+        const [eventRes, attendanceRes, decisionRes, reportRes] = await Promise.all([
           api.get(`/events/${id}`),
           api.get(`/attendance/event/${id}`),
+          api.get(`/decision/member/${id}`),
+          api.get(`/reports/event/${id}`).catch(() => null) // Report might not exist
         ]);
+
+        if (!isMounted) return;
 
         setEvent(eventRes.data);
         
         const attendanceData = attendanceRes.data || [];
         setAttendance(attendanceData);
-
+        
         // Calculate stats
         const present = attendanceData.filter(a => a.status === "present").length;
         const absent = attendanceData.filter(a => a.status === "absent").length;
         setStats({ present, absent, total: attendanceData.length });
-
+        
+        setDecision(decisionRes.data || null);
+        setReport(reportRes?.data || null);
       } catch (err) {
-        console.error(err);
-        setError("Ntibyakunze kuzana ibisobanuro by'iki gikorwa.");
+        if (isMounted) {
+          console.error(err);
+          setError("Ntibyashoboye gupakira amakuru y'igikorwa.");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchEventData();
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  const formatDate = (dateStr, includeTime = false) => {
+  const formatDate = (dateStr) => {
     try {
       if (!dateStr) return "-";
       const date = new Date(dateStr);
-      if (includeTime) {
-        return date.toLocaleDateString('rw-TZ', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      }
       return date.toLocaleDateString('rw-TZ', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch {
       return "-";
     }
   };
 
-  const handleExport = () => {
-    // Create CSV content
-    const headers = ['Umukristu', 'Uko Yitabiriye', 'Itariki'];
-    const rows = attendance.map(record => [
-      record.member?.fullName || 'Ntazwi',
-      record.status === 'present' ? 'Yitabiriye' : 'Ntabwo yitabiriye',
-      formatDate(record.createdAt)
-    ]);
-    
-    const csvContent = [headers, ...rows]
-      .map(row => row.join(','))
-      .join('\n');
-    
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${event?.title || 'event'}-attendance.csv`;
-    link.click();
+  const getAttendancePercentage = () => {
+    if (stats.total === 0) return 0;
+    return Math.round((stats.present / stats.total) * 100);
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: event?.title,
-          text: `Kwitabira: ${stats.present} yitabiriye, ${stats.absent} ntiyitabiriye`,
-          url: window.location.href,
-        });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
-    } else {
-      setShowShareOptions(!showShareOptions);
-    }
+  const handleReportSuccess = () => {
+    setShowReportForm(false);
+    // Refresh report data
+    api.get(`/reports/event/${id}`)
+      .then(res => setReport(res.data))
+      .catch(() => setReport(null));
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 
-                        border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Ibisobanuro by'igikorwa birimo gutegurwa...
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 
+                          border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+            <FaCalendarAlt className="absolute top-1/2 left-1/2 transform 
+                             -translate-x-1/2 -translate-y-1/2 
+                             text-blue-600 text-lg sm:text-xl" />
+          </div>
+          <p className="text-gray-600 text-sm sm:text-base mt-4">
+            Birimo gupakira amakuru y'igikorwa...
           </p>
         </div>
       </div>
@@ -133,14 +156,19 @@ export default function EventDetails() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-8 max-w-md text-center">
-          <div className="text-red-500 text-4xl sm:text-5xl mb-4">⚠️</div>
-          <p className="text-red-600 text-sm sm:text-base mb-4">{error}</p>
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md text-center">
+          <div className="bg-red-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
+                        flex items-center justify-center mx-auto mb-4">
+            <FaExclamationCircle className="text-red-500 text-2xl sm:text-3xl" />
+          </div>
+          <p className="text-red-600 text-sm sm:text-base font-medium mb-2">
+            Habayemo ikibazo
+          </p>
+          <p className="text-gray-600 text-xs sm:text-sm mb-6">{error}</p>
           <button
             onClick={() => navigate(-1)}
-            className="bg-blue-600 text-white px-6 py-2.5 sm:py-3 rounded-lg 
-                     hover:bg-blue-700 transition-colors text-sm sm:text-base
-                     w-full sm:w-auto"
+            className="bg-blue-600 text-white px-6 py-2.5 sm:py-3 rounded-xl 
+                     hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             Subira Inyuma
           </button>
@@ -152,14 +180,21 @@ export default function EventDetails() {
   if (!event) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-6 sm:p-8 max-w-md text-center">
-          <div className="text-yellow-500 text-4xl sm:text-5xl mb-4">📅</div>
-          <p className="text-gray-700 text-sm sm:text-base mb-4">Igikorwa nticyabonetse.</p>
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md text-center">
+          <div className="bg-yellow-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
+                        flex items-center justify-center mx-auto mb-4">
+            <FaCalendarAlt className="text-yellow-500 text-2xl sm:text-3xl" />
+          </div>
+          <p className="text-gray-800 text-sm sm:text-base font-medium mb-2">
+            Igikorwa nticyabonetse
+          </p>
+          <p className="text-gray-500 text-xs sm:text-sm mb-6">
+            Igikorwa ushaka gushakisha gishobora kuba cyarakuweho
+          </p>
           <button
             onClick={() => navigate(-1)}
-            className="bg-blue-600 text-white px-6 py-2.5 sm:py-3 rounded-lg 
-                     hover:bg-blue-700 transition-colors text-sm sm:text-base
-                     w-full sm:w-auto"
+            className="bg-blue-600 text-white px-6 py-2.5 sm:py-3 rounded-xl 
+                     hover:bg-blue-700 transition-colors text-sm font-medium"
           >
             Subira Inyuma
           </button>
@@ -178,292 +213,249 @@ export default function EventDetails() {
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-blue-600 hover:text-blue-800 
                      transition-colors active:opacity-70 px-2 py-2 -ml-2 
-                     rounded-lg active:bg-blue-50 w-fit"
-            aria-label="Go back"
+                     rounded-lg active:bg-blue-50 w-fit group"
           >
-            <FaArrowLeft className="text-sm sm:text-base" /> 
-            <span className="font-medium text-sm sm:text-base">Subira inyuma</span>
+            <FaArrowLeft className="text-sm sm:text-base group-hover:-translate-x-1 transition-transform" /> 
+            <span className="font-medium text-sm sm:text-base">Subira Inyuma</span>
           </button>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 sm:gap-3">
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 
-                       bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 
-                       transition-colors text-sm sm:text-base"
-            >
-              <FaShare className="text-sm" />
-              <span className="hidden sm:inline">Share</span>
-            </button>
-            
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 
-                       bg-green-100 text-green-600 rounded-lg hover:bg-green-200 
-                       transition-colors text-sm sm:text-base"
-            >
-              <FaDownload className="text-sm" />
-              <span className="hidden sm:inline">Download</span>
-            </button>
+          <div className="flex gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => navigate(`/events/${event._id}/attendance`)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r 
+                         from-blue-600 to-blue-700 text-white px-4 sm:px-5 
+                         py-2.5 sm:py-3 rounded-xl hover:from-blue-700 
+                         hover:to-blue-800 transition-all duration-300 
+                         transform hover:scale-105 text-sm sm:text-base 
+                         font-medium shadow-md hover:shadow-lg"
+              >
+                <FaUserCheck className="text-sm sm:text-base" />
+                Shyiraho Kwitabira
+              </button>
+            )}
           </div>
         </div>
-
-        {/* Share Options (Mobile) */}
-        {showShareOptions && !navigator.share && (
-          <div className="mb-4 p-3 bg-white rounded-lg shadow-lg">
-            <p className="text-xs sm:text-sm text-gray-600 mb-2">Sangira link:</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={window.location.href}
-                readOnly
-                className="flex-1 px-3 py-2 border rounded-lg text-xs sm:text-sm bg-gray-50"
-                onClick={(e) => e.target.select()}
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  alert('Link yandukwe!');
-                }}
-                className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm"
-              >
-                Kopi
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           
-          {/* Left Column - Event Details */}
+          {/* Left Column - Event Info */}
           <div className="lg:col-span-1 space-y-4 sm:space-y-6">
             
             {/* Event Info Card */}
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden 
-                          hover:shadow-xl transition-shadow">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4 sm:py-5">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden 
+                          hover:shadow-xl transition-all duration-300">
+              
+              {/* Event Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 sm:p-6">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">
                   {event.title}
                 </h1>
               </div>
-              
-              <div className="p-4 sm:p-6 space-y-4">
+
+              {/* Event Details */}
+              <div className="p-5 sm:p-6 space-y-4">
                 
                 {/* Date */}
-                <div className="flex items-start gap-3">
-                  <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
-                    <FaCalendarAlt className="text-blue-600 text-sm sm:text-base" />
-                  </div>
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                  <FaCalendarAlt className="text-blue-600 text-lg" />
                   <div>
-                    <p className="text-xs sm:text-sm text-gray-500">Itariki</p>
-                    <p className="text-sm sm:text-base font-medium text-gray-800">
-                      {formatDate(event.date, true)}
+                    <p className="text-xs text-gray-500">Itariki</p>
+                    <p className="text-sm font-medium">
+                      {formatDate(event.date)}
                     </p>
                   </div>
                 </div>
 
                 {/* Description */}
-                <div className="flex items-start gap-3">
-                  <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
-                    <FaInfoCircle className="text-blue-600 text-sm sm:text-base" />
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm text-gray-500">Ibisobanuro</p>
-                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed break-words">
-                      {event.description || "Nta bisobanuro bihari"}
+                {event.description && (
+                  <div className="p-3 bg-gray-50 rounded-xl">
+                    <p className="text-xs text-gray-500 mb-1">Ibisobanuro</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {event.description}
                     </p>
                   </div>
-                </div>
+                )}
 
-                {/* Stats Summary */}
-                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
-                  <div className="text-center">
-                    <div className="bg-green-100 rounded-lg p-2 sm:p-3">
-                      <FaUserCheck className="text-green-600 text-lg sm:text-xl mx-auto mb-1" />
-                      <p className="text-xs sm:text-sm text-green-600 font-medium">Yitabiriye</p>
-                      <p className="text-lg sm:text-xl font-bold text-green-700">{stats.present}</p>
+                {/* Quick Stats */}
+                <div className="pt-4 border-t border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <FaChartLine className="text-blue-600" />
+                    Ibarurishamibare
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center p-2 bg-blue-50 rounded-lg">
+                      <p className="text-lg font-bold text-blue-600">{stats.total}</p>
+                      <p className="text-xs text-gray-500">Yose</p>
+                    </div>
+                    <div className="text-center p-2 bg-green-50 rounded-lg">
+                      <p className="text-lg font-bold text-green-600">{stats.present}</p>
+                      <p className="text-xs text-gray-500">Yitabiriye</p>
+                    </div>
+                    <div className="text-center p-2 bg-red-50 rounded-lg">
+                      <p className="text-lg font-bold text-red-600">{stats.absent}</p>
+                      <p className="text-xs text-gray-500">Ntiyitabiriye</p>
                     </div>
                   </div>
-                  <div className="text-center">
-                    <div className="bg-red-100 rounded-lg p-2 sm:p-3">
-                      <FaUserTimes className="text-red-600 text-lg sm:text-xl mx-auto mb-1" />
-                      <p className="text-xs sm:text-sm text-red-600 font-medium">Ntiyitabiriye</p>
-                      <p className="text-lg sm:text-xl font-bold text-red-700">{stats.absent}</p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Action Button */}
-                <button
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 
-                           text-white px-4 py-3 sm:py-4 rounded-lg sm:rounded-xl
-                           hover:from-blue-700 hover:to-blue-800 
-                           transition-all duration-300 transform hover:scale-[1.02]
-                           text-sm sm:text-base font-medium
-                           flex items-center justify-center gap-2 mt-4"
-                  onClick={() => navigate(`/events/${event._id}/attendance`)}
-                >
-                  <FaClipboardList className="text-sm sm:text-base" />
-                  Shyiraho Kwitabira
-                </button>
+                  {/* Progress Bar */}
+                  {stats.total > 0 && (
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Kwitabira: {getAttendancePercentage()}%</span>
+                        <span>{stats.present}/{stats.total}</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-green-500 rounded-full transition-all duration-500"
+                          style={{ width: `${getAttendancePercentage()}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Attendance Table */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
+          {/* Right Column - Attendance & Report */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Attendance Section */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               
-              {/* Table Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4 sm:py-5">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                     <FaUserCheck className="text-sm sm:text-base" />
-                    Kwitabira
+                    Abitabiriye
                   </h2>
-                  <span className="bg-white/20 text-white px-3 py-1 rounded-full text-xs sm:text-sm">
-                    {stats.total} yose
-                  </span>
+                  <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl">
+                    <FaClock className="text-white text-xs" />
+                    <span className="text-white text-xs sm:text-sm font-medium">
+                      {stats.total} yitabiriye
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Table Content */}
-              <div className="p-4 sm:p-6">
+              {/* Attendance List */}
+              <div className="p-5 sm:p-6">
                 {attendance.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
-                    <div className="bg-gray-50 rounded-full w-16 h-16 sm:w-20 sm:h-20 
+                  <div className="text-center py-8">
+                    <div className="bg-gray-100 rounded-full w-16 h-16 
                                   flex items-center justify-center mx-auto mb-4">
-                      <FaUserTimes className="text-gray-400 text-2xl sm:text-3xl" />
+                      <FaUserTimes className="text-gray-400 text-2xl" />
                     </div>
-                    <p className="text-gray-500 text-sm sm:text-base">
-                      Nta makuru y'ukwitabira yabonetse
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-2">
-                      Kanda "Shyiraho Kwitabira" gutangira
-                    </p>
+                    <p className="text-gray-500">Nta bitabiriye banditswe</p>
                   </div>
                 ) : (
-                  <>
-                    {/* Mobile Card View (visible on small screens) */}
-                    <div className="block lg:hidden space-y-3">
-                      {attendance.map((record) => (
-                        <div
-                          key={record._id}
-                          className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-100"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-medium text-gray-800 text-sm sm:text-base">
+                  <div className="space-y-3">
+                    {attendance.map((record) => (
+                      <div
+                        key={record._id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center
+                                        ${record.status === "present" ? "bg-green-100" : "bg-red-100"}`}>
+                            {record.status === "present" 
+                              ? <FaUserCheck className="text-green-600 text-xs" />
+                              : <FaUserTimes className="text-red-600 text-xs" />
+                            }
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
                               {record.member?.fullName || "Ntazwi"}
-                            </h3>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium
-                                ${record.status === "present"
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
-                                }`}
-                            >
-                              {record.status === "present"
-                                ? "Yitabiriye"
-                                : "Ntabwo yitabiriye"}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs text-gray-500">
-                            <span>
-                              {record.member?.subgroup?.name || "Nta group"}
-                            </span>
-                            <span>
-                              {formatDate(record.createdAt)}
-                            </span>
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {record.member?.subgroup?.name || "Nta muryango"}
+                            </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    {/* Desktop Table View (hidden on small screens) */}
-                    <div className="hidden lg:block overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="bg-blue-50">
-                            <th className="p-3 text-left text-sm font-medium text-gray-700">
-                              Umukristu
-                            </th>
-                            <th className="p-3 text-left text-sm font-medium text-gray-700">
-                              Umuryango Remezo
-                            </th>
-                            <th className="p-3 text-left text-sm font-medium text-gray-700">
-                              Uko Yitabiriye
-                            </th>
-                            <th className="p-3 text-left text-sm font-medium text-gray-700">
-                              Itariki
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {attendance.map((record) => (
-                            <tr
-                              key={record._id}
-                              className="border-b hover:bg-gray-50 transition-colors"
-                            >
-                              <td className="p-3 text-sm">
-                                <div>
-                                  <p className="font-medium text-gray-800">
-                                    {record.member?.fullName || "Ntazwi"}
-                                  </p>
-                                  <p className="text-xs text-gray-500 capitalize">
-                                    {record.member?.category || ""}
-                                  </p>
-                                </div>
-                              </td>
-                              <td className="p-3 text-sm text-gray-600">
-                                {record.member?.subgroup?.name || "-"}
-                              </td>
-                              <td className="p-3">
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium
-                                    ${record.status === "present"
-                                      ? "bg-green-100 text-green-700"
-                                      : "bg-red-100 text-red-700"
-                                    }`}
-                                >
-                                  {record.status === "present"
-                                    ? "Yitabiriye"
-                                    : "Ntabwo yitabiriye"}
-                                </span>
-                              </td>
-                              <td className="p-3 text-sm text-gray-500">
-                                {formatDate(record.createdAt)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Summary Footer */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex flex-wrap gap-4 justify-between items-center">
-                        <div className="flex gap-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span className="text-xs sm:text-sm text-gray-600">
-                              Yitabiriye: {stats.present}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                            <span className="text-xs sm:text-sm text-gray-600">
-                              Ntiyitabiriye: {stats.absent}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-400">
-                          Update: {new Date().toLocaleTimeString()}
-                        </p>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium
+                            ${record.status === "present"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                            }`}
+                        >
+                          {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
+                        </span>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Report Section */}
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              {/* Report Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-5 sm:p-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                    <FaFileAlt />
+                    Raporo y'igikorwa
+                  </h2>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setShowReportForm(!showReportForm)}
+                      className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg 
+                               transition-colors flex items-center gap-2 text-sm"
+                    >
+                      {showReportForm ? (
+                        "Gusiba"
+                      ) : report ? (
+                        <>
+                          <FaEdit /> Hindura
+                        </>
+                      ) : (
+                        <>
+                          <FaPlus /> Ongeraho
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Report Content */}
+              <div className="p-5 sm:p-6">
+                {showReportForm ? (
+                  <EventReportForm
+                    eventId={id}
+                    existingReport={report}
+                    onSuccess={handleReportSuccess}
+                    onCancel={() => setShowReportForm(false)}
+                  />
+                ) : report ? (
+                  <EventReportView
+                    report={report}
+                    isAdmin={isAdmin}
+                    onEdit={() => setShowReportForm(true)}
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="bg-gray-100 rounded-full w-16 h-16 
+                                  flex items-center justify-center mx-auto mb-4">
+                      <FaFileAlt className="text-gray-400 text-2xl" />
                     </div>
-                  </>
+                    <p className="text-gray-500 mb-2">Nta raporo yabonetse</p>
+                    <p className="text-sm text-gray-400">
+                      Ongeraho raporo kugirango ubone amakuru y'igikorwa
+                    </p>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowReportForm(true)}
+                        className="mt-4 text-purple-600 hover:text-purple-700 font-medium"
+                      >
+                        + Ongeraho raporo
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

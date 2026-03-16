@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 import http from "http";
 import cron from "node-cron";
 import { autoMarkAbsent } from "./utils/autoAttendance.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use(express.json());
 app.use("/umuryangoremezo/backend/", router);
 app.use("/dashboard", dashboardRoutes);
 app.use("/messages", messageRoutes);
+app.use("/reports", reportRoutes);
 
 // ===============================
 // SOCKET CONNECTION
