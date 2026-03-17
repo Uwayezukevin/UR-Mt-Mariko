@@ -13,10 +13,10 @@ import EventDetails from "./pages/EventDetails";
 import EventAttendance from "./pages/EventAttendance";
 import EventsPublic from "./pages/EventsPublic";
 import EventDetailsPublic from "./pages/EventDetailsPublic";
-import AdminMessages from "./pages/AdminMessages";
+import AdminMessages from "./pages/AdminMessage";
 
 // Optional: If you want a separate reports page
-import Reports from "./pages/Reports";
+import Reports from "./pages/Report";
 import ReportDetails from "./pages/ReportDetails";
 
 export default function App() {
