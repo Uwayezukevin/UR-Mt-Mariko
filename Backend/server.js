@@ -10,6 +10,7 @@ import http from "http";
 import cron from "node-cron";
 import { autoMarkAbsent } from "./utils/autoAttendance.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import uploadRoutes from './routes/uploadRoute.js';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use("/umuryangoremezo/backend/", router);
 app.use("/dashboard", dashboardRoutes);
 app.use("/messages", messageRoutes);
 app.use("/reports", reportRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ===============================
 // SOCKET CONNECTION
