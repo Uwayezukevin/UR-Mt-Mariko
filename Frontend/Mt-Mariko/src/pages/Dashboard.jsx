@@ -132,9 +132,7 @@ export default function Dashboard() {
                 <FaInfoCircle className="text-blue-500" />
                 <span>Ibyerekeye</span>
               </Link>
-              <Link to="/reports" className="hover:text-blue-600">
-                Raporo
-              </Link>
+              {/* REMOVED: Broken link to /reports */}
               <Link
                 to="/contact"
                 className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"

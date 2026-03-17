@@ -7,7 +7,9 @@ import {
   FaFileAlt,
   FaMapMarkerAlt,
   FaClock,
-  FaUsers
+  FaUsers,
+  FaCheckCircle,  // ADD THIS
+  FaExclamationCircle  // ADD THIS
 } from "react-icons/fa";
 import api from "../api/axios";
 
