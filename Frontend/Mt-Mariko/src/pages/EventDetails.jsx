@@ -28,8 +28,8 @@ import {
   FaPlus
 } from "react-icons/fa";
 import api from "../api/axios";
-import EventReportForm from "../components/EventReportForm";
-import EventReportView from "../components/EventReportView";
+import EventReportForm from "./EventReportForm";
+import EventReportView from "./EventReportView";
 
 export default function EventDetails() {
   const { id } = useParams();
