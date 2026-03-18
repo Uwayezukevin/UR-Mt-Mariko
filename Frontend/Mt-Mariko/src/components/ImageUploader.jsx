@@ -19,14 +19,12 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
       return;
     }
 
-    // Validate file types
     const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
     if (invalidFiles.length > 0) {
       setError('Pakira amashusho gusa (jpg, png, gif, etc.)');
       return;
     }
 
-    // Validate file size (5MB max)
     const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       setError('Buri shusho igomba kuba munsi ya 5MB');
@@ -55,7 +53,6 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
       setError('Gupakira amashusho byanze. Ongera ugerageze.');
     } finally {
       setUploading(false);
-      // Clear the input
       e.target.value = '';
     }
   };
@@ -66,20 +63,17 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
     setUploadedImages(newImages);
     onImagesUploaded(newImages);
 
-    // Delete from Cloudinary if it has publicId
     if (imageToRemove.publicId) {
       try {
         await api.post('/upload/delete', { publicId: imageToRemove.publicId });
       } catch (err) {
         console.error(err);
-        // Don't show error to user, just log it
       }
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* Upload Area */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
         <input
           type="file"
@@ -104,14 +98,12 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
         </label>
       </div>
 
-      {/* Error Message */}
       {error && (
         <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
           {error}
         </p>
       )}
 
-      {/* Uploading Indicator */}
       {uploading && (
         <div className="flex items-center gap-2 text-blue-600">
           <FaSpinner className="animate-spin" />
@@ -119,7 +111,6 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
         </div>
       )}
 
-      {/* Image Previews */}
       {uploadedImages.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {uploadedImages.map((img, index) => (
