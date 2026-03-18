@@ -1,30 +1,55 @@
-import cloudinary from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
-import multer from 'multer';
-import dotenv from 'dotenv';
+// backend/routes/uploadRoute.js
+import express from 'express';
+import { upload } from '../config/cloudinary.js';
 
-dotenv.config();
+const router = express.Router();
 
-// Configure Cloudinary
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+// Upload single image
+router.post('/image', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    res.json({
+      url: req.file.path,
+      publicId: req.file.filename,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Upload failed' });
+  }
 });
 
-// Configure storage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary.v2,
-  params: {
-    folder: 'event-reports',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    transformation: [{ width: 1000, height: 1000, crop: 'limit' }], // Resize large images
-  },
+// Upload multiple images
+router.post('/images', upload.array('images', 10), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
+    const images = req.files.map(file => ({
+      url: file.path,
+      publicId: file.filename,
+    }));
+
+    res.json({ images });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Upload failed' });
+  }
 });
 
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+// Delete image
+router.post('/delete', async (req, res) => {
+  try {
+    const { publicId } = req.body;
+    await cloudinary.v2.uploader.destroy(publicId);
+    res.json({ message: 'Image deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Delete failed' });
+  }
 });
 
-export { cloudinary, upload };
+export default router; // <-- THIS IS IMPORTANT - DEFAULT EXPORT
