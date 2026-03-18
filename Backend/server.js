@@ -10,7 +10,7 @@ import http from "http";
 import cron from "node-cron";
 import { autoMarkAbsent } from "./utils/autoAttendance.js";
 import reportRoutes from "./routes/reportRoutes.js";
-import uploadRoutes from './routes/uploadRoute.js';
+import uploadRoutes from './routes/UploadRoute.js';
 
 dotenv.config();
 
@@ -22,7 +22,7 @@ const server = http.createServer(app);
 // ===============================
 const io = new Server(server, {
   cors: {
-    origin: {origin: "https://umuryangoremezo-mutagatifu-mariko.vercel.app"},
+    origin: "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
   },
 });
 
