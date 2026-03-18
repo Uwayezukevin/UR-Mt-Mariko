@@ -12,7 +12,7 @@ import {
   FaExclamationCircle
 } from "react-icons/fa";
 import api from "../api/axios";
-import ImageUploader from "./ImageUploader"; // Import the new component
+import ImageUploader from "./ImageUploader";
 
 export default function EventReportForm({ eventId, onSuccess, onCancel, existingReport }) {
   const [loading, setLoading] = useState(false);
@@ -20,51 +20,25 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
   const [success, setSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
-    title: existingReport?.title || "",
-    description: existingReport?.description || "",
-    summary: existingReport?.summary || "",
-    highlights: existingReport?.highlights || [],
-    images: existingReport?.images || [],
-    statistics: {
-      attendees: existingReport?.statistics?.attendees || "",
-      duration: existingReport?.statistics?.duration || "",
-      location: existingReport?.statistics?.location || "",
-    },
+    title: "",
+    description: "",
+    images: [],
   });
 
-  const [newHighlight, setNewHighlight] = useState("");
+  // Initialize form with existing report data if provided
+  useEffect(() => {
+    if (existingReport) {
+      setFormData({
+        title: existingReport.title || "",
+        description: existingReport.description || "",
+        images: existingReport.images || [],
+      });
+    }
+  }, [existingReport]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith("statistics.")) {
-      const statName = name.split(".")[1];
-      setFormData(prev => ({
-        ...prev,
-        statistics: {
-          ...prev.statistics,
-          [statName]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleAddHighlight = () => {
-    if (newHighlight.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        highlights: [...prev.highlights, newHighlight.trim()]
-      }));
-      setNewHighlight("");
-    }
-  };
-
-  const handleRemoveHighlight = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      highlights: prev.highlights.filter((_, i) => i !== index)
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleImagesUploaded = (images) => {
@@ -81,19 +55,14 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
         eventId,
         title: formData.title,
         description: formData.description,
-        summary: formData.summary,
-        highlights: formData.highlights,
         images: formData.images,
-        statistics: {
-          attendees: formData.statistics.attendees ? parseInt(formData.statistics.attendees) : 0,
-          duration: formData.statistics.duration,
-          location: formData.statistics.location,
-        },
       };
 
       if (existingReport) {
+        // Update existing report
         await api.put(`/reports/${existingReport._id}`, payload);
       } else {
+        // Create new report
         await api.post("/reports", payload);
       }
 
@@ -102,7 +71,7 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
         if (onSuccess) onSuccess();
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || "Error saving report");
+      setError(err.response?.data?.message || "Kubika raporo byanze");
     } finally {
       setLoading(false);
     }
@@ -166,102 +135,6 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
           />
         </div>
 
-        {/* Summary */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Mu ncamake
-          </label>
-          <textarea
-            name="summary"
-            value={formData.summary}
-            onChange={handleChange}
-            rows="2"
-            placeholder="Incamake y'igikorwa..."
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FaUsers className="inline mr-1" /> Ababitabiriye
-            </label>
-            <input
-              type="number"
-              name="statistics.attendees"
-              value={formData.statistics.attendees}
-              onChange={handleChange}
-              placeholder="Umubare"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FaClock className="inline mr-1" /> Igihe
-            </label>
-            <input
-              type="text"
-              name="statistics.duration"
-              value={formData.statistics.duration}
-              onChange={handleChange}
-              placeholder="Urugero: amasaha 2, iminsi 3"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              <FaMapMarkerAlt className="inline mr-1" /> Ahakorewe
-            </label>
-            <input
-              type="text"
-              name="statistics.location"
-              value={formData.statistics.location}
-              onChange={handleChange}
-              placeholder="Aho byabereye"
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Highlights */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Ibikomeye
-          </label>
-          <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={newHighlight}
-              onChange={(e) => setNewHighlight(e.target.value)}
-              placeholder="Ongeraho ikintu cy'ingenzi..."
-              className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddHighlight())}
-            />
-            <button
-              type="button"
-              onClick={handleAddHighlight}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <FaPlus />
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.highlights.map((highlight, index) => (
-              <div key={index} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center gap-2">
-                <span className="text-sm">{highlight}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveHighlight(index)}
-                  className="text-blue-700 hover:text-blue-900"
-                >
-                  <FaTimes className="text-xs" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Image Uploader */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -269,6 +142,7 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
           </label>
           <ImageUploader
             onImagesUploaded={handleImagesUploaded}
+            initialImages={formData.images}
             maxFiles={10}
           />
         </div>

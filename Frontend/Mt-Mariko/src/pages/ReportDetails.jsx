@@ -4,9 +4,6 @@ import {
   FaArrowLeft, 
   FaFileAlt, 
   FaCalendarAlt, 
-  FaMapMarkerAlt, 
-  FaClock, 
-  FaUsers,
   FaImage,
   FaTimes
 } from "react-icons/fa";
@@ -79,7 +76,7 @@ export default function ReportDetails() {
             <h1 className="text-2xl font-bold text-white mb-2">{report.title}</h1>
             <p className="text-purple-100">
               <FaCalendarAlt className="inline mr-2" />
-              {new Date(report.publishedAt).toLocaleDateString('rw-TZ', {
+              {new Date(report.createdAt || report.publishedAt).toLocaleDateString('rw-TZ', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -88,39 +85,6 @@ export default function ReportDetails() {
             </p>
           </div>
 
-          {/* Statistics */}
-          {(report.statistics?.attendees > 0 || report.statistics?.duration || report.statistics?.location) && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 border-b">
-              {report.statistics.attendees > 0 && (
-                <div className="flex items-center gap-3">
-                  <FaUsers className="text-blue-600 text-xl" />
-                  <div>
-                    <p className="text-xs text-gray-500">Ababitabiriye</p>
-                    <p className="font-semibold">{report.statistics.attendees}</p>
-                  </div>
-                </div>
-              )}
-              {report.statistics.duration && (
-                <div className="flex items-center gap-3">
-                  <FaClock className="text-green-600 text-xl" />
-                  <div>
-                    <p className="text-xs text-gray-500">Igihe</p>
-                    <p className="font-semibold">{report.statistics.duration}</p>
-                  </div>
-                </div>
-              )}
-              {report.statistics.location && (
-                <div className="flex items-center gap-3">
-                  <FaMapMarkerAlt className="text-orange-600 text-xl" />
-                  <div>
-                    <p className="text-xs text-gray-500">Ahakorewe</p>
-                    <p className="font-semibold">{report.statistics.location}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Description */}
           <div className="p-6 border-b">
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Ibisobanuro</h2>
@@ -128,28 +92,6 @@ export default function ReportDetails() {
               {report.description}
             </p>
           </div>
-
-          {/* Summary */}
-          {report.summary && (
-            <div className="p-6 border-b bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-800 mb-3">Mu ncamake</h2>
-              <p className="text-gray-700">{report.summary}</p>
-            </div>
-          )}
-
-          {/* Highlights */}
-          {report.highlights && report.highlights.length > 0 && (
-            <div className="p-6 border-b">
-              <h2 className="text-lg font-semibold text-gray-800 mb-3">Ibikomeye</h2>
-              <div className="flex flex-wrap gap-2">
-                {report.highlights.map((highlight, index) => (
-                  <span key={index} className="bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full text-sm">
-                    {highlight}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Images */}
           {report.images && report.images.length > 0 && (
@@ -166,15 +108,10 @@ export default function ReportDetails() {
                   >
                     <img
                       src={image.url}
-                      alt={image.caption || `Image ${index + 1}`}
+                      alt={`Image ${index + 1}`}
                       className="w-full h-40 object-cover rounded-lg shadow-md group-hover:shadow-xl transition-all"
                       onError={(e) => e.target.src = 'https://via.placeholder.com/300x200?text=Error'}
                     />
-                    {image.caption && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 rounded-b-lg">
-                        {image.caption}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

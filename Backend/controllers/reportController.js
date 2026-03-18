@@ -1,11 +1,12 @@
 import Report from "../mongoschema/reportSchema.js";
 import Event from "../mongoschema/eventschema.js";
+import { cloudinary } from '../config/cloudinary.js'; // Import cloudinary config
 import mongoose from "mongoose";
 
 // ================= CREATE REPORT =================
 export const createReport = async (req, res) => {
   try {
-    const { eventId, title, description, images, summary, highlights, statistics } = req.body;
+    const { eventId, title, description, images } = req.body;
 
     // Check if event exists
     const event = await Event.findById(eventId);
@@ -24,15 +25,10 @@ export const createReport = async (req, res) => {
       title,
       description,
       images: images || [],
-      summary: summary || "",
-      highlights: highlights || [],
-      statistics: statistics || {},
-      createdBy: req.user?.userId, // If you have user authentication
     });
 
     const populatedReport = await Report.findById(report._id)
-      .populate("event", "title date")
-      .populate("createdBy", "username email");
+      .populate("event", "title date");
 
     res.status(201).json({
       message: "Report created successfully",
@@ -50,8 +46,7 @@ export const getReportByEventId = async (req, res) => {
     const { eventId } = req.params;
 
     const report = await Report.findOne({ event: eventId })
-      .populate("event", "title date description")
-      .populate("createdBy", "username");
+      .populate("event", "title date description");
 
     if (!report) {
       return res.status(404).json({ message: "Report not found for this event" });
@@ -75,20 +70,32 @@ export const updateReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
+    // Find images to delete (images that were removed)
+    if (updates.images && report.images) {
+      const oldImageIds = report.images.map(img => img.publicId).filter(id => id);
+      const newImageIds = updates.images.map(img => img.publicId).filter(id => id);
+      
+      const imagesToDelete = oldImageIds.filter(id => !newImageIds.includes(id));
+      
+      // Delete removed images from Cloudinary
+      for (const publicId of imagesToDelete) {
+        try {
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.error(`Failed to delete image ${publicId}:`, err);
+        }
+      }
+    }
+
     // Update fields
     if (updates.title) report.title = updates.title;
     if (updates.description) report.description = updates.description;
     if (updates.images) report.images = updates.images;
-    if (updates.summary) report.summary = updates.summary;
-    if (updates.highlights) report.highlights = updates.highlights;
-    if (updates.statistics) report.statistics = updates.statistics;
-    if (updates.isPublished !== undefined) report.isPublished = updates.isPublished;
-
+    
     await report.save();
 
     const updatedReport = await Report.findById(report._id)
-      .populate("event", "title date")
-      .populate("createdBy", "username");
+      .populate("event", "title date");
 
     res.status(200).json({
       message: "Report updated successfully",
@@ -110,6 +117,19 @@ export const deleteReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
+    // Delete all images from Cloudinary
+    if (report.images && report.images.length > 0) {
+      for (const image of report.images) {
+        if (image.publicId) {
+          try {
+            await cloudinary.uploader.destroy(image.publicId);
+          } catch (err) {
+            console.error(`Failed to delete image ${image.publicId}:`, err);
+          }
+        }
+      }
+    }
+
     await Report.findByIdAndDelete(id);
 
     res.status(200).json({ message: "Report deleted successfully" });
@@ -124,7 +144,6 @@ export const getAllReports = async (req, res) => {
   try {
     const reports = await Report.find({ isPublished: true })
       .populate("event", "title date")
-      .populate("createdBy", "username")
       .sort({ publishedAt: -1 });
 
     res.status(200).json(reports);

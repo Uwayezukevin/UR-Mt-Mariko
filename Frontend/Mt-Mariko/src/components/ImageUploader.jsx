@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaCloudUploadAlt, FaTimes, FaSpinner } from 'react-icons/fa';
 import api from '../api/axios';
 
-export default function ImageUploader({ onImagesUploaded, maxFiles = 5 }) {
+export default function ImageUploader({ onImagesUploaded, initialImages = [], maxFiles = 5 }) {
   const [uploading, setUploading] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState(initialImages);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    setUploadedImages(initialImages);
+  }, [initialImages]);
 
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
@@ -56,20 +60,20 @@ export default function ImageUploader({ onImagesUploaded, maxFiles = 5 }) {
     }
   };
 
-  const handleRemoveImage = async (index, publicId) => {
-    try {
-      // Optional: Delete from Cloudinary
-      await api.post('/upload/delete', { publicId });
-      
-      const newImages = uploadedImages.filter((_, i) => i !== index);
-      setUploadedImages(newImages);
-      onImagesUploaded(newImages);
-    } catch (err) {
-      console.error(err);
-      // Still remove from UI even if delete fails
-      const newImages = uploadedImages.filter((_, i) => i !== index);
-      setUploadedImages(newImages);
-      onImagesUploaded(newImages);
+  const handleRemoveImage = async (index) => {
+    const imageToRemove = uploadedImages[index];
+    const newImages = uploadedImages.filter((_, i) => i !== index);
+    setUploadedImages(newImages);
+    onImagesUploaded(newImages);
+
+    // Delete from Cloudinary if it has publicId
+    if (imageToRemove.publicId) {
+      try {
+        await api.post('/upload/delete', { publicId: imageToRemove.publicId });
+      } catch (err) {
+        console.error(err);
+        // Don't show error to user, just log it
+      }
     }
   };
 
@@ -126,14 +130,12 @@ export default function ImageUploader({ onImagesUploaded, maxFiles = 5 }) {
                 className="w-full h-32 object-cover rounded-lg shadow-md"
               />
               <button
-                onClick={() => handleRemoveImage(index, img.publicId)}
+                onClick={() => handleRemoveImage(index)}
                 className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                type="button"
               >
                 <FaTimes className="text-xs" />
               </button>
-              <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                {index + 1}
-              </div>
             </div>
           ))}
         </div>

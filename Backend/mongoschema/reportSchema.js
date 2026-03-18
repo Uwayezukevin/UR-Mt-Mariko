@@ -35,25 +35,6 @@ const reportSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    highlights: [String],
-    statistics: {
-      attendees: {
-        type: Number,
-        default: 0,
-      },
-      duration: {
-        type: String, // e.g., "2 hours", "3 days"
-        default: "",
-      },
-      location: {
-        type: String,
-        default: "",
-      },
-    },
-    createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
     publishedAt: {
       type: Date,
       default: Date.now,
