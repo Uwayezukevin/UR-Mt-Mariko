@@ -3,10 +3,10 @@ import express from 'express';
 import cloudinary from 'cloudinary';  // <-- ADD THIS
 import { upload } from '../config/cloudinary.js';
 
-const router = express.Router();
+const uploadRoutes = express.Router();
 
 // Upload single image
-router.post('/image', upload.single('image'), (req, res) => {
+uploadRoutes.post('/image', upload.single('image'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -23,7 +23,7 @@ router.post('/image', upload.single('image'), (req, res) => {
 });
 
 // Upload multiple images
-router.post('/images', upload.array('images', 10), (req, res) => {
+uploadRoutes.post('/images', upload.array('images', 10), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
@@ -42,7 +42,7 @@ router.post('/images', upload.array('images', 10), (req, res) => {
 });
 
 // Delete image
-router.post('/delete', async (req, res) => {
+uploadRoutes.post('/delete', async (req, res) => {
   try {
     const { publicId } = req.body;
     await cloudinary.v2.uploader.destroy(publicId);  // Now cloudinary is defined
@@ -53,4 +53,4 @@ router.post('/delete', async (req, res) => {
   }
 });
 
-export default router;
+export default uploadRoutes;
