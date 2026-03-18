@@ -1,5 +1,6 @@
 // backend/routes/uploadRoute.js
 import express from 'express';
+import cloudinary from 'cloudinary';  // <-- ADD THIS
 import { upload } from '../config/cloudinary.js';
 
 const router = express.Router();
@@ -44,7 +45,7 @@ router.post('/images', upload.array('images', 10), (req, res) => {
 router.post('/delete', async (req, res) => {
   try {
     const { publicId } = req.body;
-    await cloudinary.v2.uploader.destroy(publicId);
+    await cloudinary.v2.uploader.destroy(publicId);  // Now cloudinary is defined
     res.json({ message: 'Image deleted' });
   } catch (err) {
     console.error(err);
@@ -52,4 +53,4 @@ router.post('/delete', async (req, res) => {
   }
 });
 
-export default router; // <-- THIS IS IMPORTANT - DEFAULT EXPORT
+export default router;
