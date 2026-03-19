@@ -37,7 +37,6 @@ export default function EventDetails() {
 
   const [event, setEvent] = useState(null);
   const [attendance, setAttendance] = useState([]);
-  const [decision, setDecision] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,13 +45,11 @@ export default function EventDetails() {
   const [showReportForm, setShowReportForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Check if user is admin (you can implement your own logic)
+  // Check if user is admin
   useEffect(() => {
     const checkAdmin = () => {
       const token = localStorage.getItem('token');
-      // Add your admin check logic here
-      // For example, decode token and check role
-      setIsAdmin(!!token); // Simplified - adjust based on your auth system
+      setIsAdmin(!!token);
     };
     checkAdmin();
   }, []);
@@ -65,11 +62,11 @@ export default function EventDetails() {
         setLoading(true);
         setError("");
 
-        const [eventRes, attendanceRes, decisionRes, reportRes] = await Promise.all([
+        // REMOVED the incorrect decision API call
+        const [eventRes, attendanceRes, reportRes] = await Promise.all([
           api.get(`/events/${id}`),
           api.get(`/attendance/event/${id}`),
-          api.get(`/decision/member/${id}`),
-          api.get(`/reports/event/${id}`).catch(() => null) // Report might not exist
+          api.get(`/reports/event/${id}`).catch(() => null)
         ]);
 
         if (!isMounted) return;
@@ -84,7 +81,6 @@ export default function EventDetails() {
         const absent = attendanceData.filter(a => a.status === "absent").length;
         setStats({ present, absent, total: attendanceData.length });
         
-        setDecision(decisionRes.data || null);
         setReport(reportRes?.data || null);
       } catch (err) {
         if (isMounted) {
@@ -128,7 +124,6 @@ export default function EventDetails() {
 
   const handleReportSuccess = () => {
     setShowReportForm(false);
-    // Refresh report data
     api.get(`/reports/event/${id}`)
       .then(res => setReport(res.data))
       .catch(() => setReport(null));
@@ -207,7 +202,6 @@ export default function EventDetails() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 px-3 sm:px-4 md:px-6">
       <div className="max-w-6xl mx-auto">
         
-        {/* Header with Back Button and Actions */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
           <button
             onClick={() => navigate(-1)}
@@ -237,27 +231,22 @@ export default function EventDetails() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           
           {/* Left Column - Event Info */}
           <div className="lg:col-span-1 space-y-4 sm:space-y-6">
             
-            {/* Event Info Card */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden 
                           hover:shadow-xl transition-all duration-300">
               
-              {/* Event Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 sm:p-6">
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">
                   {event.title}
                 </h1>
               </div>
 
-              {/* Event Details */}
               <div className="p-5 sm:p-6 space-y-4">
                 
-                {/* Date */}
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                   <FaCalendarAlt className="text-blue-600 text-lg" />
                   <div>
@@ -268,7 +257,6 @@ export default function EventDetails() {
                   </div>
                 </div>
 
-                {/* Description */}
                 {event.description && (
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <p className="text-xs text-gray-500 mb-1">Ibisobanuro</p>
@@ -278,7 +266,6 @@ export default function EventDetails() {
                   </div>
                 )}
 
-                {/* Quick Stats */}
                 <div className="pt-4 border-t border-gray-100">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <FaChartLine className="text-blue-600" />
@@ -299,7 +286,6 @@ export default function EventDetails() {
                     </div>
                   </div>
 
-                  {/* Progress Bar */}
                   {stats.total > 0 && (
                     <div className="mt-3">
                       <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -322,26 +308,23 @@ export default function EventDetails() {
           {/* Right Column - Attendance & Report */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Attendance Section */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               
-              {/* Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                     <FaUserCheck className="text-sm sm:text-base" />
-                    Abitabiriye
+                    Abitabiriye igikorwa
                   </h2>
                   <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-xl">
                     <FaClock className="text-white text-xs" />
                     <span className="text-white text-xs sm:text-sm font-medium">
-                      {stats.total} yitabiriye
+                      {stats.total} Bose
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Attendance List */}
               <div className="p-5 sm:p-6">
                 {attendance.length === 0 ? (
                   <div className="text-center py-8">
@@ -391,9 +374,7 @@ export default function EventDetails() {
               </div>
             </div>
 
-            {/* Report Section */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              {/* Report Header */}
               <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-5 sm:p-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
@@ -422,7 +403,6 @@ export default function EventDetails() {
                 </div>
               </div>
 
-              {/* Report Content */}
               <div className="p-5 sm:p-6">
                 {showReportForm ? (
                   <EventReportForm

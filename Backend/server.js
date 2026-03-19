@@ -22,7 +22,9 @@ const server = http.createServer(app);
 // ===============================
 const io = new Server(server, {
   cors: {
-    origin: "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
+    origin: ["https://umuryangoremezo-mutagatifu-mariko.vercel.app", "http://localhost:3000"],
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -34,7 +36,10 @@ app.use((req, res, next) => {
 // ===============================
 // MIDDLEWARE
 // ===============================
-app.use(cors());
+app.use(cors({
+  origin: ["https://umuryangoremezo-mutagatifu-mariko.vercel.app", "http://localhost:3000"],
+  credentials: true,
+}));
 app.use(express.json());
 
 // ===============================
@@ -61,16 +66,13 @@ const port = process.env.PORT || 2350;
 
 const startServer = async () => {
   try {
-    // ✅ WAIT for DB
     await connectDB();
     console.log("Database connection established successfully");
 
-    // ✅ Start server AFTER DB
     server.listen(port, () => {
       console.log(`Server running on http://localhost:${port}`);
     });
 
-    // ✅ Run initial auto attendance AFTER DB
     try {
       await autoMarkAbsent();
       console.log("Initial auto attendance check completed.");
@@ -78,7 +80,6 @@ const startServer = async () => {
       console.error("Initial auto attendance failed:", err);
     }
 
-    // ✅ Schedule cron AFTER DB
     cron.schedule("0 0 * * *", async () => {
       console.log("Running daily auto attendance job...");
       try {

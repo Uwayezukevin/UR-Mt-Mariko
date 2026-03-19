@@ -1,20 +1,25 @@
 import Report from "../mongoschema/reportSchema.js";
 import Event from "../mongoschema/eventschema.js";
-import { cloudinary } from '../config/cloudinary.js'; // Import cloudinary config
+import cloudinary from 'cloudinary'; // Import cloudinary directly
 import mongoose from "mongoose";
+
+// Configure cloudinary (if not configured elsewhere)
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // ================= CREATE REPORT =================
 export const createReport = async (req, res) => {
   try {
     const { eventId, title, description, images } = req.body;
 
-    // Check if event exists
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    // Check if report already exists for this event
     const existingReport = await Report.findOne({ event: eventId });
     if (existingReport) {
       return res.status(400).json({ message: "Report already exists for this event" });
@@ -70,24 +75,21 @@ export const updateReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // Find images to delete (images that were removed)
     if (updates.images && report.images) {
       const oldImageIds = report.images.map(img => img.publicId).filter(id => id);
       const newImageIds = updates.images.map(img => img.publicId).filter(id => id);
       
       const imagesToDelete = oldImageIds.filter(id => !newImageIds.includes(id));
       
-      // Delete removed images from Cloudinary
       for (const publicId of imagesToDelete) {
         try {
-          await cloudinary.uploader.destroy(publicId);
+          await cloudinary.v2.uploader.destroy(publicId);
         } catch (err) {
           console.error(`Failed to delete image ${publicId}:`, err);
         }
       }
     }
 
-    // Update fields
     if (updates.title) report.title = updates.title;
     if (updates.description) report.description = updates.description;
     if (updates.images) report.images = updates.images;
@@ -117,12 +119,11 @@ export const deleteReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // Delete all images from Cloudinary
     if (report.images && report.images.length > 0) {
       for (const image of report.images) {
         if (image.publicId) {
           try {
-            await cloudinary.uploader.destroy(image.publicId);
+            await cloudinary.v2.uploader.destroy(image.publicId);
           } catch (err) {
             console.error(`Failed to delete image ${image.publicId}:`, err);
           }
