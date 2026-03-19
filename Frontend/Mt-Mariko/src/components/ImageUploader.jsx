@@ -15,19 +15,19 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
     const files = Array.from(e.target.files);
     
     if (files.length + uploadedImages.length > maxFiles) {
-      setError(`Urashobora gupakira amashusho ${maxFiles} gusa`);
+      setError(`Ushobora gushyiramo amafoto ${maxFiles} gusa`);
       return;
     }
 
     const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
     if (invalidFiles.length > 0) {
-      setError('Pakira amashusho gusa (jpg, png, gif, etc.)');
+      setError('Shyiramo amafoto gusa (jpg, png, gif, etc.)');
       return;
     }
 
     const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
-      setError('Buri shusho igomba kuba munsi ya 5MB');
+      setError('Buri foto igomba kuba munsi ya 5MB');
       return;
     }
 
@@ -50,7 +50,7 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
       onImagesUploaded(allImages);
     } catch (err) {
       console.error(err);
-      setError('Gupakira amashusho byanze. Ongera ugerageze.');
+      setError('Gushyiramo amafoto byanze. Ongera ugerageze.');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -90,7 +90,7 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
         >
           <FaCloudUploadAlt className="text-4xl text-blue-500" />
           <span className="text-sm font-medium text-gray-700">
-            Kanda hano upakire amashusho
+            Kanda hano ushiremo amafoto
           </span>
           <span className="text-xs text-gray-500">
             PNG, JPG, GIF (max 5MB, {maxFiles - uploadedImages.length} asigaye)
@@ -107,7 +107,7 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
       {uploading && (
         <div className="flex items-center gap-2 text-blue-600">
           <FaSpinner className="animate-spin" />
-          <span className="text-sm">Birimo gupakirwa...</span>
+          <span className="text-sm">Birimo gukorwa...</span>
         </div>
       )}
 

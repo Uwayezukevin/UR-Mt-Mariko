@@ -223,7 +223,7 @@ export default function Members() {
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 text-center">
-            <p className="text-xs sm:text-sm text-gray-500">Yose</p>
+            <p className="text-xs sm:text-sm text-gray-500">Bose</p>
             <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600">{stats.total}</p>
           </div>
           <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 text-center">

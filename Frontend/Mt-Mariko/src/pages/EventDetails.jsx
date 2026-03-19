@@ -89,7 +89,7 @@ export default function EventDetails() {
       } catch (err) {
         if (isMounted) {
           console.error(err);
-          setError("Ntibyashoboye gupakira amakuru y'igikorwa.");
+          setError("Ntibyashoboye gupakurura amakuru y'igikorwa.");
         }
       } finally {
         if (isMounted) {
@@ -146,7 +146,7 @@ export default function EventDetails() {
                              text-blue-600 text-lg sm:text-xl" />
           </div>
           <p className="text-gray-600 text-sm sm:text-base mt-4">
-            Birimo gupakira amakuru y'igikorwa...
+            Birimo gupakurura amakuru y'igikorwa...
           </p>
         </div>
       </div>
@@ -287,15 +287,15 @@ export default function EventDetails() {
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center p-2 bg-blue-50 rounded-lg">
                       <p className="text-lg font-bold text-blue-600">{stats.total}</p>
-                      <p className="text-xs text-gray-500">Yose</p>
+                      <p className="text-xs text-gray-500">Bose</p>
                     </div>
                     <div className="text-center p-2 bg-green-50 rounded-lg">
                       <p className="text-lg font-bold text-green-600">{stats.present}</p>
-                      <p className="text-xs text-gray-500">Yitabiriye</p>
+                      <p className="text-xs text-gray-500">Abitabiriye</p>
                     </div>
                     <div className="text-center p-2 bg-red-50 rounded-lg">
                       <p className="text-lg font-bold text-red-600">{stats.absent}</p>
-                      <p className="text-xs text-gray-500">Ntiyitabiriye</p>
+                      <p className="text-xs text-gray-500">Abataritabiriye</p>
                     </div>
                   </div>
 
