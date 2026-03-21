@@ -40,7 +40,7 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
     });
 
     try {
-      const res = await api.post('/upload/images', formData, {
+      const res = await api.post('/api/upload/images', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -65,7 +65,7 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
 
     if (imageToRemove.publicId) {
       try {
-        await api.post('/upload/delete', { publicId: imageToRemove.publicId });
+        await api.post('/api/upload/delete', { publicId });
       } catch (err) {
         console.error(err);
       }

@@ -9,11 +9,11 @@ import {
 
 const router = express.Router();
 
-// Public routes
-router.get("/event/:eventId", getReportByEventId);
+// Public
 router.get("/", getAllReports);
+router.get("/event/:eventId", getReportByEventId);
 
-// Protected routes - temporarily remove adminOnly if middleware doesn't exist
+// Protected
 router.post("/", createReport);
 router.put("/:id", updateReport);
 router.delete("/:id", deleteReport);

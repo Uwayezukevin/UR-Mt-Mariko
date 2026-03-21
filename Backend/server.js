@@ -10,7 +10,7 @@ import http from "http";
 import cron from "node-cron";
 import { autoMarkAbsent } from "./utils/autoAttendance.js";
 import reportRoutes from "./routes/reportRoutes.js";
-import uploadRoutes from './routes/uploadRoute.js';
+import uploadRoutes from "./routes/uploadRoute.js";
 
 dotenv.config();
 
@@ -22,12 +22,17 @@ const server = http.createServer(app);
 // ===============================
 const io = new Server(server, {
   cors: {
-    origin: ["https://umuryangoremezo-mutagatifu-mariko.vercel.app", "http://localhost:3000"],
+    origin: [
+      "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
+      "http://localhost:3000",
+      "http://localhost:5173", // ✅ Added for Vite
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
+// Make io accessible in routes
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -36,61 +41,81 @@ app.use((req, res, next) => {
 // ===============================
 // MIDDLEWARE
 // ===============================
-app.use(cors({
-  origin: ["https://umuryangoremezo-mutagatifu-mariko.vercel.app", "http://localhost:3000"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
+      "http://localhost:3000",
+      "http://localhost:5173", // ✅ important
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // ✅ important for form-data
+
+// ===============================
+// TEST ROUTE
+// ===============================
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
 
 // ===============================
 // ROUTES
 // ===============================
-app.use("/umuryangoremezo/backend/", router);
+app.use("/umuryangoremezo/backend", router); // cleaner base route
 app.use("/dashboard", dashboardRoutes);
 app.use("/messages", messageRoutes);
-app.use("/reports", reportRoutes);
-app.use('/api/upload', uploadRoutes);
+app.use("/umuryangoremezo/backend/reports", reportRoutes);
+app.use("/umuryangoremezo/backend/api/upload", uploadRoutes);
 
 // ===============================
 // SOCKET CONNECTION
 // ===============================
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
 });
 
 // ===============================
-// START SERVER ONLY AFTER DB CONNECTS
+// SERVER START
 // ===============================
-
 const port = process.env.PORT || 2350;
 
 const startServer = async () => {
   try {
     await connectDB();
-    console.log("Database connection established successfully");
+    console.log("✅ Database connected successfully");
 
     server.listen(port, () => {
-      console.log(`Server running on http://localhost:${port}`);
+      console.log(`🚀 Server running on port ${port}`);
     });
 
+    // Run immediately once
     try {
       await autoMarkAbsent();
-      console.log("Initial auto attendance check completed.");
+      console.log("✅ Initial auto attendance completed");
     } catch (err) {
-      console.error("Initial auto attendance failed:", err);
+      console.error("❌ Initial auto attendance failed:", err);
     }
 
+    // Schedule daily job
     cron.schedule("0 0 * * *", async () => {
-      console.log("Running daily auto attendance job...");
+      console.log("⏰ Running daily auto attendance...");
       try {
         await autoMarkAbsent();
       } catch (error) {
-        console.error("Auto attendance failed:", error);
+        console.error("❌ Auto attendance failed:", error);
       }
     });
 
   } catch (error) {
-    console.error("Database connection failed:", error);
+    console.error("❌ Database connection failed:", error);
     process.exit(1);
   }
 };

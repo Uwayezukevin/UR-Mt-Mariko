@@ -29,7 +29,7 @@ export const createReport = async (req, res) => {
       event: eventId,
       title,
       description,
-      images: images || [],
+      images: images || [], // ✅ now correct
     });
 
     const populatedReport = await Report.findById(report._id)
@@ -44,7 +44,6 @@ export const createReport = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 // ================= GET REPORT BY EVENT ID =================
 export const getReportByEventId = async (req, res) => {
   try {
