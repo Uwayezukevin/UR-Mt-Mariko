@@ -20,7 +20,8 @@ import {
   FaChevronRight,
   FaHeartbeat,
   FaSkull,
-  FaTruck
+  FaTruck,
+  FaRing
 } from "react-icons/fa";
 import api from "../api/axios";
 
@@ -33,8 +34,18 @@ export default function MemberDetails() {
   const [decision, setDecision] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("info"); // 'info' or 'attendance'
+  const [activeTab, setActiveTab] = useState("info");
   const [stats, setStats] = useState({ present: 0, absent: 0, total: 0 });
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdmin = () => {
+      const token = localStorage.getItem('token');
+      setIsAdmin(!!token);
+    };
+    checkAdmin();
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,6 +76,7 @@ export default function MemberDetails() {
         setDecision(decisionRes.data || null);
       } catch (err) {
         if (isMounted) {
+          console.error(err);
           setError("Ntibyashoboye gupakira amakuru y'Umukristu.");
         }
       } finally {
@@ -100,7 +112,7 @@ export default function MemberDetails() {
     return Math.round((stats.present / stats.total) * 100);
   };
 
-  // Get accessibility icon and color
+  // Get accessibility info
   const getAccessibilityInfo = (status) => {
     switch(status) {
       case "alive":
@@ -217,18 +229,20 @@ export default function MemberDetails() {
             <span className="font-medium text-sm sm:text-base">Subira Inyuma</span>
           </button>
 
-          <button
-            onClick={() => navigate(`/members/edit/${member._id}`)}
-            className="flex items-center justify-center gap-2 bg-gradient-to-r 
-                     from-yellow-500 to-yellow-600 text-white px-4 sm:px-5 
-                     py-2.5 sm:py-3 rounded-xl hover:from-yellow-600 
-                     hover:to-yellow-700 transition-all duration-300 
-                     transform hover:scale-105 text-sm sm:text-base 
-                     font-medium shadow-md hover:shadow-lg w-full sm:w-auto"
-          >
-            <FaEdit className="text-sm sm:text-base" />
-            Hindura Amakuru
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => navigate(`/members/edit/${member._id}`)}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r 
+                       from-yellow-500 to-yellow-600 text-white px-4 sm:px-5 
+                       py-2.5 sm:py-3 rounded-xl hover:from-yellow-600 
+                       hover:to-yellow-700 transition-all duration-300 
+                       transform hover:scale-105 text-sm sm:text-base 
+                       font-medium shadow-md hover:shadow-lg w-full sm:w-auto"
+            >
+              <FaEdit className="text-sm sm:text-base" />
+              Hindura Amakuru
+            </button>
+          )}
         </div>
 
         {/* Main Content Grid */}
@@ -260,13 +274,13 @@ export default function MemberDetails() {
               {/* Profile Details */}
               <div className="p-5 sm:p-6 space-y-4">
                 
-                {/* Accessibility Status - NEW */}
+                {/* Accessibility Status */}
                 <div className={`p-4 rounded-xl border-2 ${accessibilityInfo.color}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {accessibilityInfo.icon}
                       <div>
-                        <p className="text-xs font-medium opacity-75">Icyemezo</p>
+                        <p className="text-xs font-medium opacity-75">Ikimezo</p>
                         <p className="font-semibold">{accessibilityInfo.label}</p>
                       </div>
                     </div>
@@ -371,7 +385,7 @@ export default function MemberDetails() {
                     </div>
                   </div>
 
-                  {/* Parent Information - Enhanced */}
+                  {/* Parent Information */}
                   {member.parent && (
                     <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
                       <FaUser className="text-blue-600 text-lg" />
@@ -392,13 +406,34 @@ export default function MemberDetails() {
                     </div>
                   )}
 
+                  {/* Spouse Information */}
+                  {member.spouse && (
+                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
+                      <FaRing className="text-purple-600 text-lg" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Uwo bashyinganye</p>
+                        <p className="text-sm font-medium">{member.spouse.fullName}</p>
+                        <p className="text-xs text-gray-400 capitalize">
+                          {member.spouse.category === 'child' ? 'Umwana' : 
+                           member.spouse.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/members/${member.spouse._id}`)}
+                        className="text-purple-600 hover:text-purple-800 text-xs font-medium flex items-center gap-1"
+                      >
+                        Reba <FaChevronRight className="text-xs" />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Show message for adults without parent */}
                   {member.category === "adult" && !member.parent && (
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
                       <FaUser className="text-gray-400 text-lg" />
                       <div>
                         <p className="text-xs text-gray-500">Umubyeyi</p>
-                        <p className="text-sm text-gray-500 italic">Nta mubyeyi wanditswe</p>
+                        <p className="text-sm text-gray-500 italic">Nta mubyeyi wanditswe (Umukuru ashobora kudafite umubyeyi)</p>
                       </div>
                     </div>
                   )}
@@ -506,11 +541,17 @@ export default function MemberDetails() {
                         {member.gender === 'male' ? 'Gabo' : member.gender === 'female' ? 'Gore' : 'N/A'}
                       </p>
                       <p className="text-sm text-gray-600 mt-2">
-                        <span className="font-semibold">Icyemezo:</span>{" "}
+                        <span className="font-semibold">Ikimezo:</span>{" "}
                         <span className={accessibilityInfo.color.split(' ')[2]}>
                           {accessibilityInfo.label}
                         </span>
                       </p>
+                      {member.spouse && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          <span className="font-semibold">Uwo bashyinganye:</span>{" "}
+                          {member.spouse.fullName}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -527,7 +568,7 @@ export default function MemberDetails() {
                         Nta mateka yo kwitabira
                       </p>
                       <p className="text-xs sm:text-sm text-gray-400">
-                        Uyu mukristu ntabwo yitabiriye ibikorwa
+                        Uyu munyamuryango ntabwo yitabiriye ibikorwa
                       </p>
                     </div>
                   ) : (
@@ -588,7 +629,7 @@ export default function MemberDetails() {
                               <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Itariki
                               </th>
-                            </tr>
+                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
                             {attendance.map((record) => (
