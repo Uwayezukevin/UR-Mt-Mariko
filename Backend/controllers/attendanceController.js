@@ -92,12 +92,17 @@ export const markAttendance = async (req, res) => {
 // =============================
 // GET ATTENDANCE BY EVENT
 // =============================
+// GET ATTENDANCE BY EVENT
 export const getAttendanceByEvent = async (req, res) => {
   try {
     const attendanceList = await Attendance.find({
       event: req.params.eventId,
     })
-      .populate("member", "fullName category subgroup")
+      .populate({
+        path: "member",
+        select: "fullName category",
+        populate: { path: "subgroup", select: "name" } // <-- populate subgroup name
+      })
       .populate("event", "title date");
 
     res.status(200).json(attendanceList);
@@ -107,15 +112,17 @@ export const getAttendanceByEvent = async (req, res) => {
   }
 };
 
-// =============================
 // GET ATTENDANCE BY MEMBER
-// =============================
 export const getAttendanceByMember = async (req, res) => {
   try {
     const attendanceList = await Attendance.find({
       member: req.params.memberId,
     })
-      .populate("member", "fullName category subgroup")
+      .populate({
+        path: "member",
+        select: "fullName category",
+        populate: { path: "subgroup", select: "name" } // <-- populate subgroup name
+      })
       .populate("event", "title date");
 
     res.status(200).json(attendanceList);
