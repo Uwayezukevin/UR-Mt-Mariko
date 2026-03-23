@@ -1,8 +1,21 @@
 import { checkSchema } from "express-validator";
 import mongoose from "mongoose";
+import Amasakramentu from "../mongoschema/amasakramentuSchema.js"; // Adjust path as needed
 
-// ID for UGUSHYINGIRWA sakrament - you need to set this
-const UGUSHYINGIRWA_ID = "your_marriage_sakrament_id_here";
+// Helper function to get marriage sakrament ID
+let marriageSakramentId = null;
+
+const getMarriageSakramentId = async () => {
+  if (marriageSakramentId) return marriageSakramentId;
+  try {
+    const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
+    marriageSakramentId = marriage?._id?.toString();
+    return marriageSakramentId;
+  } catch (err) {
+    console.error("Could not find marriage sakrament:", err);
+    return null;
+  }
+};
 
 /* ================= CREATE MEMBER SCHEMA ================= */
 
@@ -70,11 +83,16 @@ export const createMemberSchema = checkSchema({
   spouse: {
     optional: true,
     custom: {
-      options: (value, { req }) => {
+      options: async (value, { req }) => {
         const { sakraments, _id } = req.body;
         
-        // If UGUSHYINGIRWA is selected, spouse is required
-        if (sakraments?.includes(UGUSHYINGIRWA_ID) && !value) {
+        // Get actual marriage sakrament ID
+        const marriageId = await getMarriageSakramentId();
+        
+        // Check if marriage sakrament is selected
+        const hasMarriage = sakraments?.includes(marriageId);
+        
+        if (hasMarriage && !value) {
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
         }
         
@@ -234,13 +252,17 @@ export const updateMemberSchema = checkSchema({
   spouse: {
     optional: true,
     custom: {
-      options: (value, { req }) => {
+      options: async (value, { req }) => {
         const { sakraments, _id } = req.body;
         
-        // Check if UGUSHYINGIRWA is being added
-        const updatedSakraments = sakraments || req.member?.sakraments;
+        // Get actual marriage sakrament ID
+        const marriageId = await getMarriageSakramentId();
         
-        if (updatedSakraments?.includes(UGUSHYINGIRWA_ID) && !value) {
+        // Check if marriage sakrament is selected
+        const updatedSakraments = sakraments || req.member?.sakraments;
+        const hasMarriage = updatedSakraments?.includes(marriageId);
+        
+        if (hasMarriage && !value) {
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
         }
         
