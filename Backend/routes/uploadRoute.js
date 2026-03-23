@@ -12,12 +12,17 @@ uploadRoutes.post('/image', upload.single('image'), (req, res) => {
     }
 
     res.json({
+      success: true,
       url: req.file.path,
       publicId: req.file.filename,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Upload failed' });
+    console.error('Upload error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Upload failed',
+      error: err.message 
+    });
   }
 });
 
@@ -25,7 +30,10 @@ uploadRoutes.post('/image', upload.single('image'), (req, res) => {
 uploadRoutes.post('/images', upload.array('images', 10), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'No files uploaded' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'No files uploaded' 
+      });
     }
 
     const images = req.files.map(file => ({
@@ -33,10 +41,17 @@ uploadRoutes.post('/images', upload.array('images', 10), (req, res) => {
       publicId: file.filename,
     }));
 
-    res.json({ images });
+    res.json({ 
+      success: true,
+      images 
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Upload failed' });
+    console.error('Upload error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Upload failed',
+      error: err.message 
+    });
   }
 });
 
@@ -46,15 +61,32 @@ uploadRoutes.post('/delete', async (req, res) => {
     const { publicId } = req.body;
 
     if (!publicId) {
-      return res.status(400).json({ message: "publicId is required" });
+      return res.status(400).json({ 
+        success: false,
+        message: "publicId is required" 
+      });
     }
 
-    await cloudinary.uploader.destroy(publicId);
-
-    res.json({ message: 'Image deleted' });
+    const result = await cloudinary.uploader.destroy(publicId);
+    
+    if (result.result === 'ok') {
+      res.json({ 
+        success: true,
+        message: 'Image deleted successfully' 
+      });
+    } else {
+      res.status(404).json({ 
+        success: false,
+        message: 'Image not found or already deleted' 
+      });
+    }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Delete failed' });
+    console.error('Delete error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Delete failed',
+      error: err.message 
+    });
   }
 });
 

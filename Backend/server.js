@@ -25,7 +25,7 @@ const io = new Server(server, {
     origin: [
       "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
       "http://localhost:3000",
-      "http://localhost:5173", // ✅ Added for Vite
+      "http://localhost:5173",
     ],
     methods: ["GET", "POST"],
     credentials: true,
@@ -46,14 +46,14 @@ app.use(
     origin: [
       "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
       "http://localhost:3000",
-      "http://localhost:5173", // ✅ important
+      "http://localhost:5173",
     ],
     credentials: true,
   })
 );
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // ✅ important for form-data
+app.use(express.urlencoded({ extended: true }));
 
 // ===============================
 // TEST ROUTE
@@ -65,11 +65,29 @@ app.get("/", (req, res) => {
 // ===============================
 // ROUTES
 // ===============================
-app.use("/umuryangoremezo/backend", router); // cleaner base route
+app.use("/umuryangoremezo/backend", router);
 app.use("/dashboard", dashboardRoutes);
 app.use("/messages", messageRoutes);
 app.use("/umuryangoremezo/backend/reports", reportRoutes);
 app.use("/umuryangoremezo/backend/api/upload", uploadRoutes);
+
+// ===============================
+// ERROR HANDLING MIDDLEWARE
+// ===============================
+app.use((err, req, res, next) => {
+  console.error("Global error handler:", err);
+  res.status(500).json({ 
+    message: "Internal server error",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined
+  });
+});
+
+// ===============================
+// 404 HANDLER
+// ===============================
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
 
 // ===============================
 // SOCKET CONNECTION
@@ -104,11 +122,12 @@ const startServer = async () => {
       console.error("❌ Initial auto attendance failed:", err);
     }
 
-    // Schedule daily job
+    // Schedule daily job at midnight
     cron.schedule("0 0 * * *", async () => {
       console.log("⏰ Running daily auto attendance...");
       try {
         await autoMarkAbsent();
+        console.log("✅ Daily auto attendance completed");
       } catch (error) {
         console.error("❌ Auto attendance failed:", error);
       }
@@ -119,5 +138,14 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+// Handle graceful shutdown
+process.on("SIGINT", () => {
+  console.log("Shutting down gracefully...");
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
 
 startServer();

@@ -24,7 +24,7 @@ import {
   getMemberById,
   updateMember,
   deleteMember,
-  searchMembers, // ✅ ADD THIS
+  searchMembers,
 } from "../controllers/memberController.js";
 
 // Event Controllers
@@ -54,19 +54,26 @@ router.post("/users/logout", logoutUser);
 
 /* ==================== MEMBER ROUTES ==================== */
 
-// 🔥 SEARCH MUST COME BEFORE :id
+// 🔥 SEARCH MUST COME BEFORE :id - CORRECT ORDER
 router.get("/members/search", searchMembers);
 
+// Get all members
+router.get("/members", getAllMembers);
+
 // Create member
-// Create
 router.post(
   "/members",
+  protect,
+  adminOnly,
   createMemberSchema,
   validate,
   createMember
 );
 
-// Update
+// Get member by ID - This must come AFTER specific routes like /search
+router.get("/members/:id", getMemberById);
+
+// Update member
 router.put(
   "/members/:id",
   protect,
@@ -76,35 +83,38 @@ router.put(
   updateMember
 );
 
-// Get all members
-router.get("/members", getAllMembers);
-
-// Get member by ID
-router.get("/members/:id", getMemberById);
-
-
-// Update member
-// ⚠️ If your validator requires full body,
-// remove memberSchema from here or create updateMemberSchema
 // Delete member
 router.delete("/members/:id", protect, adminOnly, deleteMember);
 
 /* ==================== EVENT ROUTES ==================== */
 
-router.post("/events", protect, adminOnly, eventSchema, validate, createEvent);
+// Create event
+router.post(
+  "/events", 
+  protect, 
+  adminOnly, 
+  eventSchema, 
+  validate, 
+  createEvent
+);
 
+// Get all events
 router.get("/events", getAllEvents);
+
+// Get event by ID
 router.get("/events/:id", getEventById);
 
+// Update event
 router.put(
   "/events/:id",
   protect,
   adminOnly,
   eventSchema,
   validate,
-  updateEvent,
+  updateEvent
 );
 
+// Delete event
 router.delete("/events/:id", protect, adminOnly, deleteEvent);
 
 /* ==================== SACRAMENTS & SUBGROUPS ==================== */

@@ -16,11 +16,10 @@ router.post(
   markAttendance
 );
 
-
 // Get all attendance for a specific event
 router.get("/event/:eventId", protect, getAttendanceByEvent);
 
 // Get all attendance for a specific member
-router.get("/member/:memberId", getAttendanceByMember);
+router.get("/member/:memberId", getAttendanceByMember); // No protect for public access
 
 export default router;

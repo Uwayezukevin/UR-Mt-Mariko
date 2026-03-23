@@ -6,7 +6,7 @@ const reportSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
       required: true,
-      unique: true, // This already creates an index - keep this
+      unique: true, // This creates an index - no need for explicit index below
     },
     title: {
       type: String,
@@ -39,10 +39,7 @@ const reportSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// REMOVE this line - it's causing the duplicate index
-// reportSchema.index({ event: 1 });
-
-// Keep this one - it's a different index
+// Keep this index - it's for sorting
 reportSchema.index({ publishedAt: -1 });
 
 export default mongoose.model("Report", reportSchema);

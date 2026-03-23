@@ -1,7 +1,6 @@
-// memberValidator.js
 import { checkSchema } from "express-validator";
 import mongoose from "mongoose";
-import Amasakramentu from "../mongoschema/sakramentsSchema.js"; // Add this import
+import Amasakramentu from "../mongoschema/sakramentsSchema.js";
 
 // Helper function to get marriage sakrament ID
 let marriageSakramentId = null;
@@ -9,7 +8,6 @@ let marriageSakramentId = null;
 const getMarriageSakramentId = async () => {
   if (marriageSakramentId) return marriageSakramentId;
   try {
-    // Use the imported model directly
     const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
     marriageSakramentId = marriage?._id?.toString();
     return marriageSakramentId;
@@ -18,7 +16,6 @@ const getMarriageSakramentId = async () => {
     return null;
   }
 };
-
 
 /* ================= CREATE MEMBER SCHEMA ================= */
 
@@ -89,22 +86,17 @@ export const createMemberSchema = checkSchema({
       options: async (value, { req }) => {
         const { sakraments, _id } = req.body;
         
-        // Get actual marriage sakrament ID from database
         const marriageId = await getMarriageSakramentId();
-        
-        // Check if marriage sakrament is selected (using actual IDs)
         const hasMarriage = marriageId && sakraments?.includes(marriageId);
         
         if (hasMarriage && !value) {
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
         }
         
-        // Prevent self-marriage
         if (value && value === _id) {
           throw new Error("Ntushobora kwishyingira");
         }
         
-        // Validate ObjectId
         if (value && !mongoose.Types.ObjectId.isValid(value)) {
           throw new Error("Spouse must be a valid Member ID");
         }
@@ -258,10 +250,7 @@ export const updateMemberSchema = checkSchema({
       options: async (value, { req }) => {
         const { sakraments, _id } = req.body;
         
-        // Get actual marriage sakrament ID from database
         const marriageId = await getMarriageSakramentId();
-        
-        // Check if marriage sakrament is selected
         const updatedSakraments = sakraments || req.member?.sakraments;
         const hasMarriage = marriageId && updatedSakraments?.includes(marriageId);
         
@@ -269,7 +258,6 @@ export const updateMemberSchema = checkSchema({
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
         }
         
-        // Prevent self-marriage
         if (value && value === _id) {
           throw new Error("Ntushobora kwishyingira");
         }

@@ -23,7 +23,15 @@ export const createEvent = async (req, res) => {
 
 export const getAllEvents = async (req, res) => {
   try {
-    const events = await Event.find().populate("members", "fullName category");
+    const events = await Event.find()
+      .populate({
+        path: "members",
+        select: "fullName category gender",
+        populate: [
+          { path: "subgroup", select: "name" },
+          { path: "sakraments", select: "name" }
+        ]
+      });
     res.status(200).json(events);
   } catch (err) {
     console.error(err);
@@ -36,10 +44,12 @@ export const getEventById = async (req, res) => {
     const event = await Event.findById(req.params.id)
       .populate({
         path: "members",
-        select: "-nationalId", // ❌ hide nationalId
+        select: "-nationalId",
         populate: [
-          { path: "subgroup" },
-          { path: "sakraments" }
+          { path: "subgroup", select: "name" },
+          { path: "sakraments", select: "name" },
+          { path: "parent", select: "fullName category" },
+          { path: "spouse", select: "fullName category" }
         ],
       });
 
@@ -53,7 +63,6 @@ export const getEventById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const updateEvent = async (req, res) => {
   try {

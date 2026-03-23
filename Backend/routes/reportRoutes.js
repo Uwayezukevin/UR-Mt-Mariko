@@ -1,4 +1,5 @@
 import express from "express";
+import { protect, adminOnly } from "../middlewares/auth.js";
 import {
   createReport,
   getReportByEventId,
@@ -9,13 +10,13 @@ import {
 
 const router = express.Router();
 
-// Public
+// Public routes (no authentication required)
 router.get("/", getAllReports);
 router.get("/event/:eventId", getReportByEventId);
 
-// Protected
-router.post("/", createReport);
-router.put("/:id", updateReport);
-router.delete("/:id", deleteReport);
+// Protected routes (admin only)
+router.post("/", protect, adminOnly, createReport);
+router.put("/:id", protect, adminOnly, updateReport);
+router.delete("/:id", protect, adminOnly, deleteReport);
 
 export default router;

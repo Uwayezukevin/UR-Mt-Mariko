@@ -21,14 +21,11 @@ const memberSchema = new mongoose.Schema(
     parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
-      // Parent is optional for adults, required for children and youth
       validate: {
         validator: function(value) {
-          // If category is adult, parent is optional
           if (this.category === "adult") {
-            return true; // Parent can be null or a value
+            return true;
           }
-          // For child and youth, parent is required
           return value != null;
         },
         message: props => `Parent is required for ${props.doc?.category || 'this category'}`
@@ -42,16 +39,13 @@ const memberSchema = new mongoose.Schema(
         validator: async function(value) {
           if (!value) return true;
           
-          // Prevent self-marriage
           if (value.toString() === this._id?.toString()) {
             return false;
           }
           
-          // Ensure spouse exists
           const spouse = await mongoose.model("Member").findById(value);
           if (!spouse) return false;
           
-          // Ensure opposite gender
           if (spouse.gender === this.gender) {
             return false;
           }
@@ -85,14 +79,12 @@ const memberSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // New accessibility field
     accessibility: {
       type: String,
       enum: ["alive", "dead", "moved"],
       default: "alive",
       required: true,
     },
-    // Optional: Add date fields for tracking changes
     accessibilityUpdatedAt: {
       type: Date,
       default: Date.now,
@@ -107,21 +99,17 @@ const memberSchema = new mongoose.Schema(
 
 // Pre-save validation for parent field
 memberSchema.pre('validate', function(next) {
-  // Additional validation logic can be added here if needed
   if (this.category !== "adult" && !this.parent) {
     this.invalidate('parent', `Parent is required for ${this.category}`);
   }
   next();
 });
 
-// Pre-save validation for spouse field (additional check)
+// Pre-save validation for spouse field
 memberSchema.pre('save', async function(next) {
-  // Skip if spouse hasn't changed
   if (!this.isModified('spouse')) return next();
   
-  // If spouse is being set
   if (this.spouse) {
-    // Check if marriage sakrament is selected
     const Amasakramentu = mongoose.model("Amasakramentu");
     const marriageSak = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
     
@@ -139,21 +127,23 @@ memberSchema.pre('save', async function(next) {
 
 // Post-save hook to update spouse's record
 memberSchema.post('save', async function(doc) {
-  // If spouse is set, update the spouse's record to link back
   if (doc.spouse && doc.isModified('spouse')) {
     try {
-      await mongoose.model("Member").findByIdAndUpdate(
-        doc.spouse,
-        { spouse: doc._id },
-        { new: true }
-      );
+      const spouse = await mongoose.model("Member").findById(doc.spouse);
+      if (spouse && (!spouse.spouse || spouse.spouse.toString() !== doc._id.toString())) {
+        await mongoose.model("Member").findByIdAndUpdate(
+          doc.spouse,
+          { spouse: doc._id },
+          { new: true }
+        );
+      }
     } catch (err) {
       console.error("Failed to update spouse link:", err);
     }
   }
 });
 
-// Optional: Add a pre-save hook to update accessibilityUpdatedAt
+// Pre-save hook to update accessibilityUpdatedAt
 memberSchema.pre('save', function(next) {
   if (this.isModified('accessibility')) {
     this.accessibilityUpdatedAt = new Date();
@@ -204,4 +194,7 @@ memberSchema.methods.getMarriageStatus = function() {
   return "Ntashyingiye";
 };
 
-export default mongoose.model("Member", memberSchema);
+// Prevent OverwriteModelError
+const Member = mongoose.models.Member || mongoose.model("Member", memberSchema);
+
+export default Member;

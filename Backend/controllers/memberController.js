@@ -1,6 +1,7 @@
 import Member from "../mongoschema/memberschema.js";
 import Attendance from "../mongoschema/attendanceSchema.js";
 import Event from "../mongoschema/eventschema.js";
+import Amasakramentu from "../mongoschema/sakramentsSchema.js"; // Added import
 import mongoose from "mongoose";
 
 // Helper function to find marriage sakrament ID
@@ -9,7 +10,6 @@ let marriageSakramentId = null;
 const getMarriageSakramentId = async () => {
   if (marriageSakramentId) return marriageSakramentId;
   try {
-    const Amasakramentu = mongoose.model("Amasakramentu");
     const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
     marriageSakramentId = marriage?._id;
     return marriageSakramentId;
@@ -49,7 +49,7 @@ export const createMember = async (req, res) => {
 
     // Spouse validation - check if marriage sakrament is selected
     const marriageId = await getMarriageSakramentId();
-    const hasMarriage = sakraments?.includes(marriageId?.toString());
+    const hasMarriage = sakraments?.some(sak => sak.toString() === marriageId?.toString());
 
     if (hasMarriage && !spouse) {
       return res.status(400).json({
@@ -307,7 +307,7 @@ export const updateMember = async (req, res) => {
     // Spouse validation
     const marriageId = await getMarriageSakramentId();
     const updatedSakraments = sakraments !== undefined ? sakraments : member.sakraments;
-    const hasMarriage = updatedSakraments?.includes(marriageId?.toString());
+    const hasMarriage = updatedSakraments?.some(sak => sak.toString() === marriageId?.toString());
     const updatedSpouse = spouse !== undefined ? spouse : member.spouse;
 
     if (hasMarriage && !updatedSpouse) {

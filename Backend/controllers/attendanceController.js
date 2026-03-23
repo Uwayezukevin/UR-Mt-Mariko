@@ -1,3 +1,4 @@
+import mongoose from "mongoose"; // Added missing import
 import Attendance from "../mongoschema/attendanceSchema.js";
 import Event from "../mongoschema/eventschema.js";
 import Member from "../mongoschema/memberschema.js";
@@ -92,7 +93,6 @@ export const markAttendance = async (req, res) => {
 // =============================
 // GET ATTENDANCE BY EVENT
 // =============================
-// GET ATTENDANCE BY EVENT
 export const getAttendanceByEvent = async (req, res) => {
   try {
     const attendanceList = await Attendance.find({
@@ -101,7 +101,7 @@ export const getAttendanceByEvent = async (req, res) => {
       .populate({
         path: "member",
         select: "fullName category",
-        populate: { path: "subgroup", select: "name" } // <-- populate subgroup name
+        populate: { path: "subgroup", select: "name" }
       })
       .populate("event", "title date");
 
@@ -121,7 +121,7 @@ export const getAttendanceByMember = async (req, res) => {
       .populate({
         path: "member",
         select: "fullName category",
-        populate: { path: "subgroup", select: "name" } // <-- populate subgroup name
+        populate: { path: "subgroup", select: "name" }
       })
       .populate("event", "title date");
 

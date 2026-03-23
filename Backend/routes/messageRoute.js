@@ -19,19 +19,27 @@ router.post("/send", async (req, res) => {
       message,
     });
 
-    // Emit socket event
-    req.io.emit("newMessage", newMessage);
+    // Emit socket event - FIX: Check if req.io exists
+    if (req.io) {
+      req.io.emit("newMessage", newMessage);
+    }
 
     res.status(201).json({ message: "Message sent successfully" });
   } catch (error) {
+    console.error(error); // Added error logging
     res.status(500).json({ message: error.message });
   }
 });
 
 // GET ALL MESSAGES (admin dashboard)
 router.get("/", async (req, res) => {
-  const messages = await Message.find().sort({ createdAt: -1 });
-  res.json(messages);
+  try {
+    const messages = await Message.find().sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
 });
 
 export default router;

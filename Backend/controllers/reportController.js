@@ -1,14 +1,7 @@
+import { v2 as cloudinary } from 'cloudinary'; // Fixed import
 import Report from "../mongoschema/reportSchema.js";
 import Event from "../mongoschema/eventschema.js";
-import cloudinary from 'cloudinary'; // Import cloudinary directly
 import mongoose from "mongoose";
-
-// Configure cloudinary (if not configured elsewhere)
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 // ================= CREATE REPORT =================
 export const createReport = async (req, res) => {
@@ -29,7 +22,7 @@ export const createReport = async (req, res) => {
       event: eventId,
       title,
       description,
-      images: images || [], // ✅ now correct
+      images: images || [],
     });
 
     const populatedReport = await Report.findById(report._id)
@@ -44,6 +37,7 @@ export const createReport = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 // ================= GET REPORT BY EVENT ID =================
 export const getReportByEventId = async (req, res) => {
   try {
@@ -82,7 +76,7 @@ export const updateReport = async (req, res) => {
       
       for (const publicId of imagesToDelete) {
         try {
-          await cloudinary.v2.uploader.destroy(publicId);
+          await cloudinary.uploader.destroy(publicId);
         } catch (err) {
           console.error(`Failed to delete image ${publicId}:`, err);
         }
@@ -122,7 +116,7 @@ export const deleteReport = async (req, res) => {
       for (const image of report.images) {
         if (image.publicId) {
           try {
-            await cloudinary.v2.uploader.destroy(image.publicId);
+            await cloudinary.uploader.destroy(image.publicId);
           } catch (err) {
             console.error(`Failed to delete image ${image.publicId}:`, err);
           }
