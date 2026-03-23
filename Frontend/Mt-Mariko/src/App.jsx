@@ -6,7 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
 import CreateMember from "./pages/CreateMember";
 import MemberDetails from "./pages/MemberDetails";
-import UpdateMember from "./pages/UpdateMember";
+import UpdateMember from "./pages/UpdateMemmber";
 import Events from "./pages/Events";
 import EventDetails from "./pages/EventDetails";
 import EventAttendance from "./pages/EventAttendance";
