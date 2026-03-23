@@ -1,5 +1,7 @@
+// memberValidator.js
 import { checkSchema } from "express-validator";
 import mongoose from "mongoose";
+import Amasakramentu from "../mongoschema/sakramentsSchema.js"; // Add this import
 
 // Helper function to get marriage sakrament ID
 let marriageSakramentId = null;
@@ -7,7 +9,7 @@ let marriageSakramentId = null;
 const getMarriageSakramentId = async () => {
   if (marriageSakramentId) return marriageSakramentId;
   try {
-    const Amasakramentu = mongoose.model("Amasakramentu");
+    // Use the imported model directly
     const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
     marriageSakramentId = marriage?._id?.toString();
     return marriageSakramentId;
@@ -16,6 +18,7 @@ const getMarriageSakramentId = async () => {
     return null;
   }
 };
+
 
 /* ================= CREATE MEMBER SCHEMA ================= */
 
