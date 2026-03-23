@@ -180,7 +180,7 @@ export default function CreateMember() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    console.log(formData)
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
