@@ -13,10 +13,11 @@ import {
   FaHome,
   FaInfoCircle,
   FaEnvelopeOpenText,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import api from "../api/axios"; // Use api instead of axios directly
+import api from "../api/axios";
 import io from "socket.io-client";
 
 export default function Dashboard() {
@@ -27,10 +28,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [notifications, setNotifications] = useState([]);
 
   const logout = () => {
+    console.log("🔓 Logging out...");
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     navigate("/");
   };
 
@@ -45,10 +47,18 @@ export default function Dashboard() {
     const fetchStats = async () => {
       const token = localStorage.getItem("token");
       
+      console.log("🔐 Dashboard mounted - Checking token:", token ? `${token.substring(0, 30)}...` : "NO TOKEN");
+      
       // Check if token exists
       if (!token) {
+        console.error("❌ No token found in localStorage");
         setError("Token not found. Please login again.");
         setLoading(false);
+        
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
         return;
       }
 
@@ -56,19 +66,26 @@ export default function Dashboard() {
         setLoading(true);
         setError("");
         
-        // Use api instance which automatically adds token
+        console.log("📡 Fetching dashboard stats from /dashboard/stats");
         const res = await api.get("/dashboard/stats");
+        console.log("✅ Dashboard stats received:", res.data);
         setStats(res.data);
       } catch (err) {
-        console.error("Dashboard stats error:", err);
+        console.error("❌ Dashboard stats error:", err);
+        console.error("Response status:", err.response?.status);
+        console.error("Response data:", err.response?.data);
         
         // Handle 401 Unauthorized
         if (err.response?.status === 401) {
+          console.log("🔒 401 Unauthorized - Token may be invalid or expired");
           setError("Session expired. Please login again.");
           localStorage.removeItem("token");
           setTimeout(() => {
             navigate("/login");
           }, 2000);
+        } else if (err.response?.status === 404) {
+          console.log("❌ 404 Not Found - Check if /dashboard/stats endpoint exists");
+          setError("Dashboard endpoint not found. Please check backend routes.");
         } else {
           setError(err.response?.data?.message || "Failed to load dashboard stats");
         }
@@ -85,13 +102,20 @@ export default function Dashboard() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    const socket = io(import.meta.env.VITE_API_URL || "https://ur-mt-mariko.onrender.com", {
-      auth: { token }
-    });
-    
-    socket.on("newMessage", () => setUnreadMessages((prev) => prev + 1));
-    
-    return () => socket.disconnect();
+    try {
+      const socket = io(import.meta.env.VITE_API_URL || "https://ur-mt-mariko.onrender.com", {
+        auth: { token }
+      });
+      
+      socket.on("newMessage", () => {
+        console.log("📨 New message received");
+        setUnreadMessages((prev) => prev + 1);
+      });
+      
+      return () => socket.disconnect();
+    } catch (err) {
+      console.error("Socket connection error:", err);
+    }
   }, []);
 
   // Close sidebar when clicking outside on mobile
@@ -273,12 +297,20 @@ export default function Dashboard() {
             <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-2xl mx-auto">
               <FaExclamationCircle className="text-red-500 text-4xl mx-auto mb-3" />
               <p className="text-red-600 font-medium mb-2">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Ongera ugerageze
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Ongera ugerageze
+                </button>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="mt-3 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Injira
+                </button>
+              </div>
             </div>
           ) : (
             <>
