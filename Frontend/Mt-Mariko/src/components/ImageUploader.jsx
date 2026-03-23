@@ -65,7 +65,7 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
 
     if (imageToRemove.publicId) {
       try {
-        await api.post('/api/upload/delete', { publicId });
+        await api.post('/api/upload/delete', { publicId: imageToRemove.publicId });
       } catch (err) {
         console.error(err);
       }
@@ -119,6 +119,10 @@ export default function ImageUploader({ onImagesUploaded, initialImages = [], ma
                 src={img.url}
                 alt={`Uploaded ${index + 1}`}
                 className="w-full h-32 object-cover rounded-lg shadow-md"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://via.placeholder.com/300x200?text=Error';
+                }}
               />
               <button
                 onClick={() => handleRemoveImage(index)}

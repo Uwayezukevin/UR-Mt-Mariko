@@ -5,9 +5,6 @@ import {
   FaTimes, 
   FaSave,
   FaFileAlt,
-  FaMapMarkerAlt,
-  FaClock,
-  FaUsers,
   FaCheckCircle,
   FaExclamationCircle
 } from "react-icons/fa";
@@ -25,7 +22,6 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
     images: [],
   });
 
-  // Initialize form with existing report data if provided
   useEffect(() => {
     if (existingReport) {
       setFormData({
@@ -59,10 +55,8 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
       };
 
       if (existingReport) {
-        // Update existing report
         await api.put(`/reports/${existingReport._id}`, payload);
       } else {
-        // Create new report
         await api.post("/reports", payload);
       }
 
@@ -88,9 +82,7 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-3">
           <FaCheckCircle className="text-green-500 text-lg flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-green-700 font-medium">
-              Raporo yabitswe neza!
-            </p>
+            <p className="text-green-700 font-medium">Raporo yabitswe neza!</p>
           </div>
         </div>
       )}
@@ -103,7 +95,6 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Title */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Umutwe wa Raporo <span className="text-red-500">*</span>
@@ -119,7 +110,6 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
           />
         </div>
 
-        {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Ibisobanuro <span className="text-red-500">*</span>
@@ -135,7 +125,6 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
           />
         </div>
 
-        {/* Image Uploader */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <FaImage className="inline mr-1" /> Amashusho
@@ -147,7 +136,6 @@ export default function EventReportForm({ eventId, onSuccess, onCancel, existing
           />
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-3 pt-4">
           <button
             type="submit"
