@@ -1,6 +1,5 @@
 import { checkSchema } from "express-validator";
 import mongoose from "mongoose";
-import Amasakramentu from "../mongoschema/sakramentsSchema.js"; // Adjust path as needed
 
 // Helper function to get marriage sakrament ID
 let marriageSakramentId = null;
@@ -8,6 +7,7 @@ let marriageSakramentId = null;
 const getMarriageSakramentId = async () => {
   if (marriageSakramentId) return marriageSakramentId;
   try {
+    const Amasakramentu = mongoose.model("Amasakramentu");
     const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
     marriageSakramentId = marriage?._id?.toString();
     return marriageSakramentId;
@@ -86,11 +86,11 @@ export const createMemberSchema = checkSchema({
       options: async (value, { req }) => {
         const { sakraments, _id } = req.body;
         
-        // Get actual marriage sakrament ID
+        // Get actual marriage sakrament ID from database
         const marriageId = await getMarriageSakramentId();
         
-        // Check if marriage sakrament is selected
-        const hasMarriage = sakraments?.includes(marriageId);
+        // Check if marriage sakrament is selected (using actual IDs)
+        const hasMarriage = marriageId && sakraments?.includes(marriageId);
         
         if (hasMarriage && !value) {
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
@@ -255,12 +255,12 @@ export const updateMemberSchema = checkSchema({
       options: async (value, { req }) => {
         const { sakraments, _id } = req.body;
         
-        // Get actual marriage sakrament ID
+        // Get actual marriage sakrament ID from database
         const marriageId = await getMarriageSakramentId();
         
         // Check if marriage sakrament is selected
         const updatedSakraments = sakraments || req.member?.sakraments;
-        const hasMarriage = updatedSakraments?.includes(marriageId);
+        const hasMarriage = marriageId && updatedSakraments?.includes(marriageId);
         
         if (hasMarriage && !value) {
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
