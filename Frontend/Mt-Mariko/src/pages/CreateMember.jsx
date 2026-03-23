@@ -50,6 +50,7 @@ export default function CreateMember() {
   const [validationErrors, setValidationErrors] = useState({});
   const [showNotes, setShowNotes] = useState(false);
   const [showSpouse, setShowSpouse] = useState(false);
+  const [marriageSakramentId, setMarriageSakramentId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,6 +64,12 @@ export default function CreateMember() {
         setSubgroups(subRes.data);
         setSakraments(sakRes.data);
         setMembers(membersRes.data);
+
+        // Find marriage sakrament ID
+        const marriage = sakRes.data.find(s => s.name === "Ugushyingirwa");
+        if (marriage) {
+          setMarriageSakramentId(marriage._id);
+        }
 
         // Get all potential parents (adults and youth)
         const potentialParents = membersRes.data.filter(
@@ -86,16 +93,19 @@ export default function CreateMember() {
     fetchData();
   }, []);
 
-  // Check if UGUSHYINGIRWA is selected
+  // Check if marriage sakrament is selected
   const isMarriageSakramentSelected = () => {
-    const marriageSakramentId = sakraments.find(s => s.name === "Ugushyingirwa")?._id;
-    return formData.sakraments.includes(marriageSakramentId);
+    return marriageSakramentId && formData.sakraments.includes(marriageSakramentId);
   };
 
   // Update spouse field visibility when sakraments change
   useEffect(() => {
     setShowSpouse(isMarriageSakramentSelected());
-  }, [formData.sakraments, sakraments]);
+    // Clear spouse if marriage is deselected
+    if (!isMarriageSakramentSelected() && formData.spouse) {
+      setFormData(prev => ({ ...prev, spouse: "" }));
+    }
+  }, [formData.sakraments, marriageSakramentId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -149,13 +159,14 @@ export default function CreateMember() {
       errors.subgroup = "Umuryango remezo arafuzwe";
     }
     
-    if (formData.category !== "adult" && !formData.parent) {
+    // Parent validation - required for child and youth
+    if (formData.category && formData.category !== "adult" && !formData.parent) {
       errors.parent = formData.category === "child" 
         ? "Umwana agomba kugira umubyeyi" 
         : "Urubyiruko rugomba kugira umubyeyi";
     }
     
-    // Spouse validation
+    // Spouse validation - only if marriage is selected
     if (showSpouse && !formData.spouse) {
       errors.spouse = "Ugomba gushyiraho uwo mwashyingiranywe";
     }
@@ -199,16 +210,19 @@ export default function CreateMember() {
         ...(formData.accessibilityNotes?.trim() ? { accessibilityNotes: formData.accessibilityNotes.trim() } : {}),
       };
 
+      // Add parent based on category
       if (formData.category !== "adult" && formData.parent) {
         payload.parent = formData.parent;
       } else if (formData.category === "adult" && formData.parent) {
         payload.parent = formData.parent;
       }
 
+      // Add spouse if marriage is selected
       if (showSpouse && formData.spouse) {
         payload.spouse = formData.spouse;
       }
 
+      console.log("Submitting payload:", payload);
       await api.post("/members", payload);
       setSuccess(true);
       
@@ -217,6 +231,7 @@ export default function CreateMember() {
       }, 1500);
       
     } catch (err) {
+      console.error("Error:", err.response?.data || err.message);
       const message =
         err.response?.data?.errors?.map((e) => e.msg).join(", ") ||
         err.response?.data?.message ||
@@ -231,16 +246,18 @@ export default function CreateMember() {
 
   // Get potential spouses (adults of opposite gender who are alive)
   const getPotentialSpouses = () => {
+    if (!formData.gender) return [];
     const oppositeGender = formData.gender === "male" ? "female" : "male";
     return members.filter(m => 
       m.gender === oppositeGender && 
       m.accessibility === "alive" &&
-      m._id !== formData._id
+      m._id !== undefined // Don't filter by formData._id since it's undefined for new members
     );
   };
 
   // Determine which parents to show
   const getParentOptions = () => {
+    if (!formData.category) return [];
     if (formData.category === "child") {
       return allParents;
     } else if (formData.category === "youth") {
