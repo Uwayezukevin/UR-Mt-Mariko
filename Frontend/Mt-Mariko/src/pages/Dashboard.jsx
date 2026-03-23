@@ -16,7 +16,7 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios"; // Use api instead of axios directly
 import io from "socket.io-client";
 
 export default function Dashboard() {
@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [notifications, setNotifications] = useState([]);
 
@@ -39,19 +40,57 @@ export default function Dashboard() {
     return () => clearInterval(t);
   }, []);
 
-  // Fetch stats from backend
+  // Fetch stats from backend with authentication
   useEffect(() => {
-    axios
-      .get("https://ur-mt-mariko.onrender.com/dashboard/stats")
-      .then((res) => setStats(res.data))
-      .catch((err) => console.error(err))
-      .finally(() => setLoading(false));
-  }, []);
+    const fetchStats = async () => {
+      const token = localStorage.getItem("token");
+      
+      // Check if token exists
+      if (!token) {
+        setError("Token not found. Please login again.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+        
+        // Use api instance which automatically adds token
+        const res = await api.get("/dashboard/stats");
+        setStats(res.data);
+      } catch (err) {
+        console.error("Dashboard stats error:", err);
+        
+        // Handle 401 Unauthorized
+        if (err.response?.status === 401) {
+          setError("Session expired. Please login again.");
+          localStorage.removeItem("token");
+          setTimeout(() => {
+            navigate("/login");
+          }, 2000);
+        } else {
+          setError(err.response?.data?.message || "Failed to load dashboard stats");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [navigate]);
 
   // Socket for unread messages
   useEffect(() => {
-    const socket = io("https://ur-mt-mariko.onrender.com");
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    const socket = io(import.meta.env.VITE_API_URL || "https://ur-mt-mariko.onrender.com", {
+      auth: { token }
+    });
+    
     socket.on("newMessage", () => setUnreadMessages((prev) => prev + 1));
+    
     return () => socket.disconnect();
   }, []);
 
@@ -59,92 +98,60 @@ export default function Dashboard() {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
-        setSidebarOpen(true); // Always show sidebar on desktop
+        setSidebarOpen(true);
       } else {
-        setSidebarOpen(false); // Hide sidebar on mobile by default
+        setSidebarOpen(false);
       }
     };
 
-    // Set initial state
     handleResize();
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Toggle sidebar
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* NAVBAR - PERFECTED */}
+      {/* NAVBAR */}
       <nav className="bg-white/95 backdrop-blur-md fixed top-0 left-0 w-full z-50 border-b border-blue-100 shadow-sm">
         <div className="px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Left section - Logo and mobile menu */}
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* Hamburger button - ALWAYS VISIBLE on all screens up to md */}
               <button
                 onClick={toggleSidebar}
                 className="md:hidden relative w-10 h-10 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 aria-label="Toggle menu"
               >
                 <div className="relative w-5 h-5">
-                  <span
-                    className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
-                      sidebarOpen ? "rotate-45" : "-translate-y-2"
-                    }`}
-                  />
-                  <span
-                    className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
-                      sidebarOpen ? "opacity-0" : "opacity-100"
-                    }`}
-                  />
-                  <span
-                    className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${
-                      sidebarOpen ? "-rotate-45" : "translate-y-2"
-                    }`}
-                  />
+                  <span className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${sidebarOpen ? "rotate-45" : "-translate-y-2"}`} />
+                  <span className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${sidebarOpen ? "opacity-0" : "opacity-100"}`} />
+                  <span className={`absolute left-0 top-1/2 transform -translate-y-1/2 w-5 h-0.5 bg-current rounded-full transition-all duration-300 ${sidebarOpen ? "-rotate-45" : "translate-y-2"}`} />
                 </div>
               </button>
-
-              {/* Logo/Title - Truncated on mobile, full on desktop */}
               <h1 className="text-sm sm:text-base lg:text-xl font-bold text-blue-600 truncate max-w-[180px] sm:max-w-[300px] lg:max-w-none">
                 Sisitemu y'Umuryangoremezo Mutagatifu Mariko
               </h1>
             </div>
 
-            {/* Center section - Navigation Links (hidden on mobile) */}
             <div className="hidden md:flex items-center gap-1 lg:gap-2">
-              <Link
-                to="/"
-                className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
+              <Link to="/" className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2">
                 <FaHome className="text-blue-500" />
                 <span>Ahabanza</span>
               </Link>
-              <Link
-                to="/about"
-                className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
+              <Link to="/about" className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2">
                 <FaInfoCircle className="text-blue-500" />
                 <span>Ibyerekeye</span>
               </Link>
-              {/* REMOVED: Broken link to /reports */}
-              <Link
-                to="/contact"
-                className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
-              >
+              <Link to="/contact" className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2">
                 <FaEnvelopeOpenText className="text-blue-500" />
                 <span>Twandikire</span>
               </Link>
             </div>
 
-            {/* Right section - Actions */}
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
-              {/* Time - hidden on small mobile, visible on tablet */}
               <div className="hidden md:flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-xl">
                 <FaClock className="text-blue-500 text-sm" />
                 <span className="text-sm font-medium text-gray-700">
@@ -172,20 +179,15 @@ export default function Dashboard() {
         style={{ boxShadow: "4px 0 20px rgba(0,0,0,0.05)" }}
       >
         <div className="flex flex-col h-full">
-          {/* Sidebar Header - Mobile only */}
           <div className="md:hidden p-6 border-b border-blue-100">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-blue-600">Menu</h2>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
-              >
+              <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-blue-50 rounded-lg transition-colors">
                 <FaTimes className="text-gray-500" />
               </button>
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="space-y-1">
               <SidebarButton
@@ -227,14 +229,13 @@ export default function Dashboard() {
                 badge={unreadMessages}
                 onClick={() => {
                   setUnreadMessages(0);
-                  navigate("/dashboard/messages");
+                  navigate("/admin/messages");
                   setSidebarOpen(false);
                 }}
               />
             </div>
           </nav>
 
-          {/* Logout Button */}
           <div className="p-4 sm:p-6 border-t border-blue-100">
             <button
               onClick={logout}
@@ -248,11 +249,8 @@ export default function Dashboard() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main
-        className={`transition-all duration-300 ${sidebarOpen ? "md:ml-72" : "md:ml-0"}`}
-      >
+      <main className={`transition-all duration-300 ${sidebarOpen ? "md:ml-72" : "md:ml-0"}`}>
         <div className="pt-32 sm:pt-28 md:pt-24 lg:pt-20 px-4 sm:px-6 lg:px-8 pb-8">
-          {/* Page Header */}
           <div className="mb-6 sm:mb-8">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">
               Incamake y'Imbonerahamwe
@@ -271,43 +269,39 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center max-w-2xl mx-auto">
+              <FaExclamationCircle className="text-red-500 text-4xl mx-auto mb-3" />
+              <p className="text-red-600 font-medium mb-2">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Ongera ugerageze
+              </button>
+            </div>
           ) : (
             <>
-              {/* STATS CARDS - Exactly as shown in image */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8 max-w-4xl">
-                <StatCard
-                  title="Umubare w'Abakristu Bose"
-                  value={stats?.totalMembers || 0}
-                />
-                <StatCard
-                  title="Umubare w'ibikorwa Bose"
-                  value={stats?.totalEvents || 0}
-                />
+                <StatCard title="Umubare w'Abakristu Bose" value={stats?.totalMembers || 0} />
+                <StatCard title="Umubare w'ibikorwa Bose" value={stats?.totalEvents || 0} />
               </div>
 
-              {/* Additional Content */}
               <div className="bg-white rounded-xl shadow p-4 sm:p-6 max-w-4xl">
                 <h3 className="text-base sm:text-lg font-semibold text-blue-600 mb-4">
                   Abakristu hakurikijwe Umuryango Remezo
                 </h3>
-                {stats?.subgroupStats?.length > 0 ? (
+                {stats?.subgroupStats && stats.subgroupStats.length > 0 ? (
                   <ul className="space-y-2">
                     {stats.subgroupStats.map((s) => (
-                      <li
-                        key={s._id}
-                        className="flex justify-between border-b pb-2 text-sm sm:text-base hover:bg-blue-50 transition p-2 rounded"
-                      >
+                      <li key={s._id} className="flex justify-between border-b pb-2 text-sm sm:text-base hover:bg-blue-50 transition p-2 rounded">
                         <span>{s._id}</span>
-                        <span className="font-bold text-blue-600">
-                          {s.count}
-                        </span>
+                        <span className="font-bold text-blue-600">{s.count}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-500 text-sm sm:text-base">
-                    Nta makuru y'imiryango remezo ahari.
-                  </p>
+                  <p className="text-gray-500 text-sm sm:text-base">Nta makuru y'imiryango remezo ahari.</p>
                 )}
               </div>
             </>
@@ -315,15 +309,10 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* Add animation styles */}
       <style jsx>{`
         @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-in-out;
@@ -333,7 +322,6 @@ export default function Dashboard() {
   );
 }
 
-/* ---------- COMPONENTS ---------- */
 function SidebarButton({ icon, label, badge, active, onClick }) {
   return (
     <button
@@ -349,11 +337,7 @@ function SidebarButton({ icon, label, badge, active, onClick }) {
         <span className="font-medium text-sm sm:text-base">{label}</span>
       </div>
       {badge && (
-        <span
-          className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-            active ? "bg-white text-blue-600" : "bg-blue-100 text-blue-600"
-          }`}
-        >
+        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${active ? "bg-white text-blue-600" : "bg-blue-100 text-blue-600"}`}>
           {badge}
         </span>
       )}
