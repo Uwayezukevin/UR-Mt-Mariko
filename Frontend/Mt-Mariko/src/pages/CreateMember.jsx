@@ -83,8 +83,8 @@ export default function CreateMember() {
         );
         setParents(adults);
       } catch (err) {
-        console.error("Ntibishoboye kubona amakuru:", err);
-        setError("Nanone kugerageza kongera");
+        console.error("Error fetching data:", err);
+        setError("Failed to load form data");
       } finally {
         setFetchLoading(false);
       }
@@ -171,10 +171,6 @@ export default function CreateMember() {
       errors.spouse = "Ugomba gushyiraho uwo mwashyingiranywe";
     }
     
-    if (showSpouse && formData.spouse === formData._id) {
-      errors.spouse = "Ntushobora kwishyingira";
-    }
-    
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
       errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
     }
@@ -196,6 +192,7 @@ export default function CreateMember() {
     setError("");
 
     try {
+      // Build payload - only include fields that have values
       const payload = {
         fullName: formData.fullName.trim(),
         category: formData.category,
@@ -203,27 +200,47 @@ export default function CreateMember() {
         subgroup: formData.subgroup,
         accessibility: formData.accessibility,
         isActive: formData.isActive,
-        ...(formData.nationalId?.trim() ? { nationalId: formData.nationalId.trim() } : {}),
-        ...(formData.dateOfBirth ? { dateOfBirth: formData.dateOfBirth } : {}),
-        ...(formData.phone?.trim() ? { phone: formData.phone.trim() } : {}),
-        ...(formData.sakraments.length > 0 ? { sakraments: formData.sakraments } : {}),
-        ...(formData.accessibilityNotes?.trim() ? { accessibilityNotes: formData.accessibilityNotes.trim() } : {}),
       };
 
-      // Add parent based on category
+      // Only add optional fields if they have values
+      if (formData.nationalId?.trim()) {
+        payload.nationalId = formData.nationalId.trim();
+      }
+      
+      if (formData.dateOfBirth) {
+        payload.dateOfBirth = formData.dateOfBirth;
+      }
+      
+      if (formData.phone?.trim()) {
+        payload.phone = formData.phone.trim();
+      }
+      
+      if (formData.sakraments.length > 0) {
+        payload.sakraments = formData.sakraments;
+      }
+      
+      if (formData.accessibilityNotes?.trim()) {
+        payload.accessibilityNotes = formData.accessibilityNotes.trim();
+      }
+
+      // Add parent - ONLY for non-adult categories OR if explicitly selected for adult
       if (formData.category !== "adult" && formData.parent) {
         payload.parent = formData.parent;
       } else if (formData.category === "adult" && formData.parent) {
+        // Adults can have parents too, but it's optional
         payload.parent = formData.parent;
       }
 
-      // Add spouse if marriage is selected
+      // Add spouse if marriage is selected AND spouse is selected
       if (showSpouse && formData.spouse) {
         payload.spouse = formData.spouse;
       }
 
-      console.log("Submitting payload:", payload);
-      await api.post("/members", payload);
+      console.log("📤 Submitting payload:", JSON.stringify(payload, null, 2));
+      
+      const response = await api.post("/members", payload);
+      console.log("✅ Member created:", response.data);
+      
       setSuccess(true);
       
       setTimeout(() => {
@@ -231,13 +248,27 @@ export default function CreateMember() {
       }, 1500);
       
     } catch (err) {
-      console.error("Error:", err.response?.data || err.message);
-      const message =
-        err.response?.data?.errors?.map((e) => e.msg).join(", ") ||
-        err.response?.data?.message ||
-        "Kurema Umukristu byanze";
-
-      setError(message);
+      console.error("❌ Error creating member:", err);
+      console.error("Response data:", err.response?.data);
+      console.error("Response status:", err.response?.status);
+      
+      // Handle specific error messages
+      let errorMessage = "Kurema Umukristu byanze. Ongera ugerageze.";
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.errors) {
+        errorMessage = err.response.data.errors.map(e => e.msg).join(", ");
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      }
+      
+      // Handle duplicate national ID
+      if (errorMessage.includes("duplicate") || errorMessage.includes("Indangamuntu")) {
+        errorMessage = "Indangamuntu isanzwe ikoreshwa n'undi muntu";
+      }
+      
+      setError(errorMessage);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
@@ -251,7 +282,7 @@ export default function CreateMember() {
     return members.filter(m => 
       m.gender === oppositeGender && 
       m.accessibility === "alive" &&
-      m._id !== undefined // Don't filter by formData._id since it's undefined for new members
+      m.category === "adult"
     );
   };
 
@@ -409,8 +440,8 @@ export default function CreateMember() {
                     )}
                   </label>
                   <div className="relative">
-                    <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 
-                                      text-blue-400 text-sm sm:text-base`} />
+                    <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 
+                                      text-blue-400 text-sm sm:text-base" />
                     <select
                       name="parent"
                       value={formData.parent}
@@ -425,7 +456,7 @@ export default function CreateMember() {
                       <option value="">
                         {formData.category === "adult" 
                           ? "Hitamo Umubyeyi (Ntawe)" 
-                          : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
+                          : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Umukristu"}`}
                       </option>
                       {parentOptions.length === 0 ? (
                         <option value="" disabled>Nta babyeyi babonetse</option>
@@ -666,48 +697,6 @@ export default function CreateMember() {
                   )}
                 </div>
               )}
-
-              {/* isActive Status */}
-              <div className={`space-y-2 p-4 rounded-xl border-2 ${
-                formData.accessibility === "alive" 
-                  ? "border-green-200 bg-green-50" 
-                  : formData.accessibility === "dead"
-                  ? "border-gray-300 bg-gray-100"
-                  : "border-orange-200 bg-orange-50"
-              }`}>
-                <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                  Ikimezo cyo gukora
-                </label>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={formData.isActive === true}
-                      onChange={() => setFormData(prev => ({ ...prev, isActive: true }))}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <span className="text-sm">Arakora</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="isActive"
-                      checked={formData.isActive === false}
-                      onChange={() => setFormData(prev => ({ ...prev, isActive: false }))}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <span className="text-sm">Ntakora</span>
-                  </label>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.accessibility === "alive" 
-                    ? "Umukristu arakora kandi ariho"
-                    : formData.accessibility === "dead"
-                    ? "Umukristu yapfuye - ntabwo ashobora gukora"
-                    : "Umukristu yimukiye ahandi - ntabwo ashobora gukora"}
-                </p>
-              </div>
 
               {/* Sakraments */}
               <div className="space-y-2 sm:space-y-3">

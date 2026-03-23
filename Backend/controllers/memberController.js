@@ -38,9 +38,12 @@ export const createMember = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Parent validation based on category
+    console.log("📝 Creating member:", { fullName, category, gender, parent: parent || "none" });
+
+    // Parent validation based on category - FIX: Check if parent is null, undefined, OR empty string
     if (category !== "adult") {
-      if (!parent) {
+      // Parent is required for child and youth
+      if (!parent || parent === "" || parent === "null") {
         return res.status(400).json({
           message: `${category === "child" ? "Umwana" : "Urubyiruko"} agomba kugira umubyeyi`,
         });
@@ -51,7 +54,7 @@ export const createMember = async (req, res) => {
     const marriageId = await getMarriageSakramentId();
     const hasMarriage = sakraments?.some(sak => sak.toString() === marriageId?.toString());
 
-    if (hasMarriage && !spouse) {
+    if (hasMarriage && (!spouse || spouse === "" || spouse === "null")) {
       return res.status(400).json({
         message: "Ugomba gushyiraho uwo mwashyingiranywe",
       });
@@ -68,31 +71,46 @@ export const createMember = async (req, res) => {
     const memberIsActive = isActive !== undefined ? isActive : 
                           (memberAccessibility === "alive" ? true : false);
 
-    if (memberAccessibility !== "alive" && !accessibilityNotes) {
+    if (memberAccessibility !== "alive" && (!accessibilityNotes || accessibilityNotes === "")) {
       return res.status(400).json({
         message: "Accessibility notes are required when status is not 'alive'",
       });
     }
 
-    const member = await Member.create({
+    // Prepare member data - FIX: Only include parent if it has a valid value
+    const memberData = {
       fullName,
       category,
-      nationalId,
-      dateOfBirth,
-      phone,
-      parent: parent || null,
       gender,
       subgroup,
-      sakraments: sakraments || [],
-      spouse: spouse || null,
       accessibility: memberAccessibility,
-      accessibilityNotes: accessibilityNotes || "",
       accessibilityUpdatedAt: new Date(),
       isActive: memberIsActive,
-    });
+    };
 
+    // Only add optional fields if they have values
+    if (nationalId && nationalId !== "") memberData.nationalId = nationalId;
+    if (dateOfBirth && dateOfBirth !== "") memberData.dateOfBirth = dateOfBirth;
+    if (phone && phone !== "") memberData.phone = phone;
+    if (sakraments && sakraments.length > 0) memberData.sakraments = sakraments;
+    if (accessibilityNotes && accessibilityNotes !== "") memberData.accessibilityNotes = accessibilityNotes;
+    
+    // FIX: Handle parent - only add if it's a valid ID (not empty string, not null)
+    if (parent && parent !== "" && parent !== "null" && parent !== "undefined") {
+      memberData.parent = parent;
+    }
+    
+    // FIX: Handle spouse - only add if it's a valid ID
+    if (spouse && spouse !== "" && spouse !== "null" && spouse !== "undefined") {
+      memberData.spouse = spouse;
+    }
+
+    console.log("📦 Creating member with data:", memberData);
+
+    const member = await Member.create(memberData);
+    
     // If spouse is set, update the spouse's record as well
-    if (spouse) {
+    if (spouse && spouse !== "" && spouse !== "null") {
       await Member.findByIdAndUpdate(spouse, {
         spouse: member._id,
       });
@@ -109,7 +127,7 @@ export const createMember = async (req, res) => {
       member: populatedMember,
     });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Create member error:", err);
     
     if (err.code === 11000 && err.keyPattern?.nationalId) {
       return res.status(400).json({ 
@@ -117,7 +135,10 @@ export const createMember = async (req, res) => {
       });
     }
     
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ 
+      message: "Server error",
+      error: err.message 
+    });
   }
 };
 
