@@ -22,6 +22,14 @@ const attendanceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// ✅ Add compound index to prevent duplicate attendance records
+// This ensures a member can only have one attendance record per event
+attendanceSchema.index({ event: 1, member: 1 }, { unique: true });
+
+// ✅ Add index for faster queries
+attendanceSchema.index({ member: 1 });
+attendanceSchema.index({ event: 1 });
+
 // ✅ Prevent OverwriteModelError
 const Attendance =
   mongoose.models.Attendance ||
