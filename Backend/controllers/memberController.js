@@ -49,6 +49,7 @@ export const createMember = async (req, res) => {
       parent: parent || "null",
       spouse: spouse || "null",
       sakramentsCount: sakraments?.length || 0,
+      sakraments: sakraments || [],
       accessibility
     });
 
@@ -155,7 +156,6 @@ export const createMember = async (req, res) => {
     if (nationalId && nationalId !== "") memberData.nationalId = nationalId;
     if (dateOfBirth && dateOfBirth !== "") memberData.dateOfBirth = dateOfBirth;
     if (phone && phone !== "") memberData.phone = phone;
-    if (sakraments && sakraments.length > 0) memberData.sakraments = sakraments;
     if (accessibilityNotes && accessibilityNotes !== "") memberData.accessibilityNotes = accessibilityNotes;
     
     if (parent && parent !== "" && parent !== "null" && parent !== "undefined") {
@@ -166,6 +166,27 @@ export const createMember = async (req, res) => {
     if (spouse && spouse !== "" && spouse !== "null" && spouse !== "undefined") {
       console.log("🔍 Adding spouse:", spouse);
       memberData.spouse = spouse;
+    }
+    
+    // 🔥 CRITICAL FIX: Filter and validate sakraments
+    if (sakraments && sakraments.length > 0) {
+      console.log("🔍 Processing sakraments:", sakraments);
+      
+      // Get all valid sakrament IDs from database
+      const Amasakramentu = mongoose.model("Amasakramentu");
+      const validSakraments = await Amasakramentu.find({ 
+        _id: { $in: sakraments.filter(id => mongoose.Types.ObjectId.isValid(id)) } 
+      });
+      
+      const validSakramentIds = validSakraments.map(s => s._id);
+      console.log("✅ Valid sakrament IDs from DB:", validSakramentIds.map(id => id.toString()));
+      
+      if (validSakramentIds.length > 0) {
+        memberData.sakraments = validSakramentIds;
+        console.log("✅ Adding valid sakraments to member:", validSakramentIds.length);
+      } else {
+        console.log("⚠️ No valid sakraments found, skipping");
+      }
     }
 
     console.log("📦 Final member data to save:", JSON.stringify(memberData, null, 2));
@@ -203,6 +224,23 @@ export const createMember = async (req, res) => {
     console.error("❌ Error name:", err.name);
     console.error("❌ Error message:", err.message);
     console.error("❌ Error stack:", err.stack);
+    
+    // Check for specific MongoDB errors
+    if (err.name === 'CastError') {
+      console.error("❌ CastError - Invalid ID format");
+      return res.status(400).json({ 
+        message: "Invalid ID format in one of the fields",
+        error: err.message 
+      });
+    }
+    
+    if (err.name === 'ValidationError') {
+      console.error("❌ ValidationError - Schema validation failed");
+      return res.status(400).json({ 
+        message: "Validation error",
+        errors: Object.values(err.errors).map(e => e.message)
+      });
+    }
     
     if (err.code === 11000 && err.keyPattern?.nationalId) {
       console.log("❌ Duplicate national ID detected");
