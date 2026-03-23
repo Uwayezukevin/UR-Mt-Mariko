@@ -1,6 +1,6 @@
 import { checkSchema } from "express-validator";
 import mongoose from "mongoose";
-import Amasakramentu from "../mongoschema/amasakramentuSchema.js"; // Adjust path as needed
+import Amasakramentu from "../mongoschema/sakramentsSchema.js"; // Adjust path as needed
 
 // Helper function to get marriage sakrament ID
 let marriageSakramentId = null;
