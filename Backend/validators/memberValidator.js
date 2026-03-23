@@ -18,12 +18,6 @@ const getMarriageSakramentId = async () => {
 };
 
 /* ================= CREATE MEMBER SCHEMA ================= */
-
-import { checkSchema } from "express-validator";
-import mongoose from "mongoose";
-
-/* ================= CREATE MEMBER SCHEMA ================= */
-
 export const createMemberSchema = checkSchema({
   fullName: {
     notEmpty: { errorMessage: "Izina ryuzuye rirakenewe" },
