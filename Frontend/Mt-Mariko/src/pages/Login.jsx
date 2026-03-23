@@ -32,18 +32,22 @@ export default function Login() {
       setFormData(prev => ({ ...prev, useremail: savedEmail }));
       setRememberMe(true);
     }
+    
+    // Debug: Check if token already exists
+    const existingToken = localStorage.getItem("token");
+    if (existingToken) {
+      console.log("🔐 Existing token found:", existingToken.substring(0, 20) + "...");
+    }
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     
-    // Clear validation error for this field
     if (validationErrors[name]) {
       setValidationErrors(prev => ({ ...prev, [name]: "" }));
     }
     
-    // Clear general error when user starts typing
     if (error) setError("");
   };
 
@@ -68,7 +72,6 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate form
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -79,34 +82,52 @@ export default function Login() {
     setError("");
 
     try {
+      console.log("📤 Attempting login for:", formData.useremail);
+      
       const res = await api.post("/users/login", {
         useremail: formData.useremail,
         userpassword: formData.userpassword,
       });
 
+      console.log("✅ Login response:", res.data);
+      
       // Save token
-      localStorage.setItem("token", res.data.token);
+      const token = res.data.token;
+      localStorage.setItem("token", token);
+      console.log("🔐 Token saved:", token.substring(0, 30) + "...");
+      
+      // Save user info if needed
+      if (res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        console.log("👤 User saved:", res.data.user);
+      }
       
       // Save email if remember me is checked
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", formData.useremail);
+        console.log("💾 Email saved for remember me");
       } else {
         localStorage.removeItem("rememberedEmail");
       }
 
-      // Show success message and redirect
-      setError(""); // Clear any errors
+      // Clear error and redirect
+      setError("");
       
-      // Add a small delay for better UX
+      // Small delay before redirect
       setTimeout(() => {
+        console.log("🚀 Redirecting to dashboard...");
         navigate("/dashboard");
       }, 500);
       
     } catch (err) {
+      console.error("❌ Login error:", err);
+      console.error("Response data:", err.response?.data);
+      console.error("Response status:", err.response?.status);
+      
       const errorMessage = err.response?.data?.message || "Kwinjira byanze. Ongera ugerageze.";
       setError(errorMessage);
       
-      // Clear password field on error for security
+      // Clear password field on error
       setFormData(prev => ({ ...prev, userpassword: "" }));
     } finally {
       setLoading(false);
@@ -119,14 +140,12 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-6 sm:px-6">
-      {/* Background Decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 
@@ -138,10 +157,8 @@ export default function Login() {
           <span className="font-medium">Subira Inyuma</span>
         </button>
 
-        {/* Login Card */}
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden">
           
-          {/* Header with Gradient */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 sm:px-8 py-6 sm:py-8 text-center">
             <div className="bg-white/20 rounded-full w-16 h-16 sm:w-20 sm:h-20 
                           flex items-center justify-center mx-auto mb-4">
@@ -155,10 +172,8 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Form Container */}
           <div className="p-5 sm:p-6 md:p-8">
             
-            {/* Error Message */}
             {error && (
               <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 
                             rounded-xl p-3 sm:p-4 flex items-start gap-3 animate-shake">
@@ -172,25 +187,8 @@ export default function Login() {
               </div>
             )}
 
-            {/* Success Message Example - Uncomment if needed */}
-            {/* {success && (
-              <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 
-                            rounded-xl p-3 sm:p-4 flex items-start gap-3">
-                <FaCheckCircle className="text-green-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-green-700 text-xs sm:text-sm font-medium">
-                    Kwinjira byagenze neza!
-                  </p>
-                  <p className="text-green-600 text-xs sm:text-sm mt-1">
-                    Turongera tujya kuri dashboard...
-                  </p>
-                </div>
-              </div>
-            )} */}
-
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" autoComplete="off">
               
-              {/* Email Field */}
               <div className="space-y-1">
                 <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                   Email Address
@@ -229,7 +227,6 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Password Field */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -284,7 +281,6 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Remember Me Checkbox */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <input
@@ -301,7 +297,6 @@ export default function Login() {
                 </label>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -329,7 +324,6 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Divider */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
@@ -339,7 +333,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Sign Up Link */}
             <p className="text-center text-xs sm:text-sm text-gray-500">
               Nta konti ufite?{" "}
               <button
@@ -351,7 +344,6 @@ export default function Login() {
               </button>
             </p>
 
-            {/* Security Note */}
             <div className="mt-4 sm:mt-6 text-center">
               <p className="text-xs text-gray-400 flex items-center justify-center gap-1">
                 <FaShieldAlt className="text-gray-400 text-xs" />
@@ -361,7 +353,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Footer Links */}
         <div className="mt-4 sm:mt-6 text-center text-xs text-gray-400">
           <a href="#" className="hover:text-blue-600 transition-colors">Amategeko</a>
           <span className="mx-2">•</span>
@@ -369,7 +360,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Add animation styles */}
       <style jsx>{`
         @keyframes blob {
           0% { transform: translate(0px, 0px) scale(1); }
