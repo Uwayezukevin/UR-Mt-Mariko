@@ -66,8 +66,8 @@ app.get("/", (req, res) => {
 // ROUTES
 // ===============================
 app.use("/umuryangoremezo/backend", router);
-app.use("/dashboard", dashboardRoutes);
-app.use("/messages", messageRoutes);
+app.use("/umuryangoremezo/backend/dashboard", dashboardRoutes);
+app.use("/umuryangoremezo/backend/messages", messageRoutes);
 app.use("/umuryangoremezo/backend/reports", reportRoutes);
 app.use("/umuryangoremezo/backend/api/upload", uploadRoutes);
 
