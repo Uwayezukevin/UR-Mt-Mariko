@@ -28,7 +28,8 @@ import {
   FaChartLine,
   FaHeartbeat,
   FaSkull,
-  FaTruck
+  FaTruck,
+  FaRing
 } from "react-icons/fa";
 
 export default function Home() {
@@ -59,7 +60,8 @@ export default function Home() {
   // SAKRAMENTS STATE
   const [sakraments, setSakraments] = useState([]);
   const [parents, setParents] = useState([]);
-  const [allParents, setAllParents] = useState([]); // All potential parents (adults + youth)
+  const [allParents, setAllParents] = useState([]);
+  const [members, setMembers] = useState([]);
 
   // MEMBER REGISTRATION STATES
   const [showRegistration, setShowRegistration] = useState(false);
@@ -73,6 +75,7 @@ export default function Home() {
     gender: "",
     subgroup: "",
     sakraments: [],
+    spouse: "",
     accessibility: "alive",
     accessibilityNotes: "",
     isActive: true,
@@ -82,6 +85,7 @@ export default function Home() {
   const [registerError, setRegisterError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const [showNotes, setShowNotes] = useState(false);
+  const [showSpouse, setShowSpouse] = useState(false);
 
   // MOBILE MENU
   const [menuOpen, setMenuOpen] = useState(false);
@@ -108,7 +112,7 @@ export default function Home() {
     fetchEvents();
   }, []);
 
-  // FETCH SUBGROUPS, SAKRAMENTS, AND PARENTS
+  // FETCH SUBGROUPS, SAKRAMENTS, AND MEMBERS
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -120,14 +124,13 @@ export default function Home() {
 
         setSubgroups(subgroupsRes.data);
         setSakraments(sakramentsRes.data);
+        setMembers(membersRes.data);
 
-        // Filter adult parents (for backward compatibility)
         const adults = membersRes.data.filter(
           (member) => member.category === "adult"
         );
         setParents(adults);
 
-        // All potential parents (adults and youth)
         const potentialParents = membersRes.data.filter(
           (member) => member.category === "adult" || member.category === "youth"
         );
@@ -138,6 +141,17 @@ export default function Home() {
     };
     fetchData();
   }, []);
+
+  // Check if marriage sakrament is selected
+  const isMarriageSakramentSelected = () => {
+    const marriageSakramentId = sakraments.find(s => s.name === "Ugushyingirwa")?._id;
+    return registerData.sakraments.includes(marriageSakramentId);
+  };
+
+  // Update spouse field visibility when sakraments change
+  useEffect(() => {
+    setShowSpouse(isMarriageSakramentSelected());
+  }, [registerData.sakraments, sakraments]);
 
   // AUTO SEARCH
   useEffect(() => {
@@ -246,16 +260,13 @@ export default function Home() {
     setRegisterData((prev) => {
       const updated = { ...prev, [name]: value };
       
-      // Handle category change - clear parent when category changes
       if (name === "category") {
         updated.parent = "";
       }
       
-      // Handle accessibility change
       if (name === "accessibility") {
         setShowNotes(value !== "alive");
         
-        // Auto-set isActive based on accessibility
         if (value === "dead" || value === "moved") {
           updated.isActive = false;
         } else if (value === "alive") {
@@ -274,6 +285,17 @@ export default function Home() {
         ? prev.sakraments.filter((s) => s !== id)
         : [...prev.sakraments, id],
     }));
+  };
+
+  // Get potential spouses (opposite gender, alive, not self)
+  const getPotentialSpouses = () => {
+    const oppositeGender = registerData.gender === "male" ? "female" : "male";
+    return members.filter(m => 
+      m.gender === oppositeGender && 
+      m.accessibility === "alive" &&
+      m._id !== registerData._id &&
+      (m.category === "adult" || m.category === "youth")
+    );
   };
 
   const validateForm = () => {
@@ -301,9 +323,18 @@ export default function Home() {
       }
     }
     
+    // Spouse validation
+    if (showSpouse && !registerData.spouse) {
+      errors.spouse = "Ugomba gushyiraho uwo mwashyingiranywe";
+    }
+    
+    if (showSpouse && registerData.spouse === registerData._id) {
+      errors.spouse = "Ntushobora kwishyingira";
+    }
+    
     // Accessibility notes validation
     if (registerData.accessibility !== "alive" && !registerData.accessibilityNotes?.trim()) {
-      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'icyemezo";
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
     }
 
     return errors;
@@ -341,10 +372,13 @@ export default function Home() {
       if (registerData.category !== "adult" && registerData.parent) {
         payload.parent = registerData.parent;
       } else if (registerData.category === "adult" && registerData.parent) {
-        // Adults can optionally have a parent
         payload.parent = registerData.parent;
       }
-      // For adults without parent, don't include parent field
+
+      // Add spouse if marriage is selected
+      if (showSpouse && registerData.spouse) {
+        payload.spouse = registerData.spouse;
+      }
 
       await api.post("/members", payload);
       setRegisterSuccess(true);
@@ -359,6 +393,7 @@ export default function Home() {
         gender: "",
         subgroup: "",
         sakraments: [],
+        spouse: "",
         accessibility: "alive",
         accessibilityNotes: "",
         isActive: true,
@@ -409,7 +444,6 @@ export default function Home() {
     }
   };
 
-  // Get accessibility icon and color
   const getAccessibilityInfo = (status) => {
     switch(status) {
       case "alive":
@@ -439,16 +473,12 @@ export default function Home() {
     }
   };
 
-  // Determine which parents to show based on category
   const getParentOptions = () => {
     if (registerData.category === "child") {
-      // Children can have adult or youth parents
       return allParents;
     } else if (registerData.category === "youth") {
-      // Youth can have adult parents (typically)
-      return parents; // adults only
+      return parents;
     } else if (registerData.category === "adult") {
-      // Adults can have any parent (optional)
       return allParents;
     }
     return [];
@@ -460,7 +490,6 @@ export default function Home() {
       <nav className="bg-white/95 backdrop-blur-sm shadow-lg fixed top-0 left-0 w-full z-50 border-b border-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
-            {/* Logo */}
             <div className="flex items-center">
               <FaChurch className="text-blue-600 text-xl sm:text-2xl mr-2" />
               <h1 className="text-sm sm:text-base md:text-lg font-bold text-blue-600 truncate max-w-[200px] sm:max-w-none">
@@ -468,7 +497,6 @@ export default function Home() {
               </h1>
             </div>
 
-            {/* Desktop Links */}
             <div className="hidden md:flex items-center gap-6 text-gray-700">
               <a href="#home" className="hover:text-blue-600 transition-colors text-sm font-medium">
                 Ahabanza
@@ -506,7 +534,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Mobile menu button */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="md:hidden text-blue-600 text-xl p-2 hover:bg-blue-50 rounded-lg transition-colors"
@@ -517,28 +544,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {menuOpen && (
           <div className="md:hidden bg-white shadow-lg border-t border-blue-100">
-            <a 
-              href="#home" 
-              className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700"
-              onClick={() => setMenuOpen(false)}
-            >
+            <a href="#home" className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700" onClick={() => setMenuOpen(false)}>
               Ahabanza
             </a>
-            <a 
-              href="#about" 
-              className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700"
-              onClick={() => setMenuOpen(false)}
-            >
+            <a href="#about" className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700" onClick={() => setMenuOpen(false)}>
               Ibyerekeye
             </a>
-            <a 
-              href="#contact" 
-              className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700"
-              onClick={() => setMenuOpen(false)}
-            >
+            <a href="#contact" className="block px-6 py-3 hover:bg-blue-50 transition-colors text-gray-700" onClick={() => setMenuOpen(false)}>
               Twandikire
             </a>
             <div className="px-6 py-3 border-t border-blue-100 space-y-2">
@@ -574,10 +588,7 @@ export default function Home() {
       </nav>
 
       {/* HERO SECTION */}
-      <section
-        id="home"
-        className="pt-28 sm:pt-32 md:pt-36 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
-      >
+      <section id="home" className="pt-28 sm:pt-32 md:pt-36 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center">
           <div className="inline-block bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-medium mb-4">
             Murakaza neza
@@ -619,7 +630,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Decorative Elements */}
         <div className="mt-12 flex justify-center gap-4">
           <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse delay-100"></div>
@@ -633,7 +643,6 @@ export default function Home() {
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl 
                         transition-shadow duration-300 overflow-hidden border-2 border-green-200">
             
-            {/* Header with gradient */}
             <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 sm:px-6 md:px-8 py-4 sm:py-5">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
                 Kwiyandikisha nk'Umukristu
@@ -643,10 +652,8 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Form Container */}
             <div className="p-4 sm:p-6 md:p-8">
               
-              {/* Success Message */}
               {registerSuccess && (
                 <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 
                               rounded-lg p-3 sm:p-4 flex items-start gap-3">
@@ -662,7 +669,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Error Message */}
               {registerError && (
                 <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 
                               rounded-lg p-3 sm:p-4 flex items-start gap-3">
@@ -677,6 +683,7 @@ export default function Home() {
               )}
 
               <form onSubmit={handleRegisterSubmit} className="space-y-4 sm:space-y-5" autoComplete="off">
+                
                 {/* Full Name */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -734,7 +741,7 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Parent - Shows for all categories with conditional requirement */}
+                {/* Parent */}
                 {registerData.category && (
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -760,7 +767,7 @@ export default function Home() {
                       >
                         <option value="">
                           {registerData.category === "adult" 
-                            ? "Hitamo Umubyeyi (Ntayo)" 
+                            ? "Hitamo Umubyeyi (Ntawe)" 
                             : `Hitamo Umubyeyi w'${registerData.category === "child" ? "Umwana" : "Umukristu"}`}
                         </option>
                         {getParentOptions().length === 0 ? (
@@ -788,7 +795,6 @@ export default function Home() {
                 {/* Two Column Layout */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   
-                  {/* National ID */}
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                       Indangamuntu
@@ -810,7 +816,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Phone */}
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                       Telefoni
@@ -832,7 +837,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Date of Birth */}
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                       Itariki y'Amavuko
@@ -853,7 +857,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Gender */}
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                       Igitsina <span className="text-red-500">*</span>
@@ -915,6 +918,44 @@ export default function Home() {
                   )}
                 </div>
 
+                {/* Spouse Field - Shows when Ugushyingirwa is selected */}
+                {showSpouse && (
+                  <div className="space-y-1">
+                    <label className="text-xs sm:text-sm font-medium text-gray-700 block">
+                      Uwo mwashyingiranywe <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaRing className="absolute left-3 top-1/2 -translate-y-1/2 
+                                        text-green-400 text-sm sm:text-base" />
+                      <select
+                        name="spouse"
+                        value={registerData.spouse}
+                        onChange={handleRegisterChange}
+                        required
+                        className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                                   border rounded-lg sm:rounded-xl 
+                                   focus:ring-2 focus:ring-green-500 focus:border-green-500
+                                   text-sm sm:text-base appearance-none bg-white
+                                   ${validationErrors.spouse ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                      >
+                        <option value="">Hitamo uwo mwashyingiranywe</option>
+                        {getPotentialSpouses().length === 0 ? (
+                          <option value="" disabled>Nta bashakanye babonetse</option>
+                        ) : (
+                          getPotentialSpouses().map((s) => (
+                            <option key={s._id} value={s._id}>
+                              {s.fullName} ({s.category === "adult" ? "Umukuru" : "Urubyiruko"})
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                    {validationErrors.spouse && (
+                      <p className="text-red-500 text-xs mt-1">{validationErrors.spouse}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Accessibility Status */}
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -944,7 +985,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Accessibility Notes - Shows when not "alive" */}
+                {/* Accessibility Notes */}
                 {showNotes && (
                   <div className="space-y-1">
                     <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -1065,7 +1106,6 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Cancel Button */}
                 <button
                   type="button"
                   onClick={() => setShowRegistration(false)}
@@ -1075,7 +1115,6 @@ export default function Home() {
                   Gusiba
                 </button>
 
-                {/* Required Fields Note */}
                 <p className="text-xs text-gray-500 text-center mt-4">
                   <span className="text-red-500">*</span> Ibyanditswe n'inyuguti zitukura birakenewe
                 </p>
@@ -1098,7 +1137,6 @@ export default function Home() {
 
         <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Subgroup Select */}
             <div className="relative">
               <FaUsers className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
               <select
@@ -1117,7 +1155,6 @@ export default function Home() {
               </select>
             </div>
 
-            {/* Search Input */}
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
               <input
@@ -1132,14 +1169,12 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Search Tips */}
           <div className="text-xs text-gray-400 flex items-center gap-2">
             <FaInfoCircle />
             <span>Shyiramo umuryango remezo n'izina kugirango ubone ibisubizo</span>
           </div>
         </div>
 
-        {/* Loading State */}
         {searchLoading && (
           <div className="mt-8 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-200 border-t-blue-600"></div>
@@ -1147,7 +1182,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Search Results */}
         {searchResults.length > 0 && !searchLoading && (
           <div className="mt-8 space-y-4">
             <h4 className="text-lg font-semibold text-blue-600 mb-4">
@@ -1166,7 +1200,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* No Results */}
         {searchTerm && selectedSubgroup && searchResults.length === 0 && !searchLoading && (
           <div className="mt-8 text-center py-8 bg-white rounded-2xl shadow">
             <FaUser className="text-gray-300 text-4xl mx-auto mb-4" />
@@ -1248,7 +1281,6 @@ export default function Home() {
 
           <div className="bg-white rounded-2xl shadow-xl p-5 sm:p-6 max-w-xl mx-auto">
             <form onSubmit={handleContactSubmit} className="space-y-4">
-              {/* Name Input */}
               <div className="relative">
                 <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
                 <input
@@ -1264,7 +1296,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* Email Input */}
               <div className="relative">
                 <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
                 <input
@@ -1279,7 +1310,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* Phone Input */}
               <div className="relative">
                 <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 text-sm" />
                 <input
@@ -1294,7 +1324,6 @@ export default function Home() {
                 />
               </div>
 
-              {/* Message Input */}
               <textarea
                 name="message"
                 placeholder="Ubutumwa bwawe..."
@@ -1307,7 +1336,6 @@ export default function Home() {
                 required
               />
 
-              {/* Error Message */}
               {contactError && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
                   <FaExclamationCircle className="text-red-500 text-sm flex-shrink-0 mt-0.5" />
@@ -1315,7 +1343,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Success Message */}
               {successMsg && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-start gap-2">
                   <FaCheckCircle className="text-green-500 text-sm flex-shrink-0 mt-0.5" />
@@ -1323,7 +1350,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={sending}
@@ -1374,7 +1400,7 @@ export default function Home() {
   );
 }
 
-// Enhanced Member Details Card Component
+// Member Details Card Component
 function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttendancePercentage }) {
   const translateCategory = (category) => {
     if (category === "child") return "Umwana";
@@ -1392,7 +1418,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
       .slice(0, 2);
   };
 
-  // Get accessibility info
   const getAccessibilityInfo = (status) => {
     switch(status) {
       case "alive":
@@ -1426,7 +1451,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
 
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
-      {/* Header - Always visible */}
       <div 
         className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
         onClick={onToggle}
@@ -1462,9 +1486,7 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
           </div>
         </div>
 
-        {/* Quick Stats - Always visible */}
         <div className="mt-3 flex items-center gap-3">
-          {/* Accessibility Status Badge */}
           <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1
                         ${accessibilityInfo.color}`}>
             {accessibilityInfo.icon}
@@ -1488,10 +1510,8 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
         </div>
       </div>
 
-      {/* Expanded Details */}
       {isExpanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50">
-          {/* Personal Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div className="flex items-center gap-3 p-3 bg-white rounded-xl">
               <FaVenusMars className="text-blue-600 text-lg" />
@@ -1545,7 +1565,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
               </div>
             </div>
 
-            {/* Parent Info */}
             {member.parent && (
               <div className="flex items-center gap-3 p-3 bg-white rounded-xl sm:col-span-2">
                 <FaUser className="text-blue-600 text-lg" />
@@ -1560,7 +1579,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
               </div>
             )}
 
-            {/* Accessibility Notes */}
             {member.accessibilityNotes && (
               <div className={`p-3 rounded-xl sm:col-span-2 ${accessibilityInfo.color}`}>
                 <p className="text-xs font-medium opacity-75">Ibisobanuro ku kimezo</p>
@@ -1569,7 +1587,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
             )}
           </div>
 
-          {/* Stats */}
           <div className="mb-4">
             <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <FaChartLine className="text-blue-600" />
@@ -1590,7 +1607,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
               </div>
             </div>
 
-            {/* Progress Bar */}
             {member.stats?.total > 0 && (
               <div className="mt-3">
                 <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -1607,7 +1623,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
             )}
           </div>
 
-          {/* Attendance History */}
           {member.attendance?.length > 0 && (
             <div>
               <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -1615,7 +1630,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
                 Amateka yo kwitabira
               </h5>
               
-              {/* Mobile View */}
               <div className="block sm:hidden space-y-2">
                 {member.attendance.slice(0, 3).map((record) => (
                   <div key={record._id} className="bg-white rounded-lg p-3">
@@ -1636,7 +1650,6 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
                 ))}
               </div>
 
-              {/* Desktop View */}
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -1644,7 +1657,7 @@ function MemberDetailsCard({ member, isExpanded, onToggle, formatDate, getAttend
                       <th className="p-2 text-left">Igikorwa</th>
                       <th className="p-2 text-left">Uko yitabiriye</th>
                       <th className="p-2 text-left">Itariki</th>
-                    </tr>
+                     </tr>
                   </thead>
                   <tbody>
                     {member.attendance.slice(0, 5).map((record) => (

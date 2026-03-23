@@ -736,7 +736,7 @@ export default function UpdateMember() {
                       >
                         <option value="">
                           {formData.category === "adult" 
-                            ? "Hitamo Umubyeyi (Ntayo)" 
+                            ? "Hitamo Umubyeyi (Ntawe)" 
                             : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Umukristu"}`}
                         </option>
                         {parentOptions.length === 0 ? (

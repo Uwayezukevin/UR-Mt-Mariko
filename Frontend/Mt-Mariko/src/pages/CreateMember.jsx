@@ -407,7 +407,7 @@ export default function CreateMember() {
                     >
                       <option value="">
                         {formData.category === "adult" 
-                          ? "Hitamo Umubyeyi (Ntayo)" 
+                          ? "Hitamo Umubyeyi (Ntawe)" 
                           : `Hitamo Umubyeyi w'${formData.category === "child" ? "Umwana" : "Urubyiruko"}`}
                       </option>
                       {parentOptions.length === 0 ? (
