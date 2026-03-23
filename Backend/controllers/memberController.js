@@ -22,6 +22,9 @@ const getMarriageSakramentId = async () => {
 // ================= CREATE MEMBER =================
 export const createMember = async (req, res) => {
   try {
+    console.log("🔍 ========== CREATE MEMBER START ==========");
+    console.log("📦 Request body received:", JSON.stringify(req.body, null, 2));
+    
     const {
       fullName,
       category,
@@ -38,46 +41,106 @@ export const createMember = async (req, res) => {
       isActive,
     } = req.body;
 
-    console.log("📝 Creating member:", { fullName, category, gender, parent: parent || "none" });
+    console.log("✅ Extracted fields:", {
+      fullName,
+      category,
+      gender,
+      subgroup,
+      parent: parent || "null",
+      spouse: spouse || "null",
+      sakramentsCount: sakraments?.length || 0,
+      accessibility
+    });
 
-    // Parent validation based on category - FIX: Check if parent is null, undefined, OR empty string
+    // Validate required fields
+    if (!fullName) {
+      console.log("❌ Missing fullName");
+      return res.status(400).json({ message: "Full name is required" });
+    }
+    
+    if (!category) {
+      console.log("❌ Missing category");
+      return res.status(400).json({ message: "Category is required" });
+    }
+    
+    if (!gender) {
+      console.log("❌ Missing gender");
+      return res.status(400).json({ message: "Gender is required" });
+    }
+    
+    if (!subgroup) {
+      console.log("❌ Missing subgroup");
+      return res.status(400).json({ message: "Subgroup is required" });
+    }
+
+    console.log("✅ Required fields validated");
+
+    // Parent validation based on category
     if (category !== "adult") {
-      // Parent is required for child and youth
-      if (!parent || parent === "" || parent === "null") {
+      console.log("🔍 Checking parent for non-adult category:", category);
+      if (!parent || parent === "" || parent === "null" || parent === "undefined") {
+        console.log("❌ Parent missing for non-adult");
         return res.status(400).json({
           message: `${category === "child" ? "Umwana" : "Urubyiruko"} agomba kugira umubyeyi`,
         });
       }
     }
 
-    // Spouse validation - check if marriage sakrament is selected
-    const marriageId = await getMarriageSakramentId();
-    const hasMarriage = sakraments?.some(sak => sak.toString() === marriageId?.toString());
+    console.log("✅ Parent validation passed");
+
+    // Spouse validation - only if marriage sakrament is selected
+    console.log("🔍 Checking marriage sakrament...");
+    let hasMarriage = false;
+    let marriageId = null;
+    
+    try {
+      // Safely get marriage sakrament ID
+      const Amasakramentu = mongoose.model("Amasakramentu");
+      const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
+      if (marriage) {
+        marriageId = marriage._id;
+        hasMarriage = sakraments?.some(sak => sak && sak.toString() === marriageId.toString());
+        console.log("✅ Marriage sakrament found:", marriageId);
+        console.log("🔍 Has marriage in selected sakraments:", hasMarriage);
+      } else {
+        console.log("⚠️ Marriage sakrament not found in database");
+      }
+    } catch (err) {
+      console.error("❌ Error checking marriage sakrament:", err);
+    }
 
     if (hasMarriage && (!spouse || spouse === "" || spouse === "null")) {
+      console.log("❌ Marriage selected but no spouse provided");
       return res.status(400).json({
         message: "Ugomba gushyiraho uwo mwashyingiranywe",
       });
     }
 
     if (spouse && spouse === req.body._id) {
+      console.log("❌ Self-marriage attempted");
       return res.status(400).json({
         message: "Ntushobora kwishyingira",
       });
     }
 
-    // Set default values for accessibility fields
+    console.log("✅ Spouse validation passed");
+
+    // Accessibility validation
     const memberAccessibility = accessibility || "alive";
     const memberIsActive = isActive !== undefined ? isActive : 
                           (memberAccessibility === "alive" ? true : false);
 
     if (memberAccessibility !== "alive" && (!accessibilityNotes || accessibilityNotes === "")) {
+      console.log("❌ Accessibility notes missing for non-alive status");
       return res.status(400).json({
         message: "Accessibility notes are required when status is not 'alive'",
       });
     }
 
-    // Prepare member data - FIX: Only include parent if it has a valid value
+    console.log("✅ Accessibility validation passed");
+
+    // Prepare member data
+    console.log("📝 Preparing member data...");
     const memberData = {
       fullName,
       category,
@@ -88,48 +151,61 @@ export const createMember = async (req, res) => {
       isActive: memberIsActive,
     };
 
-    // Only add optional fields if they have values
+    // Add optional fields
     if (nationalId && nationalId !== "") memberData.nationalId = nationalId;
     if (dateOfBirth && dateOfBirth !== "") memberData.dateOfBirth = dateOfBirth;
     if (phone && phone !== "") memberData.phone = phone;
     if (sakraments && sakraments.length > 0) memberData.sakraments = sakraments;
     if (accessibilityNotes && accessibilityNotes !== "") memberData.accessibilityNotes = accessibilityNotes;
     
-    // FIX: Handle parent - only add if it's a valid ID (not empty string, not null)
     if (parent && parent !== "" && parent !== "null" && parent !== "undefined") {
+      console.log("🔍 Adding parent:", parent);
       memberData.parent = parent;
     }
     
-    // FIX: Handle spouse - only add if it's a valid ID
     if (spouse && spouse !== "" && spouse !== "null" && spouse !== "undefined") {
+      console.log("🔍 Adding spouse:", spouse);
       memberData.spouse = spouse;
     }
 
-    console.log("📦 Creating member with data:", memberData);
+    console.log("📦 Final member data to save:", JSON.stringify(memberData, null, 2));
 
+    // Create member
+    console.log("💾 Creating member in database...");
     const member = await Member.create(memberData);
+    console.log("✅ Member created with ID:", member._id);
     
-    // If spouse is set, update the spouse's record as well
+    // Update spouse's record if spouse exists
     if (spouse && spouse !== "" && spouse !== "null") {
-      await Member.findByIdAndUpdate(spouse, {
-        spouse: member._id,
-      });
+      console.log("🔗 Updating spouse record:", spouse);
+      await Member.findByIdAndUpdate(spouse, { spouse: member._id });
+      console.log("✅ Spouse record updated");
     }
 
+    // Populate and return
+    console.log("📚 Populating member data...");
     const populatedMember = await Member.findById(member._id)
       .populate("parent", "fullName category")
       .populate("subgroup", "name")
       .populate("sakraments", "name")
       .populate("spouse", "fullName category");
 
+    console.log("✅ Member creation complete!");
+    console.log("🔍 ========== CREATE MEMBER END ==========");
+
     res.status(201).json({
       message: "Member created successfully",
       member: populatedMember,
     });
+    
   } catch (err) {
-    console.error("❌ Create member error:", err);
+    console.error("❌ ========== CREATE MEMBER ERROR ==========");
+    console.error("❌ Error name:", err.name);
+    console.error("❌ Error message:", err.message);
+    console.error("❌ Error stack:", err.stack);
     
     if (err.code === 11000 && err.keyPattern?.nationalId) {
+      console.log("❌ Duplicate national ID detected");
       return res.status(400).json({ 
         message: "Indangamuntu isanzwe ikoreshwa" 
       });
@@ -141,7 +217,6 @@ export const createMember = async (req, res) => {
     });
   }
 };
-
 // ================= GET ALL MEMBERS =================
 export const getAllMembers = async (req, res) => {
   try {
