@@ -74,41 +74,9 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ================= SIMPLE PRE-VALIDATE HOOK =================
-memberSchema.pre('validate', function(next) {
-  // Only validate parent if category is not adult
-  if (this.category !== "adult" && !this.parent) {
-    this.invalidate('parent', `Parent is required for ${this.category}`);
-  }
-  next();
-});
-
-// ================= SIMPLE PRE-SAVE HOOK FOR ACCESSIBILITY =================
-memberSchema.pre('save', function(next) {
-  if (this.isModified('accessibility')) {
-    this.accessibilityUpdatedAt = new Date();
-  }
-  next();
-});
-
-// ================= POST-SAVE HOOK FOR SPOUSE LINKING =================
-memberSchema.post('save', async function(doc) {
-  // Only run if spouse exists and it's a new spouse link
-  if (doc.spouse && doc.isModified('spouse')) {
-    try {
-      const spouse = await mongoose.model("Member").findById(doc.spouse);
-      if (spouse && (!spouse.spouse || spouse.spouse.toString() !== doc._id.toString())) {
-        await mongoose.model("Member").findByIdAndUpdate(
-          doc.spouse,
-          { spouse: doc._id },
-          { new: true }
-        );
-      }
-    } catch (err) {
-      console.error("Failed to update spouse link:", err);
-    }
-  }
-});
+// ================= NO CUSTOM HOOKS - ALL VALIDATION IN CONTROLLER =================
+// All pre-save, pre-validate, and post-save hooks have been removed
+// All validation is handled in the controller
 
 // ================= ADD INDEXES =================
 memberSchema.index({ fullName: 1 });
@@ -116,7 +84,7 @@ memberSchema.index({ category: 1 });
 memberSchema.index({ subgroup: 1 });
 memberSchema.index({ nationalId: 1 }, { unique: true, sparse: true });
 
-// ================= ADD HELPER METHODS =================
+// ================= ADD HELPER METHODS (these are safe - no hooks) =================
 memberSchema.methods.getAccessibilityInKinyarwanda = function() {
   const translations = {
     alive: "Ariho",
