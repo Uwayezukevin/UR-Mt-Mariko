@@ -24,7 +24,7 @@ export const createMember = async (req, res) => {
   try {
     console.log("🔍 ========== CREATE MEMBER START ==========");
     console.log("📦 Request body received:", JSON.stringify(req.body, null, 2));
-    
+
     const {
       fullName,
       category,
@@ -41,217 +41,164 @@ export const createMember = async (req, res) => {
       isActive,
     } = req.body;
 
-    console.log("✅ Extracted fields:", {
-      fullName,
-      category,
-      gender,
-      subgroup,
-      parent: parent || "null",
-      spouse: spouse || "null",
-      sakramentsCount: sakraments?.length || 0,
-      sakraments: sakraments || [],
-      accessibility
-    });
-
-    // Validate required fields
-    if (!fullName) {
-      console.log("❌ Missing fullName");
-      return res.status(400).json({ message: "Full name is required" });
-    }
-    
-    if (!category) {
-      console.log("❌ Missing category");
-      return res.status(400).json({ message: "Category is required" });
-    }
-    
-    if (!gender) {
-      console.log("❌ Missing gender");
-      return res.status(400).json({ message: "Gender is required" });
-    }
-    
-    if (!subgroup) {
-      console.log("❌ Missing subgroup");
-      return res.status(400).json({ message: "Subgroup is required" });
+    // ================= REQUIRED =================
+    if (!fullName || !category || !gender || !subgroup) {
+      return res.status(400).json({
+        message: "Missing required fields",
+      });
     }
 
-    console.log("✅ Required fields validated");
-
-    // Parent validation based on category
+    // ================= PARENT =================
     if (category !== "adult") {
-      console.log("🔍 Checking parent for non-adult category:", category);
-      if (!parent || parent === "" || parent === "null" || parent === "undefined") {
-        console.log("❌ Parent missing for non-adult");
+      if (!parent || !mongoose.Types.ObjectId.isValid(parent)) {
         return res.status(400).json({
-          message: `${category === "child" ? "Umwana" : "Urubyiruko"} agomba kugira umubyeyi`,
+          message:
+            category === "child"
+              ? "Umwana agomba kugira umubyeyi"
+              : "Urubyiruko rugomba kugira umubyeyi",
         });
       }
     }
 
-    console.log("✅ Parent validation passed");
+    // ================= SAKRAMENTS SAFETY =================
+    let safeSakraments = [];
 
-    // Spouse validation - only if marriage sakrament is selected
-    console.log("🔍 Checking marriage sakrament...");
-    let hasMarriage = false;
-    let marriageId = null;
-    
-    try {
-      // Safely get marriage sakrament ID
-      const Amasakramentu = mongoose.model("Amasakramentu");
-      const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
-      if (marriage) {
-        marriageId = marriage._id;
-        hasMarriage = sakraments?.some(sak => sak && sak.toString() === marriageId.toString());
-        console.log("✅ Marriage sakrament found:", marriageId);
-        console.log("🔍 Has marriage in selected sakraments:", hasMarriage);
-      } else {
-        console.log("⚠️ Marriage sakrament not found in database");
+    if (sakraments) {
+      if (!Array.isArray(sakraments)) {
+        return res.status(400).json({
+          message: "Sakraments must be an array",
+        });
       }
-    } catch (err) {
-      console.error("❌ Error checking marriage sakrament:", err);
+
+      const validIds = sakraments.filter(id =>
+        mongoose.Types.ObjectId.isValid(id)
+      );
+
+      const found = await Amasakramentu.find({
+        _id: { $in: validIds },
+      });
+
+      safeSakraments = found.map(s => s._id);
     }
 
-    if (hasMarriage && (!spouse || spouse === "" || spouse === "null")) {
-      console.log("❌ Marriage selected but no spouse provided");
+    // ================= MARRIAGE CHECK =================
+    let hasMarriage = false;
+
+    const marriage = await Amasakramentu.findOne({
+      name: "Ugushyingirwa",
+    });
+
+    if (marriage) {
+      hasMarriage = safeSakraments.some(
+        id => id.toString() === marriage._id.toString()
+      );
+    }
+
+    // ================= SPOUSE =================
+    if (hasMarriage && !spouse) {
       return res.status(400).json({
         message: "Ugomba gushyiraho uwo mwashyingiranywe",
       });
     }
 
-    if (spouse && spouse === req.body._id) {
-      console.log("❌ Self-marriage attempted");
-      return res.status(400).json({
-        message: "Ntushobora kwishyingira",
-      });
+    if (spouse) {
+      if (!mongoose.Types.ObjectId.isValid(spouse)) {
+        return res.status(400).json({
+          message: "Invalid spouse ID",
+        });
+      }
+
+      const spouseExists = await Member.findById(spouse);
+      if (!spouseExists) {
+        return res.status(400).json({
+          message: "Uwo mwashyingiranywe ntabaho",
+        });
+      }
     }
 
-    console.log("✅ Spouse validation passed");
-
-    // Accessibility validation
+    // ================= ACCESSIBILITY =================
     const memberAccessibility = accessibility || "alive";
-    const memberIsActive = isActive !== undefined ? isActive : 
-                          (memberAccessibility === "alive" ? true : false);
+    const memberIsActive =
+      isActive !== undefined
+        ? isActive
+        : memberAccessibility === "alive";
 
-    if (memberAccessibility !== "alive" && (!accessibilityNotes || accessibilityNotes === "")) {
-      console.log("❌ Accessibility notes missing for non-alive status");
+    if (
+      memberAccessibility !== "alive" &&
+      (!accessibilityNotes || accessibilityNotes === "")
+    ) {
       return res.status(400).json({
-        message: "Accessibility notes are required when status is not 'alive'",
+        message: "Accessibility notes are required",
       });
     }
 
-    console.log("✅ Accessibility validation passed");
-
-    // Prepare member data
-    console.log("📝 Preparing member data...");
+    // ================= BUILD DATA =================
     const memberData = {
       fullName,
       category,
       gender,
       subgroup,
+      sakraments: safeSakraments,
       accessibility: memberAccessibility,
       accessibilityUpdatedAt: new Date(),
       isActive: memberIsActive,
     };
 
-    // Add optional fields
-    if (nationalId && nationalId !== "") memberData.nationalId = nationalId;
-    if (dateOfBirth && dateOfBirth !== "") memberData.dateOfBirth = dateOfBirth;
-    if (phone && phone !== "") memberData.phone = phone;
-    if (accessibilityNotes && accessibilityNotes !== "") memberData.accessibilityNotes = accessibilityNotes;
-    
-    if (parent && parent !== "" && parent !== "null" && parent !== "undefined") {
-      console.log("🔍 Adding parent:", parent);
-      memberData.parent = parent;
-    }
-    
-    if (spouse && spouse !== "" && spouse !== "null" && spouse !== "undefined") {
-      console.log("🔍 Adding spouse:", spouse);
-      memberData.spouse = spouse;
-    }
-    
-    // 🔥 CRITICAL FIX: Filter and validate sakraments
-    if (sakraments && sakraments.length > 0) {
-      console.log("🔍 Processing sakraments:", sakraments);
-      
-      // Get all valid sakrament IDs from database
-      const Amasakramentu = mongoose.model("Amasakramentu");
-      const validSakraments = await Amasakramentu.find({ 
-        _id: { $in: sakraments.filter(id => mongoose.Types.ObjectId.isValid(id)) } 
-      });
-      
-      const validSakramentIds = validSakraments.map(s => s._id);
-      console.log("✅ Valid sakrament IDs from DB:", validSakramentIds.map(id => id.toString()));
-      
-      if (validSakramentIds.length > 0) {
-        memberData.sakraments = validSakramentIds;
-        console.log("✅ Adding valid sakraments to member:", validSakramentIds.length);
-      } else {
-        console.log("⚠️ No valid sakraments found, skipping");
-      }
-    }
+    if (nationalId) memberData.nationalId = nationalId;
+    if (dateOfBirth) memberData.dateOfBirth = dateOfBirth;
+    if (phone) memberData.phone = phone;
+    if (parent) memberData.parent = parent;
+    if (spouse) memberData.spouse = spouse;
+    if (accessibilityNotes) memberData.accessibilityNotes = accessibilityNotes;
 
-    console.log("📦 Final member data to save:", JSON.stringify(memberData, null, 2));
+    console.log("📦 Final member data:", memberData);
 
-    // Create member
-    console.log("💾 Creating member in database...");
+    // ================= CREATE =================
     const member = await Member.create(memberData);
-    console.log("✅ Member created with ID:", member._id);
-    
-    // Update spouse's record if spouse exists
-    if (spouse && spouse !== "" && spouse !== "null") {
-      console.log("🔗 Updating spouse record:", spouse);
-      await Member.findByIdAndUpdate(spouse, { spouse: member._id });
-      console.log("✅ Spouse record updated");
+
+    // ================= LINK SPOUSE =================
+    if (spouse) {
+      await Member.findByIdAndUpdate(spouse, {
+        spouse: member._id,
+      });
     }
 
-    // Populate and return
-    console.log("📚 Populating member data...");
     const populatedMember = await Member.findById(member._id)
       .populate("parent", "fullName category")
       .populate("subgroup", "name")
       .populate("sakraments", "name")
       .populate("spouse", "fullName category");
 
-    console.log("✅ Member creation complete!");
-    console.log("🔍 ========== CREATE MEMBER END ==========");
-
     res.status(201).json({
       message: "Member created successfully",
       member: populatedMember,
     });
-    
+
   } catch (err) {
-    console.error("❌ ========== CREATE MEMBER ERROR ==========");
-    console.error("❌ Error name:", err.name);
-    console.error("❌ Error message:", err.message);
-    console.error("❌ Error stack:", err.stack);
-    
-    // Check for specific MongoDB errors
-    if (err.name === 'CastError') {
-      console.error("❌ CastError - Invalid ID format");
-      return res.status(400).json({ 
-        message: "Invalid ID format in one of the fields",
-        error: err.message 
+    console.error("❌ ERROR:", err);
+
+    if (err.name === "CastError") {
+      return res.status(400).json({
+        message: "Invalid ID format",
       });
     }
-    
-    if (err.name === 'ValidationError') {
-      console.error("❌ ValidationError - Schema validation failed");
-      return res.status(400).json({ 
+
+    if (err.name === "ValidationError") {
+      return res.status(400).json({
         message: "Validation error",
-        errors: Object.values(err.errors).map(e => e.message)
+        errors: Object.values(err.errors).map(e => e.message),
       });
     }
-    
-    if (err.code === 11000 && err.keyPattern?.nationalId) {
-      console.log("❌ Duplicate national ID detected");
-      return res.status(400).json({ 
-        message: "Indangamuntu isanzwe ikoreshwa" 
+
+    if (err.code === 11000) {
+      return res.status(400).json({
+        message: "Indangamuntu isanzwe ikoreshwa",
       });
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       message: "Server error",
-      error: err.message 
+      error: err.message,
     });
   }
 };

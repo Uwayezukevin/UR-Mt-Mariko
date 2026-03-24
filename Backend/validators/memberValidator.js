@@ -1,21 +1,5 @@
 import { checkSchema } from "express-validator";
 import mongoose from "mongoose";
-import Amasakramentu from "../mongoschema/sakramentsSchema.js";
-
-// Helper function to get marriage sakrament ID
-let marriageSakramentId = null;
-
-const getMarriageSakramentId = async () => {
-  if (marriageSakramentId) return marriageSakramentId;
-  try {
-    const marriage = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
-    marriageSakramentId = marriage?._id?.toString();
-    return marriageSakramentId;
-  } catch (err) {
-    console.error("Could not find marriage sakrament:", err);
-    return null;
-  }
-};
 
 /* ================= CREATE MEMBER SCHEMA ================= */
 export const createMemberSchema = checkSchema({
@@ -23,15 +7,16 @@ export const createMemberSchema = checkSchema({
     notEmpty: { errorMessage: "Izina ryuzuye rirakenewe" },
     isLength: {
       options: { min: 2 },
-      errorMessage: "Izina ryuzuye rigomba kuba rifite inyuguti zirenzwe ebyiri",
+      errorMessage: "Izina rigomba kuba rifite inyuguti zirenga ebyiri",
     },
+    trim: true,
   },
 
   category: {
-    notEmpty: { errorMessage: "Icyiciro kirakenwe" },
+    notEmpty: { errorMessage: "Icyiciro kirakenewe" },
     isIn: {
       options: [["child", "youth", "adult"]],
-      errorMessage: "Category must be child, youth, or adult",
+      errorMessage: "Category must be child, youth or adult",
     },
   },
 
@@ -39,7 +24,7 @@ export const createMemberSchema = checkSchema({
     optional: { options: { nullable: true, checkFalsy: true } },
     isLength: {
       options: { min: 16, max: 16 },
-      errorMessage: "Irangamuntu igomba kuba imibare 16",
+      errorMessage: "Indangamuntu igomba kuba imibare 16",
     },
   },
 
@@ -54,68 +39,66 @@ export const createMemberSchema = checkSchema({
     optional: { options: { checkFalsy: true } },
     matches: {
       options: [/^(\+2507|07)\d{8}$/],
-      errorMessage: "Telefoni igomba kuba ari numero y'URwanda",
+      errorMessage: "Telefoni igomba kuba iy'u Rwanda",
     },
   },
 
+  /* ================= PARENT ================= */
   parent: {
     optional: true,
     custom: {
       options: (value, { req }) => {
         const { category } = req.body;
-        
+
+        // Required for child & youth
         if (category !== "adult") {
-          if (!value || value === "" || value === "null" || value === "undefined") {
-            throw new Error(category === "child" 
-              ? "Umwana agomba kugira umubyeyi" 
-              : "Urubyiruko rugomba kugira umubyeyi");
+          if (!value) {
+            throw new Error(
+              category === "child"
+                ? "Umwana agomba kugira umubyeyi"
+                : "Urubyiruko rugomba kugira umubyeyi"
+            );
           }
         }
-        
-        if (value && value !== "" && !mongoose.Types.ObjectId.isValid(value)) {
-          throw new Error("Parent must be a valid Member ID");
+
+        if (value && !mongoose.Types.ObjectId.isValid(value)) {
+          throw new Error("Parent must be valid ID");
         }
-        
+
         return true;
       },
     },
   },
 
+  /* ================= SPOUSE ================= */
   spouse: {
     optional: true,
     custom: {
       options: (value, { req }) => {
-        const { sakraments, _id, category } = req.body;
-        
-        // Skip spouse validation for non-adults if needed
-        if (category !== "adult") {
-          return true;
-        }
-        
-        // Check if marriage sakrament is selected (by name, not by ID to avoid async)
-        const hasMarriage = sakraments && sakraments.some(sak => 
-          sak === "Ugushyingirwa" || sak.name === "Ugushyingirwa"
-        );
-        
-        if (hasMarriage && (!value || value === "" || value === "null")) {
+        const { sakraments, category } = req.body;
+
+        // Only adults can marry
+        if (category !== "adult") return true;
+
+        // Check if marriage sakrament selected (by ID)
+        const hasMarriage =
+          Array.isArray(sakraments) && sakraments.length > 0;
+
+        if (hasMarriage && !value) {
           throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
         }
-        
-        if (value && value === _id) {
-          throw new Error("Ntushobora kwishyingira");
+
+        if (value && !mongoose.Types.ObjectId.isValid(value)) {
+          throw new Error("Spouse must be valid ID");
         }
-        
-        if (value && value !== "" && !mongoose.Types.ObjectId.isValid(value)) {
-          throw new Error("Spouse must be a valid Member ID");
-        }
-        
+
         return true;
       },
     },
   },
 
   gender: {
-    notEmpty: { errorMessage: "Select gender" },
+    notEmpty: { errorMessage: "Hitamo igitsina" },
     isIn: {
       options: [["male", "female"]],
       errorMessage: "Gender must be male or female",
@@ -127,13 +110,14 @@ export const createMemberSchema = checkSchema({
     custom: {
       options: (value) => {
         if (!mongoose.Types.ObjectId.isValid(value)) {
-          throw new Error("Subgroup must be a valid ID");
+          throw new Error("Subgroup must be valid ID");
         }
         return true;
       },
     },
   },
 
+  /* ================= SAKRAMENTS ================= */
   sakraments: {
     optional: true,
     isArray: {
@@ -142,9 +126,10 @@ export const createMemberSchema = checkSchema({
     custom: {
       options: (value) => {
         if (!Array.isArray(value)) return true;
+
         for (let id of value) {
           if (id && !mongoose.Types.ObjectId.isValid(id)) {
-            throw new Error("All sakraments must be valid IDs");
+            throw new Error("Invalid sakrament ID");
           }
         }
         return true;
@@ -152,26 +137,31 @@ export const createMemberSchema = checkSchema({
     },
   },
 
+  /* ================= ACCESSIBILITY ================= */
   accessibility: {
     optional: true,
     isIn: {
       options: [["alive", "dead", "moved"]],
-      errorMessage: "Accessibility must be alive, dead, or moved",
+      errorMessage: "Accessibility must be alive, dead or moved",
     },
   },
 
   accessibilityNotes: {
-    optional: { options: { checkFalsy: true } },
+    optional: true,
     isLength: {
       options: { max: 500 },
-      errorMessage: "Accessibility notes cannot exceed 500 characters",
+      errorMessage: "Notes ntizirenga inyuguti 500",
     },
     custom: {
       options: (value, { req }) => {
         const { accessibility } = req.body;
-        if (accessibility && accessibility !== "alive" && (!value || value === "")) {
-          throw new Error("Accessibility notes are required when status is not 'alive'");
+
+        if (accessibility && accessibility !== "alive" && !value) {
+          throw new Error(
+            "Ugomba gusobanura impamvu niba atari 'alive'"
+          );
         }
+
         return true;
       },
     },
@@ -180,18 +170,18 @@ export const createMemberSchema = checkSchema({
   isActive: {
     optional: true,
     isBoolean: {
-      errorMessage: "isActive must be a boolean value",
+      errorMessage: "isActive must be true or false",
     },
   },
 });
-/* ================= UPDATE MEMBER SCHEMA ================= */
 
+/* ================= UPDATE MEMBER SCHEMA ================= */
 export const updateMemberSchema = checkSchema({
   fullName: {
     optional: true,
     isLength: {
       options: { min: 2 },
-      errorMessage: "Izina rigomba kuba rifite inyuguti zirenzwe ebyiri",
+      errorMessage: "Izina rigomba kuba rifite inyuguti zirenga ebyiri",
     },
   },
 
@@ -199,30 +189,23 @@ export const updateMemberSchema = checkSchema({
     optional: true,
     isIn: {
       options: [["child", "youth", "adult"]],
-      errorMessage: "Category must be child, youth, or adult",
+      errorMessage: "Invalid category",
     },
   },
 
   nationalId: {
-    optional: { options: { nullable: true, checkFalsy: true } },
+    optional: true,
     isLength: {
       options: { min: 16, max: 16 },
-      errorMessage: "Irangamuntu igomba kuba imibare 16",
-    },
-  },
-
-  dateOfBirth: {
-    optional: true,
-    isISO8601: {
-      errorMessage: "Shyiramo itariki ya nyayo",
+      errorMessage: "Indangamuntu igomba kuba 16",
     },
   },
 
   phone: {
-    optional: { options: { checkFalsy: true } },
+    optional: true,
     matches: {
       options: [/^(\+2507|07)\d{8}$/],
-      errorMessage: "Telefoni igomba kuba ari numero y'URwanda",
+      errorMessage: "Telefoni siyo",
     },
   },
 
@@ -230,22 +213,16 @@ export const updateMemberSchema = checkSchema({
     optional: true,
     custom: {
       options: (value, { req }) => {
-        const { category } = req.body;
-        const currentCategory = req.member?.category;
-        const effectiveCategory = category || currentCategory;
-        
-        if (effectiveCategory && effectiveCategory !== "adult") {
-          if (value === null || value === undefined || value === "") {
-            throw new Error(effectiveCategory === "child" 
-              ? "Umwana agomba kugira umubyeyi" 
-              : "Urubyiruko rugomba kugira umubyeyi");
-          }
+        const category = req.body.category || req.member?.category;
+
+        if (category !== "adult" && !value) {
+          throw new Error("Umubyeyi arakenewe");
         }
-        
+
         if (value && !mongoose.Types.ObjectId.isValid(value)) {
-          throw new Error("Parent must be a valid Member ID");
+          throw new Error("Invalid parent ID");
         }
-        
+
         return true;
       },
     },
@@ -254,35 +231,12 @@ export const updateMemberSchema = checkSchema({
   spouse: {
     optional: true,
     custom: {
-      options: async (value, { req }) => {
-        const { sakraments, _id } = req.body;
-        
-        const marriageId = await getMarriageSakramentId();
-        const updatedSakraments = sakraments || req.member?.sakraments;
-        const hasMarriage = marriageId && updatedSakraments?.includes(marriageId);
-        
-        if (hasMarriage && !value) {
-          throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
-        }
-        
-        if (value && value === _id) {
-          throw new Error("Ntushobora kwishyingira");
-        }
-        
+      options: (value) => {
         if (value && !mongoose.Types.ObjectId.isValid(value)) {
-          throw new Error("Spouse must be a valid Member ID");
+          throw new Error("Invalid spouse ID");
         }
-        
         return true;
       },
-    },
-  },
-
-  gender: {
-    optional: true,
-    isIn: {
-      options: [["male", "female"]],
-      errorMessage: "Gender must be male or female",
     },
   },
 
@@ -291,7 +245,7 @@ export const updateMemberSchema = checkSchema({
     custom: {
       options: (value) => {
         if (value && !mongoose.Types.ObjectId.isValid(value)) {
-          throw new Error("Subgroup must be a valid ID");
+          throw new Error("Invalid subgroup ID");
         }
         return true;
       },
@@ -300,42 +254,26 @@ export const updateMemberSchema = checkSchema({
 
   sakraments: {
     optional: true,
-    isArray: {
-      errorMessage: "Sakraments must be an array",
-    },
-    custom: {
-      options: (value) => {
-        if (!Array.isArray(value)) return true;
-        for (let id of value) {
-          if (!mongoose.Types.ObjectId.isValid(id)) {
-            throw new Error("All sakraments must be valid IDs");
-          }
-        }
-        return true;
-      },
-    },
+    isArray: true,
   },
 
   accessibility: {
     optional: true,
     isIn: {
       options: [["alive", "dead", "moved"]],
-      errorMessage: "Accessibility must be alive, dead, or moved",
     },
   },
 
   accessibilityNotes: {
-    optional: { options: { checkFalsy: true } },
-    isLength: {
-      options: { max: 500 },
-      errorMessage: "Accessibility notes cannot exceed 500 characters",
-    },
+    optional: true,
     custom: {
       options: (value, { req }) => {
-        const { accessibility } = req.body;
+        const accessibility = req.body.accessibility;
+
         if (accessibility && accessibility !== "alive" && !value) {
-          throw new Error("Accessibility notes are required when status is not 'alive'");
+          throw new Error("Notes zirakenewe");
         }
+
         return true;
       },
     },
@@ -343,8 +281,6 @@ export const updateMemberSchema = checkSchema({
 
   isActive: {
     optional: true,
-    isBoolean: {
-      errorMessage: "isActive must be a boolean value",
-    },
+    isBoolean: true,
   },
 });
