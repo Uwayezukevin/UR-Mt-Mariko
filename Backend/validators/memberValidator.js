@@ -105,11 +105,13 @@ export const createMemberSchema = checkSchema({
     },
   },
 
+  /* ================= SUBGROUP - FIXED: Made optional ================= */
   subgroup: {
-    notEmpty: { errorMessage: "Umuryango remezo urakenewe" },
+    optional: true, // Changed from notEmpty to optional
     custom: {
       options: (value) => {
-        if (!mongoose.Types.ObjectId.isValid(value)) {
+        // Only validate if value is provided
+        if (value && !mongoose.Types.ObjectId.isValid(value)) {
           throw new Error("Subgroup must be valid ID");
         }
         return true;

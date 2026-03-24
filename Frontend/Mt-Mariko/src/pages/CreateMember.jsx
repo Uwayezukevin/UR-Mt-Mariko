@@ -15,6 +15,10 @@ import {
   FaTruck,
   FaInfoCircle,
   FaRing,
+  FaChurch,
+  FaUserFriends,
+  FaChild,
+  FaUserGraduate,
 } from "react-icons/fa";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -143,8 +147,13 @@ export default function CreateMember() {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       
-      if (name === "category" && value !== "child") {
+      if (name === "category") {
+        // Reset parent when category changes
         updated.parent = "";
+        // Auto-set isActive based on accessibility
+        if (updated.accessibility === "alive") {
+          updated.isActive = true;
+        }
       }
       
       if (name === "accessibility") {
@@ -172,6 +181,7 @@ export default function CreateMember() {
   const validateForm = () => {
     const errors = {};
     
+    // Required fields
     if (!formData.fullName?.trim()) {
       errors.fullName = "Amazina yose arafuzwe";
     }
@@ -180,9 +190,6 @@ export default function CreateMember() {
     }
     if (!formData.gender) {
       errors.gender = "Igitsina arafuzwe";
-    }
-    if (!formData.subgroup) {
-      errors.subgroup = "Umuryango remezo arafuzwe";
     }
     
     // Parent validation - required for child and youth
@@ -197,8 +204,25 @@ export default function CreateMember() {
       errors.spouse = "Ugomba gushyiraho uwo mwashyingiranywe";
     }
     
+    // Accessibility notes validation
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
       errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+    }
+
+    // National ID validation (if provided)
+    if (formData.nationalId && formData.nationalId.trim()) {
+      const nationalIdRegex = /^[0-9]{16}$/;
+      if (!nationalIdRegex.test(formData.nationalId.trim())) {
+        errors.nationalId = "Indangamuntu igomba kuba imibare 16";
+      }
+    }
+
+    // Phone validation (if provided)
+    if (formData.phone && formData.phone.trim()) {
+      const phoneRegex = /^(\+2507|07)[0-9]{8}$/;
+      if (!phoneRegex.test(formData.phone.trim())) {
+        errors.phone = "Telefoni igomba kuba iy'u Rwanda (ex: 0788123456 cyangwa +250788123456)";
+      }
     }
 
     return errors;
@@ -224,12 +248,15 @@ export default function CreateMember() {
         fullName: formData.fullName.trim(),
         category: formData.category,
         gender: formData.gender,
-        subgroup: formData.subgroup,
         accessibility: formData.accessibility,
         isActive: formData.isActive,
       };
 
       // Only add optional fields if they have values
+      if (formData.subgroup) {
+        payload.subgroup = formData.subgroup;
+      }
+      
       if (formData.nationalId?.trim()) {
         payload.nationalId = formData.nationalId.trim();
       }
@@ -250,11 +277,8 @@ export default function CreateMember() {
         payload.accessibilityNotes = formData.accessibilityNotes.trim();
       }
 
-      // Add parent - ONLY for non-adult categories OR if explicitly selected for adult
+      // Add parent - ONLY for non-adult categories
       if (formData.category !== "adult" && formData.parent) {
-        payload.parent = formData.parent;
-      } else if (formData.category === "adult" && formData.parent) {
-        // Adults can have parents too, but it's optional
         payload.parent = formData.parent;
       }
 
@@ -285,13 +309,13 @@ export default function CreateMember() {
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.response?.data?.errors) {
-        errorMessage = err.response.data.errors.map(e => e.msg).join(", ");
+        errorMessage = err.response.data.errors.map(e => e.msg || e.message).join(", ");
       } else if (err.response?.data?.error) {
         errorMessage = err.response.data.error;
       }
       
       // Handle duplicate national ID
-      if (errorMessage.includes("duplicate") || errorMessage.includes("Indangamuntu")) {
+      if (errorMessage.toLowerCase().includes("duplicate") || errorMessage.includes("Indangamuntu")) {
         errorMessage = "Indangamuntu isanzwe ikoreshwa n'undi muntu";
       }
       
@@ -302,14 +326,15 @@ export default function CreateMember() {
     }
   };
 
-  // Get potential spouses (adults of opposite gender who are alive)
+  // Get potential spouses (adults of opposite gender who are alive and not married)
   const getPotentialSpouses = () => {
     if (!formData.gender) return [];
     const oppositeGender = formData.gender === "male" ? "female" : "male";
     return members.filter(m => 
       m.gender === oppositeGender && 
       m.accessibility === "alive" &&
-      m.category === "adult"
+      m.category === "adult" &&
+      !m.spouse // Only show unmarried members
     );
   };
 
@@ -324,6 +349,20 @@ export default function CreateMember() {
       return allParents;
     }
     return [];
+  };
+
+  // Get category icon
+  const getCategoryIcon = () => {
+    switch(formData.category) {
+      case "child":
+        return <FaChild className="text-blue-500" />;
+      case "youth":
+        return <FaUserGraduate className="text-green-500" />;
+      case "adult":
+        return <FaUserFriends className="text-purple-500" />;
+      default:
+        return <FaUsers className="text-gray-500" />;
+    }
   };
 
   if (fetchLoading) {
@@ -344,6 +383,7 @@ export default function CreateMember() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 md:py-10 px-3 sm:px-4 md:px-6">
       <div className="max-w-2xl mx-auto">
         
+        {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 
@@ -355,23 +395,30 @@ export default function CreateMember() {
           <span className="font-medium">Subira inyuma</span>
         </button>
 
+        {/* Main Card */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl 
                       transition-shadow duration-300 overflow-hidden">
           
+          {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 md:px-8 py-4 sm:py-5">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
-              Andika Umukristu Mushya
-            </h1>
-            <p className="text-blue-100 text-xs sm:text-sm text-center mt-1">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <FaChurch className="text-white text-2xl sm:text-3xl" />
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center">
+                Andika Umukristu Mushya
+              </h1>
+            </div>
+            <p className="text-blue-100 text-xs sm:text-sm text-center">
               Uzuza neza amakuru yose asabwa
             </p>
           </div>
 
+          {/* Form Body */}
           <div className="p-4 sm:p-6 md:p-8">
             
+            {/* Success Message */}
             {success && (
               <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 
-                            rounded-lg p-3 sm:p-4 flex items-start gap-3">
+                            rounded-lg p-3 sm:p-4 flex items-start gap-3 animate-fade-in">
                 <FaCheckCircle className="text-green-500 text-lg sm:text-xl flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-green-700 text-sm sm:text-base font-medium">
@@ -384,6 +431,7 @@ export default function CreateMember() {
               </div>
             )}
 
+            {/* Error Message */}
             {error && (
               <div className="mb-4 sm:mb-6 bg-red-50 border border-red-200 
                             rounded-lg p-3 sm:p-4 flex items-start gap-3">
@@ -413,7 +461,6 @@ export default function CreateMember() {
                     placeholder="Andika amazina yose"
                     value={formData.fullName}
                     onChange={handleChange}
-                    required
                     className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
                                border rounded-lg sm:rounded-xl 
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
@@ -422,7 +469,9 @@ export default function CreateMember() {
                   />
                 </div>
                 {validationErrors.fullName && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.fullName}</p>
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <FaExclamationCircle className="text-xs" /> {validationErrors.fullName}
+                  </p>
                 )}
               </div>
 
@@ -438,7 +487,6 @@ export default function CreateMember() {
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    required
                     className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
                                border rounded-lg sm:rounded-xl 
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
@@ -452,11 +500,13 @@ export default function CreateMember() {
                   </select>
                 </div>
                 {validationErrors.category && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.category}</p>
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <FaExclamationCircle className="text-xs" /> {validationErrors.category}
+                  </p>
                 )}
               </div>
 
-              {/* Parent */}
+              {/* Parent - Only show if category is selected */}
               {formData.category && (
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
@@ -497,7 +547,9 @@ export default function CreateMember() {
                     </select>
                   </div>
                   {validationErrors.parent && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.parent}</p>
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" /> {validationErrors.parent}
+                    </p>
                   )}
                 </div>
               )}
@@ -505,6 +557,7 @@ export default function CreateMember() {
               {/* Two Column Layout */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 
+                {/* National ID */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Indangamuntu
@@ -515,17 +568,23 @@ export default function CreateMember() {
                     <input
                       type="text"
                       name="nationalId"
-                      placeholder="Indangamuntu"
+                      placeholder="Indangamuntu (imibare 16)"
                       value={formData.nationalId}
                       onChange={handleChange}
-                      className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
-                               border border-gray-200 rounded-lg sm:rounded-xl 
+                      maxLength="16"
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                               border rounded-lg sm:rounded-xl 
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               text-sm sm:text-base transition-all"
+                               text-sm sm:text-base transition-all
+                               ${validationErrors.nationalId ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                     />
                   </div>
+                  {validationErrors.nationalId && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.nationalId}</p>
+                  )}
                 </div>
 
+                {/* Phone */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Telefoni
@@ -539,14 +598,19 @@ export default function CreateMember() {
                       placeholder="0788 123 456"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
-                               border border-gray-200 rounded-lg sm:rounded-xl 
+                      className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                               border rounded-lg sm:rounded-xl 
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               text-sm sm:text-base transition-all"
+                               text-sm sm:text-base transition-all
+                               ${validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
                     />
                   </div>
+                  {validationErrors.phone && (
+                    <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>
+                  )}
                 </div>
 
+                {/* Date of Birth */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Itariki y'Amavuko
@@ -567,6 +631,7 @@ export default function CreateMember() {
                   </div>
                 </div>
 
+                {/* Gender */}
                 <div className="space-y-1">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Igitsina <span className="text-red-500">*</span>
@@ -578,7 +643,6 @@ export default function CreateMember() {
                       name="gender"
                       value={formData.gender}
                       onChange={handleChange}
-                      required
                       className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
                                  border rounded-lg sm:rounded-xl 
                                  focus:ring-2 focus:ring-blue-500 focus:border-blue-500
@@ -591,15 +655,17 @@ export default function CreateMember() {
                     </select>
                   </div>
                   {validationErrors.gender && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.gender}</p>
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" /> {validationErrors.gender}
+                    </p>
                   )}
                 </div>
               </div>
 
-              {/* Subgroup */}
+              {/* Subgroup - Optional */}
               <div className="space-y-1">
                 <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                  Umuryango Remezo <span className="text-red-500">*</span>
+                  Umuryango Remezo <span className="text-gray-400 text-xs">(Ntayo)</span>
                 </label>
                 <div className="relative">
                   <FaLayerGroup className="absolute left-3 top-1/2 -translate-y-1/2 
@@ -608,14 +674,12 @@ export default function CreateMember() {
                     name="subgroup"
                     value={formData.subgroup}
                     onChange={handleChange}
-                    required
-                    className={`w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
-                               border rounded-lg sm:rounded-xl 
+                    className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-3.5 
+                               border border-gray-200 rounded-lg sm:rounded-xl 
                                focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-                               text-sm sm:text-base appearance-none bg-white
-                               ${validationErrors.subgroup ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                               text-sm sm:text-base appearance-none bg-white"
                   >
-                    <option value="">Hitamo Umuryango Remezo</option>
+                    <option value="">Hitamo Umuryango Remezo (Ntayo)</option>
                     {subgroups.map((s) => (
                       <option key={s._id} value={s._id}>
                         {s.name}
@@ -623,14 +687,12 @@ export default function CreateMember() {
                     ))}
                   </select>
                 </div>
-                {validationErrors.subgroup && (
-                  <p className="text-red-500 text-xs mt-1">{validationErrors.subgroup}</p>
-                )}
+                <p className="text-gray-400 text-xs">Iki gice ni uguhitamo gusa</p>
               </div>
 
               {/* Spouse Field - Shows when Ugushyingirwa is selected */}
               {showSpouse && (
-                <div className="space-y-1">
+                <div className="space-y-1 animate-fade-in">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Uwo mwashyingiranywe <span className="text-red-500">*</span>
                   </label>
@@ -654,14 +716,16 @@ export default function CreateMember() {
                       ) : (
                         potentialSpouses.map((s) => (
                           <option key={s._id} value={s._id}>
-                            {s.fullName} ({s.category === "adult" ? "Umukuru" : "Urubyiruko"})
+                            {s.fullName} ({s.gender === "male" ? "Gabo" : "Gore"})
                           </option>
                         ))
                       )}
                     </select>
                   </div>
                   {validationErrors.spouse && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.spouse}</p>
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" /> {validationErrors.spouse}
+                    </p>
                   )}
                 </div>
               )}
@@ -673,9 +737,9 @@ export default function CreateMember() {
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green" },
-                    { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray" },
-                    { value: "moved", label: "Yimukiye", icon: <FaTruck />, color: "orange" },
+                    { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green", bgColor: "bg-green-50", borderColor: "border-green-500", textColor: "text-green-700" },
+                    { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray", bgColor: "bg-gray-50", borderColor: "border-gray-500", textColor: "text-gray-700" },
+                    { value: "moved", label: "Yimukiye", icon: <FaTruck />, color: "orange", bgColor: "bg-orange-50", borderColor: "border-orange-500", textColor: "text-orange-700" },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -684,7 +748,7 @@ export default function CreateMember() {
                       className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 
                                  transition-all duration-200
                                  ${formData.accessibility === option.value
-                                   ? `bg-${option.color}-50 border-${option.color}-500 text-${option.color}-700`
+                                   ? `${option.bgColor} ${option.borderColor} ${option.textColor}`
                                    : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
                                  }`}
                     >
@@ -697,7 +761,7 @@ export default function CreateMember() {
 
               {/* Accessibility Notes */}
               {showNotes && (
-                <div className="space-y-1">
+                <div className="space-y-1 animate-fade-in">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Impamvu y'ihinduka <span className="text-red-500">*</span>
                   </label>
@@ -720,7 +784,9 @@ export default function CreateMember() {
                     />
                   </div>
                   {validationErrors.accessibilityNotes && (
-                    <p className="text-red-500 text-xs mt-1">{validationErrors.accessibilityNotes}</p>
+                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                      <FaExclamationCircle className="text-xs" /> {validationErrors.accessibilityNotes}
+                    </p>
                   )}
                 </div>
               )}
@@ -747,6 +813,7 @@ export default function CreateMember() {
                     </button>
                   ))}
                 </div>
+                <p className="text-gray-400 text-xs">Hita amasakramentu yakiriye</p>
               </div>
 
               {/* Submit Button */}
@@ -769,7 +836,10 @@ export default function CreateMember() {
                       Turimo kurema...
                     </span>
                   ) : (
-                    "Andika Umukristu"
+                    <span className="flex items-center justify-center gap-2">
+                      <FaChurch className="text-white" />
+                      Andika Umukristu
+                    </span>
                   )}
                 </button>
               </div>
@@ -781,6 +851,23 @@ export default function CreateMember() {
           </div>
         </div>
       </div>
+
+      {/* Add animation styles */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
