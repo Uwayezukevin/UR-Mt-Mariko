@@ -45,11 +45,12 @@ export const createMember = async (req, res) => {
     } = req.body;
 
     // ================= REQUIRED FIELDS VALIDATION =================
+    // Only fullName, category, and gender are required
     const requiredErrors = [];
     if (!fullName) requiredErrors.push("fullName");
     if (!category) requiredErrors.push("category");
     if (!gender) requiredErrors.push("gender");
-    if (!subgroup) requiredErrors.push("subgroup");
+    // subgroup is NOT required - remove from required check
     
     if (requiredErrors.length > 0) {
       return res.status(400).json({
@@ -65,11 +66,22 @@ export const createMember = async (req, res) => {
       });
     }
 
-    // ================= SUBGROUP VALIDATION =================
-    if (!mongoose.Types.ObjectId.isValid(subgroup)) {
-      return res.status(400).json({
-        message: "Invalid subgroup ID",
-      });
+    // ================= SUBGROUP VALIDATION (OPTIONAL) =================
+    if (subgroup) {
+      if (!mongoose.Types.ObjectId.isValid(subgroup)) {
+        return res.status(400).json({
+          message: "Invalid subgroup ID format",
+        });
+      }
+      
+      // Verify subgroup exists if provided
+      const Subgroup = mongoose.model("subgroups");
+      const subgroupExists = await Subgroup.findById(subgroup);
+      if (!subgroupExists) {
+        return res.status(400).json({
+          message: "Subgroup not found",
+        });
+      }
     }
 
     // ================= PARENT VALIDATION =================
@@ -196,8 +208,6 @@ export const createMember = async (req, res) => {
       fullName: fullName.trim(),
       category,
       gender,
-      subgroup,
-      sakraments: safeSakraments,
       accessibility: memberAccessibility,
       accessibilityUpdatedAt: new Date(),
       isActive: memberIsActive,
@@ -207,11 +217,13 @@ export const createMember = async (req, res) => {
     if (nationalId && nationalId.trim()) memberData.nationalId = nationalId.trim();
     if (dateOfBirth) memberData.dateOfBirth = new Date(dateOfBirth);
     if (phone && phone.trim()) memberData.phone = phone.trim();
+    if (subgroup) memberData.subgroup = subgroup; // Only add if provided
     if (parent && category !== "adult") memberData.parent = parent;
     if (hasMarriage && spouse) memberData.spouse = spouse;
     if (accessibilityNotes && accessibilityNotes.trim()) {
       memberData.accessibilityNotes = accessibilityNotes.trim();
     }
+    if (safeSakraments.length > 0) memberData.sakraments = safeSakraments;
 
     console.log("📦 Final member data:", JSON.stringify(memberData, null, 2));
     
@@ -241,7 +253,7 @@ export const createMember = async (req, res) => {
     
   } catch (err) {
     console.error("❌ ERROR in createMember:", err);
-    console.error("❌ Stack trace:", err.stack);
+    console.error("❌ Error details:", err);
     
     // Handle specific MongoDB errors
     if (err.name === "CastError") {

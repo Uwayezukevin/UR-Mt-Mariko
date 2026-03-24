@@ -4,70 +4,47 @@ const memberSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-      required: true,
+      required: [true, "Izina ryuzuye rirakenewe"],
+      trim: true,
     },
     category: {
       type: String,
       enum: ["child", "adult", "youth"],
-      required: true,
+      required: [true, "Icyiciro kirakenewe"],
     },
     nationalId: {
       type: String,
       unique: true,
       sparse: true,
+      trim: true,
     },
-    dateOfBirth: Date,
-    phone: String,
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
     parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
-      validate: {
-        validator: function(value) {
-          if (this.category === "adult") {
-            return true;
-          }
-          return value != null;
-        },
-        message: props => `Parent is required for ${props.doc?.category || 'this category'}`
-      }
+      default: null,
     },
     spouse: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
       default: null,
-      validate: {
-        validator: async function(value) {
-          if (!value) return true;
-          
-          if (value.toString() === this._id?.toString()) {
-            return false;
-          }
-          
-          const spouse = await mongoose.model("Member").findById(value);
-          if (!spouse) return false;
-          
-          if (spouse.gender === this.gender) {
-            return false;
-          }
-          
-          return true;
-        },
-        message: props => {
-          if (props.value?.toString() === props.doc?._id?.toString()) {
-            return "Ntushobora kwishyingira";
-          }
-          return "Uwo mwashyingiranywe ntabaho cyangwa igitsina kirimo kibihuje";
-        }
-      }
     },
     gender: {
       type: String,
       enum: ["male", "female"],
-      required: true,
+      required: [true, "Igitsina kirakenewe"],
     },
     subgroup: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "subgroups",
+      default: null, // Make it optional
     },
     sakraments: [
       {
@@ -83,7 +60,6 @@ const memberSchema = new mongoose.Schema(
       type: String,
       enum: ["alive", "dead", "moved"],
       default: "alive",
-      required: true,
     },
     accessibilityUpdatedAt: {
       type: Date,
@@ -92,6 +68,7 @@ const memberSchema = new mongoose.Schema(
     accessibilityNotes: {
       type: String,
       maxlength: 500,
+      trim: true,
     },
   },
   { timestamps: true }
@@ -99,27 +76,34 @@ const memberSchema = new mongoose.Schema(
 
 // Pre-save validation for parent field
 memberSchema.pre('validate', function(next) {
+  // Only validate parent if category is not adult AND parent is required
   if (this.category !== "adult" && !this.parent) {
     this.invalidate('parent', `Parent is required for ${this.category}`);
   }
   next();
 });
 
-// Pre-save validation for spouse field
+// Pre-save validation for spouse field - FIXED to avoid async issues
 memberSchema.pre('save', async function(next) {
-  if (!this.isModified('spouse')) return next();
+  if (!this.isModified('spouse') || !this.spouse) return next();
   
-  if (this.spouse) {
+  try {
     const Amasakramentu = mongoose.model("Amasakramentu");
-    const marriageSak = await Amasakramentu.findOne({ name: "Ugushyingirwa" });
+    const marriageSak = await Amasakramentu.findOne({ 
+      name: { $regex: /Ugushyingirwa/i } 
+    });
     
-    const hasMarriageSakrament = this.sakraments?.some(
-      sak => sak.toString() === marriageSak?._id?.toString()
-    );
-    
-    if (!hasMarriageSakrament) {
-      this.invalidate('spouse', "Ugomba guhitamo isakramentu ry 'ugushyingirwa mbere yo gushyiraho uwo mwashyingiranywe");
+    if (marriageSak) {
+      const hasMarriageSakrament = this.sakraments?.some(
+        sak => sak && sak.toString() === marriageSak._id.toString()
+      );
+      
+      if (!hasMarriageSakrament && this.spouse) {
+        this.invalidate('spouse', "Ugomba guhitamo isakramentu ry 'ugushyingirwa mbere yo gushyiraho uwo mwashyingiranywe");
+      }
     }
+  } catch (err) {
+    console.error("Error in spouse validation:", err);
   }
   
   next();
@@ -150,6 +134,12 @@ memberSchema.pre('save', function(next) {
   }
   next();
 });
+
+// Add indexes for better performance
+memberSchema.index({ fullName: 1 });
+memberSchema.index({ category: 1 });
+memberSchema.index({ subgroup: 1 });
+memberSchema.index({ nationalId: 1 }, { unique: true, sparse: true });
 
 // Optional: Add a method to get accessibility status in Kinyarwanda
 memberSchema.methods.getAccessibilityInKinyarwanda = function() {
