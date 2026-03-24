@@ -55,36 +55,62 @@ export default function CreateMember() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log("Fetching data...");
+        
         const [subRes, sakRes, membersRes] = await Promise.all([
           api.get("/subgroups"),
           api.get("/sakraments"),
           api.get("/members"),
         ]);
 
-        setSubgroups(subRes.data);
-        setSakraments(sakRes.data);
-        setMembers(membersRes.data);
+        console.log("Subgroups response:", subRes.data);
+        console.log("Sakraments response:", sakRes.data);
+        console.log("Members response:", membersRes.data);
+
+        // Handle different response formats
+        const subgroupsData = Array.isArray(subRes.data) ? subRes.data : 
+                              subRes.data.subgroups || subRes.data.members || [];
+        
+        const sakramentsData = Array.isArray(sakRes.data) ? sakRes.data : 
+                               sakRes.data.sakraments || sakRes.data.members || [];
+        
+        let membersData = [];
+        if (Array.isArray(membersRes.data)) {
+          membersData = membersRes.data;
+        } else if (membersRes.data.members && Array.isArray(membersRes.data.members)) {
+          membersData = membersRes.data.members;
+        } else if (membersRes.data.data && Array.isArray(membersRes.data.data)) {
+          membersData = membersRes.data.data;
+        }
+
+        console.log("Processed members data:", membersData);
+
+        setSubgroups(subgroupsData);
+        setSakraments(sakramentsData);
+        setMembers(membersData);
 
         // Find marriage sakrament ID
-        const marriage = sakRes.data.find(s => s.name === "Ugushyingirwa");
+        const marriage = sakramentsData.find(s => s.name === "Ugushyingirwa");
         if (marriage) {
           setMarriageSakramentId(marriage._id);
         }
 
         // Get all potential parents (adults and youth)
-        const potentialParents = membersRes.data.filter(
+        const potentialParents = membersData.filter(
           (member) => member.category === "adult" || member.category === "youth"
         );
         setAllParents(potentialParents);
 
         // Filter adult parents
-        const adults = membersRes.data.filter(
+        const adults = membersData.filter(
           (member) => member.category === "adult"
         );
         setParents(adults);
+        
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError("Failed to load form data");
+        console.error("Error details:", err.response?.data);
+        setError("Failed to load form data: " + (err.response?.data?.message || err.message));
       } finally {
         setFetchLoading(false);
       }
@@ -180,7 +206,8 @@ export default function CreateMember() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData)
+    console.log("Submitting form data:", formData);
+    
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);

@@ -278,7 +278,36 @@ export const createMember = async (req, res) => {
 };
 
 // ================= GET ALL MEMBERS =================
+// FIXED: Now returns array directly instead of object with pagination
 export const getAllMembers = async (req, res) => {
+  try {
+    const { category, gender, subgroup } = req.query;
+    
+    const filter = {};
+    if (category) filter.category = category;
+    if (gender) filter.gender = gender;
+    if (subgroup) filter.subgroup = subgroup;
+    
+    const members = await Member.find(filter)
+      .populate("subgroup", "name")
+      .populate("sakraments", "name")
+      .populate("parent", "fullName category")
+      .populate("spouse", "fullName category")
+      .select("-nationalId")
+      .sort({ createdAt: -1 });
+    
+    // Return array directly for frontend compatibility
+    res.status(200).json(members);
+    
+  } catch (err) {
+    console.error("Error in getAllMembers:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ================= GET ALL MEMBERS WITH PAGINATION (Optional) =================
+// If you need pagination, create a separate endpoint
+export const getAllMembersWithPagination = async (req, res) => {
   try {
     const { category, gender, subgroup, page = 1, limit = 100 } = req.query;
     
@@ -312,7 +341,7 @@ export const getAllMembers = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("Error in getAllMembers:", err);
+    console.error("Error in getAllMembersWithPagination:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
