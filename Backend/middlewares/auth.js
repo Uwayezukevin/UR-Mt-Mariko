@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import User from "../mongoschema/userSchema.js";
+import User from "../mongoschema/userschema.js";
 
 export const protect = async (req, res, next) => {
   try {
