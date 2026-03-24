@@ -315,16 +315,6 @@ export default function Dashboard() {
                     setSidebarOpen(false);
                   }}
                 />
-                <SidebarButton
-                  icon={<FaUserFriends />}
-                  label="Ibyiciro"
-                  path="/categories"
-                  isActive={isActive("/categories")}
-                  onClick={() => {
-                    navigate("/categories");
-                    setSidebarOpen(false);
-                  }}
-                />
               </div>
             </div>
 
@@ -341,16 +331,6 @@ export default function Dashboard() {
                   isActive={isActive("/events")}
                   onClick={() => {
                     navigate("/events");
-                    setSidebarOpen(false);
-                  }}
-                />
-                <SidebarButton
-                  icon={<FaClock />}
-                  label="Ibyitabire"
-                  path="/attendance"
-                  isActive={isActive("/attendance")}
-                  onClick={() => {
-                    navigate("/attendance");
                     setSidebarOpen(false);
                   }}
                 />
@@ -391,25 +371,6 @@ export default function Dashboard() {
                   isActive={isActive("/reports")}
                   onClick={() => {
                     navigate("/reports");
-                    setSidebarOpen(false);
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Settings Section */}
-            <div className="mb-6">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-4">
-                Igenamiterere
-              </p>
-              <div className="space-y-1">
-                <SidebarButton
-                  icon={<FaCog />}
-                  label="Igenamiterere"
-                  path="/settings"
-                  isActive={isActive("/settings")}
-                  onClick={() => {
-                    navigate("/settings");
                     setSidebarOpen(false);
                   }}
                 />

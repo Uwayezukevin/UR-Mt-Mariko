@@ -89,6 +89,14 @@ router.put(
 // Delete member
 router.delete("/members/:id", protect, adminOnly, deleteMember);
 
+router.get("/members/:id/family", protect, getMemberWithFamily);
+
+// Get complete family tree starting from a root member
+router.get("/members/:id/family-tree", protect, getFamilyTree);
+
+// Get all members grouped by families
+router.get("/families", protect, getMembersByFamily);
+
 /* ==================== EVENT ROUTES ==================== */
 
 // Create event

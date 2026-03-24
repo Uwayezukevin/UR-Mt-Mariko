@@ -22,6 +22,11 @@ import {
   FaSkull,
   FaTruck,
   FaRing,
+  FaTree,
+  FaUsers,
+  FaChild,
+  FaUserFriends,
+  FaHome,
 } from "react-icons/fa";
 import api from "../api/axios";
 
@@ -32,6 +37,7 @@ export default function MemberDetails() {
   const [member, setMember] = useState(null);
   const [attendance, setAttendance] = useState([]);
   const [decision, setDecision] = useState(null);
+  const [familyInfo, setFamilyInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("info");
@@ -55,15 +61,17 @@ export default function MemberDetails() {
         setLoading(true);
         setError("");
 
-        const [memberRes, attendanceRes, decisionRes] = await Promise.all([
+        const [memberRes, attendanceRes, decisionRes, familyRes] = await Promise.all([
           api.get(`/members/${id}`),
           api.get(`/attendance/member/${id}`),
           api.get(`/decision/member/${id}`),
+          api.get(`/members/${id}/family`).catch(() => ({ data: null })), // Family data is optional
         ]);
 
         if (!isMounted) return;
 
         setMember(memberRes.data);
+        setFamilyInfo(familyRes.data || null);
 
         const attendanceData = attendanceRes.data || [];
         setAttendance(attendanceData);
@@ -224,6 +232,7 @@ export default function MemberDetails() {
   }
 
   const accessibilityInfo = getAccessibilityInfo(member.accessibility);
+  const familySummary = familyInfo?.summary || {};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 px-3 sm:px-4 md:px-6">
@@ -242,21 +251,59 @@ export default function MemberDetails() {
             </span>
           </button>
 
-          {isAdmin && (
+          <div className="flex gap-2">
             <button
-              onClick={() => navigate(`/members/edit/${member._id}`)}
+              onClick={() => navigate(`/members/${member._id}/family`)}
               className="flex items-center justify-center gap-2 bg-gradient-to-r 
-                       from-yellow-500 to-yellow-600 text-white px-4 sm:px-5 
-                       py-2.5 sm:py-3 rounded-xl hover:from-yellow-600 
-                       hover:to-yellow-700 transition-all duration-300 
+                       from-green-500 to-green-600 text-white px-4 sm:px-5 
+                       py-2.5 sm:py-3 rounded-xl hover:from-green-600 
+                       hover:to-green-700 transition-all duration-300 
                        transform hover:scale-105 text-sm sm:text-base 
-                       font-medium shadow-md hover:shadow-lg w-full sm:w-auto"
+                       font-medium shadow-md hover:shadow-lg"
             >
-              <FaEdit className="text-sm sm:text-base" />
-              Hindura Amakuru
+              <FaTree className="text-sm sm:text-base" />
+              Reba Umuryango
             </button>
-          )}
+            
+            {isAdmin && (
+              <button
+                onClick={() => navigate(`/members/edit/${member._id}`)}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r 
+                         from-yellow-500 to-yellow-600 text-white px-4 sm:px-5 
+                         py-2.5 sm:py-3 rounded-xl hover:from-yellow-600 
+                         hover:to-yellow-700 transition-all duration-300 
+                         transform hover:scale-105 text-sm sm:text-base 
+                         font-medium shadow-md hover:shadow-lg"
+              >
+                <FaEdit className="text-sm sm:text-base" />
+                Hindura Amakuru
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Family Quick Stats Banner */}
+        {familyInfo && familySummary.totalChildren > 0 && (
+          <div className="mb-4 sm:mb-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <FaTree className="text-purple-600 text-xl" />
+                <div>
+                  <p className="text-xs text-purple-600 font-medium">Umuryango</p>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {member.fullName} afite abana {familySummary.totalChildren}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate(`/members/${member._id}/family`)}
+                className="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center gap-1"
+              >
+                Reba Umuryango wose <FaChevronRight className="text-xs" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -418,13 +465,6 @@ export default function MemberDetails() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/members/${member._id}/family`)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                  >
-                    <FaTree />
-                    Reba Umuryango
-                  </button>
 
                   {/* Parent Information */}
                   {member.parent && (
@@ -460,7 +500,7 @@ export default function MemberDetails() {
                       <FaRing className="text-purple-600 text-lg" />
                       <div className="flex-1">
                         <p className="text-xs text-gray-500">
-                          Uwo bashyinganye
+                          Uwo bashakanye
                         </p>
                         <p className="text-sm font-medium">
                           {member.spouse.fullName}
@@ -481,6 +521,38 @@ export default function MemberDetails() {
                       >
                         Reba <FaChevronRight className="text-xs" />
                       </button>
+                    </div>
+                  )}
+
+                  {/* Children Count Quick View */}
+                  {familyInfo && familyInfo.family?.children?.length > 0 && (
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-100">
+                      <FaChild className="text-green-600 text-lg" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Abana</p>
+                        <p className="text-sm font-medium">
+                          {familyInfo.family.children.length} abana
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/members/${member._id}/family`)}
+                        className="text-green-600 hover:text-green-800 text-xs font-medium flex items-center gap-1"
+                      >
+                        Reba <FaChevronRight className="text-xs" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Siblings Count Quick View */}
+                  {familyInfo && familyInfo.family?.siblings?.length > 0 && (
+                    <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+                      <FaUsers className="text-yellow-600 text-lg" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Abavandimwe</p>
+                        <p className="text-sm font-medium">
+                          {familyInfo.family.siblings.length} abavandimwe
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -629,7 +701,7 @@ export default function MemberDetails() {
                       {member.spouse && (
                         <p className="text-sm text-gray-600 mt-2">
                           <span className="font-semibold">
-                            Uwo bashyinganye:
+                            Uwo bashakanye:
                           </span>{" "}
                           {member.spouse.fullName}
                         </p>
