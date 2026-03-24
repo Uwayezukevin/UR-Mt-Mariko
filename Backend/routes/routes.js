@@ -55,10 +55,10 @@ router.post("/users/logout", logoutUser);
 /* ==================== MEMBER ROUTES ==================== */
 
 // 🔥 SEARCH MUST COME BEFORE :id - CORRECT ORDER
-router.get("/members/search", searchMembers);
+router.get("/members/search", protect, searchMembers);
 
 // Get all members
-router.get("/members", getAllMembers);
+router.get("/members", protect, getAllMembers);
 
 // Create member
 router.post(
@@ -71,7 +71,7 @@ router.post(
 );
 
 // Get member by ID - This must come AFTER specific routes like /search
-router.get("/members/:id", getMemberById);
+router.get("/members/:id", protect, getMemberById);
 
 // Update member
 router.put(
@@ -99,10 +99,10 @@ router.post(
 );
 
 // Get all events
-router.get("/events", getAllEvents);
+router.get("/events", protect, getAllEvents);
 
 // Get event by ID
-router.get("/events/:id", getEventById);
+router.get("/events/:id", protect, getEventById);
 
 // Update event
 router.put(
@@ -119,12 +119,12 @@ router.delete("/events/:id", protect, adminOnly, deleteEvent);
 
 /* ==================== SACRAMENTS & SUBGROUPS ==================== */
 
-router.get("/sakraments", getAllSakraments);
-router.get("/subgroups", getAllSubgroups);
+router.get("/sakraments", protect, getAllSakraments);
+router.get("/subgroups", protect, getAllSubgroups);
 
 /* ==================== EXTRA MODULES ==================== */
 
-router.use("/attendance", attendanceRoutes);
-router.use("/decision", decisionRoutes);
+router.use("/attendance", protect, attendanceRoutes);
+router.use("/decision", protect, decisionRoutes);
 
 export default router;
