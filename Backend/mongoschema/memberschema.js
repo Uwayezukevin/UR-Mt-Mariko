@@ -44,7 +44,7 @@ const memberSchema = new mongoose.Schema(
     subgroup: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "subgroups",
-      default: null, // Make it optional
+      default: null,
     },
     sakraments: [
       {
@@ -74,42 +74,51 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Pre-save validation for parent field
+// ================= FIXED PRE-VALIDATE HOOK =================
 memberSchema.pre('validate', function(next) {
   // Only validate parent if category is not adult AND parent is required
   if (this.category !== "adult" && !this.parent) {
     this.invalidate('parent', `Parent is required for ${this.category}`);
   }
-  next();
+  next(); // Make sure to call next()
 });
 
-// Pre-save validation for spouse field - FIXED to avoid async issues
+// ================= FIXED PRE-SAVE HOOK FOR SPOUSE =================
 memberSchema.pre('save', async function(next) {
-  if (!this.isModified('spouse') || !this.spouse) return next();
-  
   try {
-    const Amasakramentu = mongoose.model("Amasakramentu");
-    const marriageSak = await Amasakramentu.findOne({ 
-      name: { $regex: /Ugushyingirwa/i } 
-    });
-    
-    if (marriageSak) {
-      const hasMarriageSakrament = this.sakraments?.some(
-        sak => sak && sak.toString() === marriageSak._id.toString()
-      );
+    // Only run spouse validation if spouse is being modified and has a value
+    if (this.isModified('spouse') && this.spouse) {
+      const Amasakramentu = mongoose.model("Amasakramentu");
+      const marriageSak = await Amasakramentu.findOne({ 
+        name: { $regex: /Ugushyingirwa/i } 
+      });
       
-      if (!hasMarriageSakrament && this.spouse) {
-        this.invalidate('spouse', "Ugomba guhitamo isakramentu ry 'ugushyingirwa mbere yo gushyiraho uwo mwashyingiranywe");
+      if (marriageSak) {
+        const hasMarriageSakrament = this.sakraments?.some(
+          sak => sak && sak.toString() === marriageSak._id.toString()
+        );
+        
+        if (!hasMarriageSakrament) {
+          this.invalidate('spouse', "Ugomba guhitamo isakramentu ry 'ugushyingirwa mbere yo gushyiraho uwo mwashyingiranywe");
+        }
       }
     }
+    next(); // Always call next() at the end
   } catch (err) {
     console.error("Error in spouse validation:", err);
+    next(err); // Pass error to next
   }
-  
-  next();
 });
 
-// Post-save hook to update spouse's record
+// ================= FIXED PRE-SAVE HOOK FOR ACCESSIBILITY =================
+memberSchema.pre('save', function(next) {
+  if (this.isModified('accessibility')) {
+    this.accessibilityUpdatedAt = new Date();
+  }
+  next(); // Make sure to call next()
+});
+
+// ================= POST-SAVE HOOK (this one is fine) =================
 memberSchema.post('save', async function(doc) {
   if (doc.spouse && doc.isModified('spouse')) {
     try {
@@ -125,14 +134,6 @@ memberSchema.post('save', async function(doc) {
       console.error("Failed to update spouse link:", err);
     }
   }
-});
-
-// Pre-save hook to update accessibilityUpdatedAt
-memberSchema.pre('save', function(next) {
-  if (this.isModified('accessibility')) {
-    this.accessibilityUpdatedAt = new Date();
-  }
-  next();
 });
 
 // Add indexes for better performance
