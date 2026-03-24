@@ -183,13 +183,13 @@ export default function CreateMember() {
     
     // Required fields
     if (!formData.fullName?.trim()) {
-      errors.fullName = "Amazina yose arafuzwe";
+      errors.fullName = "Amazina yose arakenewe";
     }
     if (!formData.category) {
-      errors.category = "Icyiciro arafuzwe";
+      errors.category = "Icyiciro kirakenewe";
     }
     if (!formData.gender) {
-      errors.gender = "Igitsina arafuzwe";
+      errors.gender = "Igitsina kirakenewe";
     }
     
     // Parent validation - required for child and youth
@@ -206,7 +206,7 @@ export default function CreateMember() {
     
     // Accessibility notes validation
     if (formData.accessibility !== "alive" && !formData.accessibilityNotes?.trim()) {
-      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'ikimezo";
+      errors.accessibilityNotes = "Andika impamvu y'ihinduka ry'Icyemezo";
     }
 
     // National ID validation (if provided)
@@ -733,13 +733,13 @@ export default function CreateMember() {
               {/* Accessibility Status */}
               <div className="space-y-2">
                 <label className="text-xs sm:text-sm font-medium text-gray-700 block">
-                  Ikimezo cy'Umukristu <span className="text-red-500">*</span>
+                  Icyemezo cy'Umukristu <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { value: "alive", label: "Ariho", icon: <FaHeartbeat />, color: "green", bgColor: "bg-green-50", borderColor: "border-green-500", textColor: "text-green-700" },
-                    { value: "dead", label: "Yapfuye", icon: <FaSkull />, color: "gray", bgColor: "bg-gray-50", borderColor: "border-gray-500", textColor: "text-gray-700" },
-                    { value: "moved", label: "Yimukiye", icon: <FaTruck />, color: "orange", bgColor: "bg-orange-50", borderColor: "border-orange-500", textColor: "text-orange-700" },
+                    { value: "dead", label: "Yitabye Imana", icon: <FaSkull />, color: "gray", bgColor: "bg-gray-50", borderColor: "border-gray-500", textColor: "text-gray-700" },
+                    { value: "moved", label: "Yimukiye ahandi", icon: <FaTruck />, color: "orange", bgColor: "bg-orange-50", borderColor: "border-orange-500", textColor: "text-orange-700" },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -774,7 +774,7 @@ export default function CreateMember() {
                       onChange={handleChange}
                       placeholder={formData.accessibility === "dead" 
                         ? "Andika igihe n'impamvu y'urupfu..." 
-                        : "Andika aho yimukiye n'igihe..."}
+                        : "Andika aho Yimukiye ahandi n'igihe..."}
                       rows="3"
                       className={`w-full pl-9 pr-4 py-3 sm:py-3.5 
                                  border rounded-lg sm:rounded-xl 
@@ -813,7 +813,7 @@ export default function CreateMember() {
                     </button>
                   ))}
                 </div>
-                <p className="text-gray-400 text-xs">Hita amasakramentu yakiriye</p>
+                <p className="text-gray-400 text-xs">Hitamo amasakramentu yakiriye</p>
               </div>
 
               {/* Submit Button */}
@@ -833,7 +833,7 @@ export default function CreateMember() {
                     <span className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 
                                     border-2 border-white border-t-transparent"></div>
-                      Turimo kurema...
+                      Turimo kwandika...
                     </span>
                   ) : (
                     <span className="flex items-center justify-center gap-2">
