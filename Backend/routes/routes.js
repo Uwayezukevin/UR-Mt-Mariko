@@ -65,8 +65,8 @@ router.post(
   "/members",
   protect,
   adminOnly,
-  createMemberSchema,
-  validate,
+  // createMemberSchema,
+  // validate,
   createMember
 );
 
