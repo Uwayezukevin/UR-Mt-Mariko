@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { 
-  FaArrowLeft, 
-  FaUserCheck, 
+import {
+  FaArrowLeft,
+  FaUserCheck,
   FaUserTimes,
   FaUser,
   FaCalendarAlt,
@@ -21,7 +21,7 @@ import {
   FaHeartbeat,
   FaSkull,
   FaTruck,
-  FaRing
+  FaRing,
 } from "react-icons/fa";
 import api from "../api/axios";
 
@@ -41,7 +41,7 @@ export default function MemberDetails() {
   // Check if user is admin
   useEffect(() => {
     const checkAdmin = () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       setIsAdmin(!!token);
     };
     checkAdmin();
@@ -64,15 +64,19 @@ export default function MemberDetails() {
         if (!isMounted) return;
 
         setMember(memberRes.data);
-        
+
         const attendanceData = attendanceRes.data || [];
         setAttendance(attendanceData);
-        
+
         // Calculate stats
-        const present = attendanceData.filter(a => a.status === "present").length;
-        const absent = attendanceData.filter(a => a.status === "absent").length;
+        const present = attendanceData.filter(
+          (a) => a.status === "present",
+        ).length;
+        const absent = attendanceData.filter(
+          (a) => a.status === "absent",
+        ).length;
         setStats({ present, absent, total: attendanceData.length });
-        
+
         setDecision(decisionRes.data || null);
       } catch (err) {
         if (isMounted) {
@@ -97,10 +101,10 @@ export default function MemberDetails() {
     try {
       if (!dateStr) return "-";
       const date = new Date(dateStr);
-      return date.toLocaleDateString('rw-TZ', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return date.toLocaleDateString("rw-TZ", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch {
       return "-";
@@ -114,30 +118,30 @@ export default function MemberDetails() {
 
   // Get accessibility info
   const getAccessibilityInfo = (status) => {
-    switch(status) {
+    switch (status) {
       case "alive":
-        return { 
+        return {
           icon: <FaHeartbeat className="text-green-500" />,
           color: "bg-green-50 border-green-200 text-green-700",
-          label: "Ariho"
+          label: "Ariho",
         };
       case "dead":
-        return { 
+        return {
           icon: <FaSkull className="text-gray-600" />,
           color: "bg-gray-100 border-gray-300 text-gray-700",
-          label: "Yitabye Imana"
+          label: "Yitabye Imana",
         };
       case "moved":
-        return { 
+        return {
           icon: <FaTruck className="text-orange-500" />,
           color: "bg-orange-50 border-orange-200 text-orange-700",
-          label: "Yimukiye ahandi"
+          label: "Yimukiye ahandi",
         };
       default:
-        return { 
+        return {
           icon: <FaInfoCircle className="text-blue-400" />,
           color: "bg-blue-50 border-blue-200 text-blue-700",
-          label: status || "Ntamakuru"
+          label: status || "Ntamakuru",
         };
     }
   };
@@ -147,11 +151,15 @@ export default function MemberDetails() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
         <div className="text-center">
           <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 
-                          border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
-            <FaUser className="absolute top-1/2 left-1/2 transform 
+            <div
+              className="animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 
+                          border-4 border-blue-200 border-t-blue-600 mx-auto"
+            ></div>
+            <FaUser
+              className="absolute top-1/2 left-1/2 transform 
                              -translate-x-1/2 -translate-y-1/2 
-                             text-blue-600 text-lg sm:text-xl" />
+                             text-blue-600 text-lg sm:text-xl"
+            />
           </div>
           <p className="text-gray-600 text-sm sm:text-base mt-4">
             Birimo gupakira amakuru y'Umukristu...
@@ -165,8 +173,10 @@ export default function MemberDetails() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md text-center">
-          <div className="bg-red-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
-                        flex items-center justify-center mx-auto mb-4">
+          <div
+            className="bg-red-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
+                        flex items-center justify-center mx-auto mb-4"
+          >
             <FaExclamationCircle className="text-red-500 text-2xl sm:text-3xl" />
           </div>
           <p className="text-red-600 text-sm sm:text-base font-medium mb-2">
@@ -189,8 +199,10 @@ export default function MemberDetails() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 max-w-md text-center">
-          <div className="bg-yellow-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
-                        flex items-center justify-center mx-auto mb-4">
+          <div
+            className="bg-yellow-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
+                        flex items-center justify-center mx-auto mb-4"
+          >
             <FaUser className="text-yellow-500 text-2xl sm:text-3xl" />
           </div>
           <p className="text-gray-800 text-sm sm:text-base font-medium mb-2">
@@ -216,7 +228,6 @@ export default function MemberDetails() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-4 sm:py-6 px-3 sm:px-4 md:px-6">
       <div className="max-w-6xl mx-auto">
-        
         {/* Header with Back Button and Edit */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
           <button
@@ -225,8 +236,10 @@ export default function MemberDetails() {
                      transition-colors active:opacity-70 px-2 py-2 -ml-2 
                      rounded-lg active:bg-blue-50 w-fit group"
           >
-            <FaArrowLeft className="text-sm sm:text-base group-hover:-translate-x-1 transition-transform" /> 
-            <span className="font-medium text-sm sm:text-base">Subira Inyuma</span>
+            <FaArrowLeft className="text-sm sm:text-base group-hover:-translate-x-1 transition-transform" />
+            <span className="font-medium text-sm sm:text-base">
+              Subira Inyuma
+            </span>
           </button>
 
           {isAdmin && (
@@ -247,41 +260,50 @@ export default function MemberDetails() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          
           {/* Left Column - Member Profile */}
           <div className="lg:col-span-1 space-y-4 sm:space-y-6">
-            
             {/* Profile Card */}
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden 
-                          hover:shadow-xl transition-all duration-300">
-              
+            <div
+              className="bg-white rounded-2xl shadow-lg overflow-hidden 
+                          hover:shadow-xl transition-all duration-300"
+            >
               {/* Profile Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-5 sm:p-6 text-center">
-                <div className="bg-white/20 rounded-full w-20 h-20 sm:w-24 sm:h-24 
+                <div
+                  className="bg-white/20 rounded-full w-20 h-20 sm:w-24 sm:h-24 
                               flex items-center justify-center mx-auto mb-3 
-                              border-4 border-white/30">
+                              border-4 border-white/30"
+                >
                   <FaUser className="text-white text-3xl sm:text-4xl" />
                 </div>
                 <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white break-words">
                   {member.fullName}
                 </h1>
                 <p className="text-blue-100 text-sm mt-1 capitalize">
-                  {member.category === 'child' ? 'Umwana' : 
-                   member.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                  {member.category === "child"
+                    ? "Umwana"
+                    : member.category === "youth"
+                      ? "Urubyiruko"
+                      : "Umukuru"}
                 </p>
               </div>
 
               {/* Profile Details */}
               <div className="p-5 sm:p-6 space-y-4">
-                
                 {/* Accessibility Status */}
-                <div className={`p-4 rounded-xl border-2 ${accessibilityInfo.color}`}>
+                <div
+                  className={`p-4 rounded-xl border-2 ${accessibilityInfo.color}`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {accessibilityInfo.icon}
                       <div>
-                        <p className="text-xs font-medium opacity-75">Ikimezo</p>
-                        <p className="font-semibold">{accessibilityInfo.label}</p>
+                        <p className="text-xs font-medium opacity-75">
+                          Ikimezo
+                        </p>
+                        <p className="font-semibold">
+                          {accessibilityInfo.label}
+                        </p>
                       </div>
                     </div>
                     {member.accessibilityNotes && (
@@ -291,15 +313,17 @@ export default function MemberDetails() {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Decision Status */}
-                <div className={`p-4 rounded-xl ${
-                  decision?.status === "ACTIVE" 
-                    ? "bg-green-50 border border-green-200" 
-                    : decision?.status === "INACTIVE"
-                    ? "bg-red-50 border border-red-200"
-                    : "bg-gray-50 border border-gray-200"
-                }`}>
+                <div
+                  className={`p-4 rounded-xl ${
+                    decision?.status === "ACTIVE"
+                      ? "bg-green-50 border border-green-200"
+                      : decision?.status === "INACTIVE"
+                        ? "bg-red-50 border border-red-200"
+                        : "bg-gray-50 border border-gray-200"
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {decision?.status === "ACTIVE" ? (
@@ -309,18 +333,20 @@ export default function MemberDetails() {
                       ) : (
                         <FaInfoCircle className="text-gray-400 text-lg" />
                       )}
-                      <span className={`font-medium ${
-                        decision?.status === "ACTIVE" 
-                          ? "text-green-700" 
-                          : decision?.status === "INACTIVE"
-                          ? "text-red-700"
-                          : "text-gray-500"
-                      }`}>
-                        {decision ? (
-                          decision.status === "ACTIVE" ? "Aritabira" : "Ntiyitabira"
-                        ) : (
-                          "Nta cyemezo"
-                        )}
+                      <span
+                        className={`font-medium ${
+                          decision?.status === "ACTIVE"
+                            ? "text-green-700"
+                            : decision?.status === "INACTIVE"
+                              ? "text-red-700"
+                              : "text-gray-500"
+                        }`}
+                      >
+                        {decision
+                          ? decision.status === "ACTIVE"
+                            ? "Aritabira"
+                            : "Ntiyitabira"
+                          : "Nta cyemezo"}
                       </span>
                     </div>
                     {decision && (
@@ -338,7 +364,11 @@ export default function MemberDetails() {
                     <div>
                       <p className="text-xs text-gray-500">Igitsina</p>
                       <p className="text-sm font-medium capitalize">
-                        {member.gender === 'male' ? 'Gabo' : member.gender === 'female' ? 'Gore' : 'N/A'}
+                        {member.gender === "male"
+                          ? "Gabo"
+                          : member.gender === "female"
+                            ? "Gore"
+                            : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -348,7 +378,9 @@ export default function MemberDetails() {
                     <div>
                       <p className="text-xs text-gray-500">Telefone</p>
                       <p className="text-sm font-medium">
-                        {member.phone || member.userphoneNumber || "Nta telefone"}
+                        {member.phone ||
+                          member.userphoneNumber ||
+                          "Nta telefone"}
                       </p>
                     </div>
                   </div>
@@ -358,7 +390,9 @@ export default function MemberDetails() {
                     <div>
                       <p className="text-xs text-gray-500">Itariki y'amavuko</p>
                       <p className="text-sm font-medium">
-                        {member.dateOfBirth ? formatDate(member.dateOfBirth) : "Nta tariki"}
+                        {member.dateOfBirth
+                          ? formatDate(member.dateOfBirth)
+                          : "Nta tariki"}
                       </p>
                     </div>
                   </div>
@@ -378,12 +412,19 @@ export default function MemberDetails() {
                     <div>
                       <p className="text-xs text-gray-500">Amasakramentu</p>
                       <p className="text-sm font-medium">
-                        {member.sakraments?.length > 0 
+                        {member.sakraments?.length > 0
                           ? member.sakraments.map((s) => s.name).join(", ")
                           : "Nta Sakramenti"}
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => navigate(`/members/${member._id}/family`)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    <FaTree />
+                    Reba Umuryango
+                  </button>
 
                   {/* Parent Information */}
                   {member.parent && (
@@ -391,14 +432,21 @@ export default function MemberDetails() {
                       <FaUser className="text-blue-600 text-lg" />
                       <div className="flex-1">
                         <p className="text-xs text-gray-500">Umubyeyi</p>
-                        <p className="text-sm font-medium">{member.parent.fullName}</p>
+                        <p className="text-sm font-medium">
+                          {member.parent.fullName}
+                        </p>
                         <p className="text-xs text-gray-400 capitalize">
-                          {member.parent.category === 'child' ? 'Umwana' : 
-                           member.parent.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                          {member.parent.category === "child"
+                            ? "Umwana"
+                            : member.parent.category === "youth"
+                              ? "Urubyiruko"
+                              : "Umukuru"}
                         </p>
                       </div>
                       <button
-                        onClick={() => navigate(`/members/${member.parent._id}`)}
+                        onClick={() =>
+                          navigate(`/members/${member.parent._id}`)
+                        }
                         className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
                       >
                         Reba <FaChevronRight className="text-xs" />
@@ -411,15 +459,24 @@ export default function MemberDetails() {
                     <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl border border-purple-100">
                       <FaRing className="text-purple-600 text-lg" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500">Uwo bashyinganye</p>
-                        <p className="text-sm font-medium">{member.spouse.fullName}</p>
+                        <p className="text-xs text-gray-500">
+                          Uwo bashyinganye
+                        </p>
+                        <p className="text-sm font-medium">
+                          {member.spouse.fullName}
+                        </p>
                         <p className="text-xs text-gray-400 capitalize">
-                          {member.spouse.category === 'child' ? 'Umwana' : 
-                           member.spouse.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                          {member.spouse.category === "child"
+                            ? "Umwana"
+                            : member.spouse.category === "youth"
+                              ? "Urubyiruko"
+                              : "Umukuru"}
                         </p>
                       </div>
                       <button
-                        onClick={() => navigate(`/members/${member.spouse._id}`)}
+                        onClick={() =>
+                          navigate(`/members/${member.spouse._id}`)
+                        }
                         className="text-purple-600 hover:text-purple-800 text-xs font-medium flex items-center gap-1"
                       >
                         Reba <FaChevronRight className="text-xs" />
@@ -433,7 +490,10 @@ export default function MemberDetails() {
                       <FaUser className="text-gray-400 text-lg" />
                       <div>
                         <p className="text-xs text-gray-500">Umubyeyi</p>
-                        <p className="text-sm text-gray-500 italic">Nta mubyeyi wanditswe (Umukuru ashobora kudafite umubyeyi)</p>
+                        <p className="text-sm text-gray-500 italic">
+                          Nta mubyeyi wanditswe (Umukuru ashobora kudafite
+                          umubyeyi)
+                        </p>
                       </div>
                     </div>
                   )}
@@ -447,15 +507,21 @@ export default function MemberDetails() {
                   </h3>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center p-2 bg-blue-50 rounded-lg">
-                      <p className="text-lg font-bold text-blue-600">{stats.total}</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {stats.total}
+                      </p>
                       <p className="text-xs text-gray-500">Yose</p>
                     </div>
                     <div className="text-center p-2 bg-green-50 rounded-lg">
-                      <p className="text-lg font-bold text-green-600">{stats.present}</p>
+                      <p className="text-lg font-bold text-green-600">
+                        {stats.present}
+                      </p>
                       <p className="text-xs text-gray-500">Yitabiriye</p>
                     </div>
                     <div className="text-center p-2 bg-red-50 rounded-lg">
-                      <p className="text-lg font-bold text-red-600">{stats.absent}</p>
+                      <p className="text-lg font-bold text-red-600">
+                        {stats.absent}
+                      </p>
                       <p className="text-xs text-gray-500">Ntiyitabiriye</p>
                     </div>
                   </div>
@@ -467,25 +533,28 @@ export default function MemberDetails() {
           {/* Right Column - Attendance History */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              
               {/* Tabs for Mobile */}
               <div className="sm:hidden border-b border-gray-200">
                 <div className="flex">
                   <button
                     onClick={() => setActiveTab("info")}
                     className={`flex-1 py-3 text-sm font-medium transition-colors
-                              ${activeTab === "info" 
-                                ? "text-blue-600 border-b-2 border-blue-600" 
-                                : "text-gray-500 hover:text-gray-700"}`}
+                              ${
+                                activeTab === "info"
+                                  ? "text-blue-600 border-b-2 border-blue-600"
+                                  : "text-gray-500 hover:text-gray-700"
+                              }`}
                   >
                     Amakuru
                   </button>
                   <button
                     onClick={() => setActiveTab("attendance")}
                     className={`flex-1 py-3 text-sm font-medium transition-colors
-                              ${activeTab === "attendance" 
-                                ? "text-blue-600 border-b-2 border-blue-600" 
-                                : "text-gray-500 hover:text-gray-700"}`}
+                              ${
+                                activeTab === "attendance"
+                                  ? "text-blue-600 border-b-2 border-blue-600"
+                                  : "text-gray-500 hover:text-gray-700"
+                              }`}
                   >
                     Kwitabira
                   </button>
@@ -512,10 +581,12 @@ export default function MemberDetails() {
                   <div className="mt-4">
                     <div className="flex justify-between text-xs text-white mb-1">
                       <span>Kwitabira: {getAttendancePercentage()}%</span>
-                      <span>{stats.present}/{stats.total}</span>
+                      <span>
+                        {stats.present}/{stats.total}
+                      </span>
                     </div>
                     <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-green-400 rounded-full transition-all duration-500"
                         style={{ width: `${getAttendancePercentage()}%` }}
                       ></div>
@@ -527,28 +598,39 @@ export default function MemberDetails() {
               {/* Content */}
               <div className="p-5 sm:p-6">
                 {/* Mobile: Show only active tab content */}
-                <div className={`${activeTab === "info" ? "block sm:hidden" : "hidden"}`}>
+                <div
+                  className={`${activeTab === "info" ? "block sm:hidden" : "hidden"}`}
+                >
                   {/* Quick Info Summary for Mobile */}
                   <div className="space-y-3">
                     <div className="bg-blue-50 rounded-xl p-4">
                       <p className="text-sm text-gray-600">
                         <span className="font-semibold">Icyiciro:</span>{" "}
-                        {member.category === 'child' ? 'Umwana' : 
-                         member.category === 'youth' ? 'Urubyiruko' : 'Umukuru'}
+                        {member.category === "child"
+                          ? "Umwana"
+                          : member.category === "youth"
+                            ? "Urubyiruko"
+                            : "Umukuru"}
                       </p>
                       <p className="text-sm text-gray-600 mt-2">
                         <span className="font-semibold">Igitsina:</span>{" "}
-                        {member.gender === 'male' ? 'Gabo' : member.gender === 'female' ? 'Gore' : 'N/A'}
+                        {member.gender === "male"
+                          ? "Gabo"
+                          : member.gender === "female"
+                            ? "Gore"
+                            : "N/A"}
                       </p>
                       <p className="text-sm text-gray-600 mt-2">
                         <span className="font-semibold">Ikimezo:</span>{" "}
-                        <span className={accessibilityInfo.color.split(' ')[2]}>
+                        <span className={accessibilityInfo.color.split(" ")[2]}>
                           {accessibilityInfo.label}
                         </span>
                       </p>
                       {member.spouse && (
                         <p className="text-sm text-gray-600 mt-2">
-                          <span className="font-semibold">Uwo bashyinganye:</span>{" "}
+                          <span className="font-semibold">
+                            Uwo bashyinganye:
+                          </span>{" "}
                           {member.spouse.fullName}
                         </p>
                       )}
@@ -557,11 +639,15 @@ export default function MemberDetails() {
                 </div>
 
                 {/* Attendance Content */}
-                <div className={`${activeTab === "attendance" ? "block" : "hidden sm:block"}`}>
+                <div
+                  className={`${activeTab === "attendance" ? "block" : "hidden sm:block"}`}
+                >
                   {attendance.length === 0 ? (
                     <div className="text-center py-8 sm:py-12">
-                      <div className="bg-gray-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
-                                    flex items-center justify-center mx-auto mb-4">
+                      <div
+                        className="bg-gray-100 rounded-full w-16 h-16 sm:w-20 sm:h-20 
+                                    flex items-center justify-center mx-auto mb-4"
+                      >
                         <FaUserTimes className="text-gray-400 text-2xl sm:text-3xl" />
                       </div>
                       <p className="text-gray-600 text-sm sm:text-base font-medium mb-2">
@@ -582,31 +668,42 @@ export default function MemberDetails() {
                                      hover:shadow-md transition-all duration-300"
                           >
                             <div className="flex items-start gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center
-                                            ${record.status === "present" 
-                                              ? "bg-green-100" 
-                                              : "bg-red-100"}`}>
-                                {record.status === "present" 
-                                  ? <FaUserCheck className="text-green-600 text-xs" />
-                                  : <FaUserTimes className="text-red-600 text-xs" />
-                                }
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center
+                                            ${
+                                              record.status === "present"
+                                                ? "bg-green-100"
+                                                : "bg-red-100"
+                                            }`}
+                              >
+                                {record.status === "present" ? (
+                                  <FaUserCheck className="text-green-600 text-xs" />
+                                ) : (
+                                  <FaUserTimes className="text-red-600 text-xs" />
+                                )}
                               </div>
                               <div className="flex-1">
                                 <h3 className="font-medium text-gray-800 text-sm">
-                                  {record.event?.title || "Igikorwa nticyamenyekanye"}
+                                  {record.event?.title ||
+                                    "Igikorwa nticyamenyekanye"}
                                 </h3>
                                 <div className="flex justify-between items-center mt-2">
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs font-medium
-                                      ${record.status === "present"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
+                                      ${
+                                        record.status === "present"
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-red-100 text-red-700"
                                       }`}
                                   >
-                                    {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
+                                    {record.status === "present"
+                                      ? "Yitabiriye"
+                                      : "Ntiyitabiriye"}
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    {record.createdAt ? formatDate(record.createdAt) : "-"}
+                                    {record.createdAt
+                                      ? formatDate(record.createdAt)
+                                      : "-"}
                                   </span>
                                 </div>
                               </div>
@@ -629,30 +726,36 @@ export default function MemberDetails() {
                               <th className="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Itariki
                               </th>
-                             </tr>
+                            </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
                             {attendance.map((record) => (
-                              <tr 
-                                key={record._id} 
+                              <tr
+                                key={record._id}
                                 className="hover:bg-gray-50 transition-colors"
                               >
                                 <td className="p-4 text-sm text-gray-800">
-                                  {record.event?.title || "Igikorwa nticyamenyekanye"}
+                                  {record.event?.title ||
+                                    "Igikorwa nticyamenyekanye"}
                                 </td>
                                 <td className="p-4">
                                   <span
                                     className={`px-3 py-1 rounded-full text-xs font-medium
-                                      ${record.status === "present"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
+                                      ${
+                                        record.status === "present"
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-red-100 text-red-700"
                                       }`}
                                   >
-                                    {record.status === "present" ? "Yitabiriye" : "Ntiyitabiriye"}
+                                    {record.status === "present"
+                                      ? "Yitabiriye"
+                                      : "Ntiyitabiriye"}
                                   </span>
                                 </td>
                                 <td className="p-4 text-sm text-gray-500">
-                                  {record.createdAt ? formatDate(record.createdAt) : "-"}
+                                  {record.createdAt
+                                    ? formatDate(record.createdAt)
+                                    : "-"}
                                 </td>
                               </tr>
                             ))}
@@ -667,13 +770,19 @@ export default function MemberDetails() {
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                               <span className="text-xs sm:text-sm text-gray-600">
-                                Yitabiriye: <span className="font-semibold">{stats.present}</span>
+                                Yitabiriye:{" "}
+                                <span className="font-semibold">
+                                  {stats.present}
+                                </span>
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                               <span className="text-xs sm:text-sm text-gray-600">
-                                Ntiyitabiriye: <span className="font-semibold">{stats.absent}</span>
+                                Ntiyitabiriye:{" "}
+                                <span className="font-semibold">
+                                  {stats.absent}
+                                </span>
                               </span>
                             </div>
                           </div>

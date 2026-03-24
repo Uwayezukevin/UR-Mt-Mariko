@@ -25,6 +25,9 @@ import {
   updateMember,
   deleteMember,
   searchMembers,
+  getMemberWithFamily,
+  getFamilyTree,      
+  getMembersByFamily,
 } from "../controllers/memberController.js";
 
 // Event Controllers

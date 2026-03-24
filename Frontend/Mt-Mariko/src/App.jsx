@@ -16,7 +16,8 @@ import AdminMessages from "./pages/AdminMessages";
 import Reports from "./pages/Reports";
 import ReportDetails from "./pages/ReportDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import FamilyView from "./components/FamilyView";
+import FamiliesList from "./components/FamiliesList";
 export default function App() {
   return (
     <Router>
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/events-public/:id" element={<EventDetailsPublic />} />
         
         {/* Protected Routes */}
+
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
         <Route path="/members/create" element={<ProtectedRoute><CreateMember /></ProtectedRoute>} />
@@ -40,6 +42,8 @@ export default function App() {
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/reports/:id" element={<ProtectedRoute><ReportDetails /></ProtectedRoute>} />
         <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
+        <Route path="/members/:id/family" element={<ProtectedRoute><FamilyView /></ProtectedRoute> } />
+        <Route path="/families" element={<ProtectedRoute> <FamiliesList /> </ProtectedRoute>} />
       </Routes>
     </Router>
   );

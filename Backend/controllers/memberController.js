@@ -676,4 +676,353 @@ export const deleteMember = async (req, res) => {
     }
     res.status(500).json({ message: "Server error" });
   }
+};// ================= GET MEMBER WITH FAMILY =================
+export const getMemberWithFamily = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid member ID format",
+      });
+    }
+    
+    // Get the main member
+    const member = await Member.findById(id)
+      .populate("subgroup", "name")
+      .populate("sakraments", "name")
+      .populate("parent", "fullName category gender")
+      .populate("spouse", "fullName category gender");
+    
+    if (!member) {
+      return res.status(404).json({
+        message: "Member not found",
+      });
+    }
+    
+    // Get children (members who have this member as parent)
+    const children = await Member.find({ parent: member._id })
+      .populate("subgroup", "name")
+      .populate("sakraments", "name")
+      .select("fullName category gender dateOfBirth isActive")
+      .sort({ createdAt: -1 });
+    
+    // Get siblings (other children of the same parents)
+    let siblings = [];
+    if (member.parent) {
+      siblings = await Member.find({
+        parent: member.parent,
+        _id: { $ne: member._id } // Exclude current member
+      })
+        .populate("subgroup", "name")
+        .select("fullName category gender dateOfBirth isActive")
+        .sort({ fullName: 1 });
+    }
+    
+    // Get grandparents (parents of the member's parents)
+    let grandparents = [];
+    if (member.parent) {
+      const parent = await Member.findById(member.parent);
+      if (parent && parent.parent) {
+        grandparents = await Member.find({
+          _id: parent.parent
+        })
+          .select("fullName category gender dateOfBirth")
+          .lean();
+      }
+    }
+    
+    // Get grandchildren (children of the member's children)
+    let grandchildren = [];
+    if (children.length > 0) {
+      const childrenIds = children.map(child => child._id);
+      grandchildren = await Member.find({
+        parent: { $in: childrenIds }
+      })
+        .populate("subgroup", "name")
+        .select("fullName category gender dateOfBirth")
+        .sort({ createdAt: -1 });
+    }
+    
+    // Get in-laws (spouse's parents and siblings)
+    let inLaws = {
+      spouseParents: null,
+      spouseSiblings: []
+    };
+    
+    if (member.spouse) {
+      const spouse = await Member.findById(member.spouse);
+      if (spouse) {
+        // Spouse's parents
+        if (spouse.parent) {
+          inLaws.spouseParents = await Member.findById(spouse.parent)
+            .select("fullName category gender");
+        }
+        
+        // Spouse's siblings
+        if (spouse.parent) {
+          inLaws.spouseSiblings = await Member.find({
+            parent: spouse.parent,
+            _id: { $ne: spouse._id }
+          })
+            .select("fullName category gender")
+            .sort({ fullName: 1 });
+        }
+      }
+    }
+    
+    // Build the family tree
+    const familyTree = {
+      // Main member
+      member: {
+        _id: member._id,
+        fullName: member.fullName,
+        category: member.category,
+        gender: member.gender,
+        dateOfBirth: member.dateOfBirth,
+        phone: member.phone,
+        isActive: member.isActive,
+        accessibility: member.accessibility,
+        subgroup: member.subgroup,
+        sakraments: member.sakraments,
+      },
+      
+      // Family relationships
+      family: {
+        // Parents
+        parents: member.parent ? [member.parent] : [],
+        
+        // Siblings
+        siblings: siblings.map(s => ({
+          _id: s._id,
+          fullName: s.fullName,
+          category: s.category,
+          gender: s.gender,
+          dateOfBirth: s.dateOfBirth,
+          isActive: s.isActive,
+        })),
+        
+        // Children
+        children: children.map(c => ({
+          _id: c._id,
+          fullName: c.fullName,
+          category: c.category,
+          gender: c.gender,
+          dateOfBirth: c.dateOfBirth,
+          isActive: c.isActive,
+          subgroup: c.subgroup,
+        })),
+        
+        // Grandchildren
+        grandchildren: grandchildren.map(gc => ({
+          _id: gc._id,
+          fullName: gc.fullName,
+          category: gc.category,
+          gender: gc.gender,
+          dateOfBirth: gc.dateOfBirth,
+          subgroup: gc.subgroup,
+          parent: gc.parent,
+        })),
+        
+        // Grandparents
+        grandparents: grandparents.map(gp => ({
+          _id: gp._id,
+          fullName: gp.fullName,
+          category: gp.category,
+          gender: gp.gender,
+        })),
+        
+        // Spouse
+        spouse: member.spouse,
+        
+        // In-laws
+        inLaws: inLaws,
+      },
+      
+      // Summary statistics
+      summary: {
+        totalChildren: children.length,
+        totalSiblings: siblings.length,
+        totalGrandchildren: grandchildren.length,
+        hasSpouse: !!member.spouse,
+        hasParents: !!member.parent,
+        hasGrandparents: grandparents.length > 0,
+      }
+    };
+    
+    res.status(200).json(familyTree);
+    
+  } catch (err) {
+    console.error("Error in getMemberWithFamily:", err);
+    res.status(500).json({ 
+      message: "Error fetching family information",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined
+    });
+  }
+};
+
+// ================= GET FAMILY TREE BY FAMILY NAME/ID =================
+export const getFamilyTree = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid family ID format",
+      });
+    }
+    
+    // Get the root member (usually the parent/head of family)
+    const rootMember = await Member.findById(id)
+      .populate("subgroup", "name");
+    
+    if (!rootMember) {
+      return res.status(404).json({
+        message: "Family head not found",
+      });
+    }
+    
+    // Recursive function to build family tree
+    async function buildFamilyTree(memberId, level = 0, maxLevel = 3) {
+      if (level > maxLevel) return null;
+      
+      const member = await Member.findById(memberId)
+        .populate("subgroup", "name")
+        .populate("sakraments", "name")
+        .populate("spouse", "fullName category gender");
+      
+      if (!member) return null;
+      
+      // Get children
+      const children = await Member.find({ parent: member._id })
+        .select("fullName category gender dateOfBirth isActive");
+      
+      // Recursively build children trees
+      const childrenTrees = await Promise.all(
+        children.map(async (child) => {
+          const childTree = await buildFamilyTree(child._id, level + 1, maxLevel);
+          return {
+            ...child.toObject(),
+            children: childTree ? childTree.children : [],
+            spouse: childTree ? childTree.spouse : null,
+          };
+        })
+      );
+      
+      return {
+        _id: member._id,
+        fullName: member.fullName,
+        category: member.category,
+        gender: member.gender,
+        dateOfBirth: member.dateOfBirth,
+        isActive: member.isActive,
+        accessibility: member.accessibility,
+        subgroup: member.subgroup,
+        sakraments: member.sakraments,
+        spouse: member.spouse,
+        children: childrenTrees,
+        level: level,
+      };
+    }
+    
+    const familyTree = await buildFamilyTree(rootMember._id);
+    
+    res.status(200).json({
+      familyHead: {
+        _id: rootMember._id,
+        fullName: rootMember.fullName,
+        category: rootMember.category,
+      },
+      familyTree: familyTree,
+      totalMembers: await countFamilyMembers(rootMember._id),
+    });
+    
+  } catch (err) {
+    console.error("Error in getFamilyTree:", err);
+    res.status(500).json({ 
+      message: "Error fetching family tree",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined
+    });
+  }
+};
+
+// Helper function to count total family members
+async function countFamilyMembers(rootId) {
+  let count = 1; // Count the root member
+  
+  const children = await Member.find({ parent: rootId });
+  
+  for (const child of children) {
+    count += await countFamilyMembers(child._id);
+  }
+  
+  return count;
+}
+
+// ================= GET MEMBERS BY FAMILY (Group by Parent) =================
+export const getMembersByFamily = async (req, res) => {
+  try {
+    // Get all members grouped by parent
+    const allMembers = await Member.find({})
+      .populate("parent", "fullName category")
+      .populate("spouse", "fullName category")
+      .select("fullName category gender parent spouse dateOfBirth isActive")
+      .sort({ fullName: 1 });
+    
+    // Group members by parent
+    const families = {};
+    
+    // First, organize all members
+    allMembers.forEach(member => {
+      const parentId = member.parent ? member.parent._id.toString() : "orphans";
+      
+      if (!families[parentId]) {
+        families[parentId] = {
+          parent: member.parent || null,
+          children: [],
+          parentInfo: member.parent ? {
+            _id: member.parent._id,
+            fullName: member.parent.fullName,
+            category: member.parent.category,
+          } : null,
+        };
+      }
+      
+      families[parentId].children.push({
+        _id: member._id,
+        fullName: member.fullName,
+        category: member.category,
+        gender: member.gender,
+        dateOfBirth: member.dateOfBirth,
+        isActive: member.isActive,
+        spouse: member.spouse,
+      });
+    });
+    
+    // Convert to array and sort
+    const familiesList = Object.values(families)
+      .filter(family => family.parent !== null) // Remove orphans
+      .sort((a, b) => {
+        if (!a.parentInfo) return 1;
+        if (!b.parentInfo) return -1;
+        return a.parentInfo.fullName.localeCompare(b.parentInfo.fullName);
+      });
+    
+    // Get orphans (members without parents)
+    const orphans = families["orphans"]?.children || [];
+    
+    res.status(200).json({
+      totalFamilies: familiesList.length,
+      totalOrphans: orphans.length,
+      families: familiesList,
+      orphans: orphans,
+    });
+    
+  } catch (err) {
+    console.error("Error in getMembersByFamily:", err);
+    res.status(500).json({ 
+      message: "Error fetching family groups",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined
+    });
+  }
 };
