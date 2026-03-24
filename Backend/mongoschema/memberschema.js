@@ -74,52 +74,26 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ================= FIXED PRE-VALIDATE HOOK =================
+// ================= SIMPLE PRE-VALIDATE HOOK =================
 memberSchema.pre('validate', function(next) {
-  // Only validate parent if category is not adult AND parent is required
+  // Only validate parent if category is not adult
   if (this.category !== "adult" && !this.parent) {
     this.invalidate('parent', `Parent is required for ${this.category}`);
   }
-  next(); // Make sure to call next()
+  next();
 });
 
-// ================= FIXED PRE-SAVE HOOK FOR SPOUSE =================
-memberSchema.pre('save', async function(next) {
-  try {
-    // Only run spouse validation if spouse is being modified and has a value
-    if (this.isModified('spouse') && this.spouse) {
-      const Amasakramentu = mongoose.model("Amasakramentu");
-      const marriageSak = await Amasakramentu.findOne({ 
-        name: { $regex: /Ugushyingirwa/i } 
-      });
-      
-      if (marriageSak) {
-        const hasMarriageSakrament = this.sakraments?.some(
-          sak => sak && sak.toString() === marriageSak._id.toString()
-        );
-        
-        if (!hasMarriageSakrament) {
-          this.invalidate('spouse', "Ugomba guhitamo isakramentu ry 'ugushyingirwa mbere yo gushyiraho uwo mwashyingiranywe");
-        }
-      }
-    }
-    next(); // Always call next() at the end
-  } catch (err) {
-    console.error("Error in spouse validation:", err);
-    next(err); // Pass error to next
-  }
-});
-
-// ================= FIXED PRE-SAVE HOOK FOR ACCESSIBILITY =================
+// ================= SIMPLE PRE-SAVE HOOK FOR ACCESSIBILITY =================
 memberSchema.pre('save', function(next) {
   if (this.isModified('accessibility')) {
     this.accessibilityUpdatedAt = new Date();
   }
-  next(); // Make sure to call next()
+  next();
 });
 
-// ================= POST-SAVE HOOK (this one is fine) =================
+// ================= POST-SAVE HOOK FOR SPOUSE LINKING =================
 memberSchema.post('save', async function(doc) {
+  // Only run if spouse exists and it's a new spouse link
   if (doc.spouse && doc.isModified('spouse')) {
     try {
       const spouse = await mongoose.model("Member").findById(doc.spouse);
@@ -136,13 +110,13 @@ memberSchema.post('save', async function(doc) {
   }
 });
 
-// Add indexes for better performance
+// ================= ADD INDEXES =================
 memberSchema.index({ fullName: 1 });
 memberSchema.index({ category: 1 });
 memberSchema.index({ subgroup: 1 });
 memberSchema.index({ nationalId: 1 }, { unique: true, sparse: true });
 
-// Optional: Add a method to get accessibility status in Kinyarwanda
+// ================= ADD HELPER METHODS =================
 memberSchema.methods.getAccessibilityInKinyarwanda = function() {
   const translations = {
     alive: "Ariho",
@@ -152,12 +126,10 @@ memberSchema.methods.getAccessibilityInKinyarwanda = function() {
   return translations[this.accessibility] || this.accessibility;
 };
 
-// Optional: Add a method to check if member can participate in events
 memberSchema.methods.canParticipate = function() {
   return this.accessibility === "alive" && this.isActive === true;
 };
 
-// Add a method to get parent info with proper validation
 memberSchema.methods.getParentInfo = function() {
   if (!this.parent) {
     return this.category === "adult" 
@@ -167,25 +139,22 @@ memberSchema.methods.getParentInfo = function() {
   return this.parent;
 };
 
-// Add a method to get spouse info
 memberSchema.methods.getSpouseInfo = async function() {
   if (!this.spouse) return null;
   const spouse = await mongoose.model("Member").findById(this.spouse);
   return spouse;
 };
 
-// Add a method to check if member is married
 memberSchema.methods.isMarried = function() {
   return !!this.spouse;
 };
 
-// Add a method to get marriage status in Kinyarwanda
 memberSchema.methods.getMarriageStatus = function() {
   if (this.spouse) return "Yashyingiye";
   return "Ntashyingiye";
 };
 
-// Prevent OverwriteModelError
+// ================= PREVENT OVERWRITE MODEL ERROR =================
 const Member = mongoose.models.Member || mongoose.model("Member", memberSchema);
 
 export default Member;

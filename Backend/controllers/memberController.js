@@ -45,12 +45,10 @@ export const createMember = async (req, res) => {
     } = req.body;
 
     // ================= REQUIRED FIELDS VALIDATION =================
-    // Only fullName, category, and gender are required
     const requiredErrors = [];
     if (!fullName) requiredErrors.push("fullName");
     if (!category) requiredErrors.push("category");
     if (!gender) requiredErrors.push("gender");
-    // subgroup is NOT required - remove from required check
     
     if (requiredErrors.length > 0) {
       return res.status(400).json({
@@ -209,7 +207,6 @@ export const createMember = async (req, res) => {
       category,
       gender,
       accessibility: memberAccessibility,
-      accessibilityUpdatedAt: new Date(),
       isActive: memberIsActive,
     };
     
@@ -217,7 +214,7 @@ export const createMember = async (req, res) => {
     if (nationalId && nationalId.trim()) memberData.nationalId = nationalId.trim();
     if (dateOfBirth) memberData.dateOfBirth = new Date(dateOfBirth);
     if (phone && phone.trim()) memberData.phone = phone.trim();
-    if (subgroup) memberData.subgroup = subgroup; // Only add if provided
+    if (subgroup) memberData.subgroup = subgroup;
     if (parent && category !== "adult") memberData.parent = parent;
     if (hasMarriage && spouse) memberData.spouse = spouse;
     if (accessibilityNotes && accessibilityNotes.trim()) {
@@ -290,7 +287,6 @@ export const createMember = async (req, res) => {
 };
 
 // ================= GET ALL MEMBERS =================
-// FIXED: Now returns array directly instead of object with pagination
 export const getAllMembers = async (req, res) => {
   try {
     const { category, gender, subgroup } = req.query;
@@ -308,7 +304,6 @@ export const getAllMembers = async (req, res) => {
       .select("-nationalId")
       .sort({ createdAt: -1 });
     
-    // Return array directly for frontend compatibility
     res.status(200).json(members);
     
   } catch (err) {
@@ -317,8 +312,7 @@ export const getAllMembers = async (req, res) => {
   }
 };
 
-// ================= GET ALL MEMBERS WITH PAGINATION (Optional) =================
-// If you need pagination, create a separate endpoint
+// ================= GET ALL MEMBERS WITH PAGINATION =================
 export const getAllMembersWithPagination = async (req, res) => {
   try {
     const { category, gender, subgroup, page = 1, limit = 100 } = req.query;
@@ -573,8 +567,6 @@ export const updateMember = async (req, res) => {
       member.accessibility = accessibility;
       
       if (oldAccessibility !== accessibility) {
-        member.accessibilityUpdatedAt = new Date();
-        
         if (accessibilityNotes !== undefined) {
           member.accessibilityNotes = accessibilityNotes?.trim();
         }
@@ -602,18 +594,15 @@ export const updateMember = async (req, res) => {
     
     // Update spouse's record to maintain bidirectional link
     if (updatedSpouse && updatedSpouse !== member.spouse) {
-      // Remove old spouse reference if exists
       if (member.spouse && member.spouse !== updatedSpouse) {
         await Member.findByIdAndUpdate(member.spouse, {
           $unset: { spouse: "" }
         });
       }
-      // Set new spouse reference
       await Member.findByIdAndUpdate(updatedSpouse, {
         spouse: member._id
       });
     } else if (updatedSpouse === null && member.spouse) {
-      // Remove spouse reference if spouse is removed
       await Member.findByIdAndUpdate(member.spouse, {
         $unset: { spouse: "" }
       });
