@@ -4,32 +4,32 @@ const memberSchema = new mongoose.Schema(
   {
     fullName: {
       type: String,
-      required: [true, "Izina ryuzuye rirakenewe"],
-      trim: true,
+      required: true,
     },
     category: {
       type: String,
       enum: ["child", "adult", "youth"],
-      required: [true, "Icyiciro kirakenewe"],
+      required: true,
     },
     nationalId: {
       type: String,
-      unique: true,
+      unique: true,  // This already creates an index - DO NOT add another one
       sparse: true,
-      trim: true,
     },
-    dateOfBirth: {
-      type: Date,
-      default: null,
-    },
-    phone: {
-      type: String,
-      trim: true,
-    },
+    dateOfBirth: Date,
+    phone: String,
     parent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
-      default: null,
+      validate: {
+        validator: function(value) {
+          if (this.category === "adult") {
+            return true;
+          }
+          return value != null;
+        },
+        message: props => `Parent is required for ${props.doc?.category || 'this category'}`
+      }
     },
     spouse: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,12 +39,11 @@ const memberSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["male", "female"],
-      required: [true, "Igitsina kirakenewe"],
+      required: true,
     },
     subgroup: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "subgroups",
-      default: null,
     },
     sakraments: [
       {
@@ -60,6 +59,7 @@ const memberSchema = new mongoose.Schema(
       type: String,
       enum: ["alive", "dead", "moved"],
       default: "alive",
+      required: true,
     },
     accessibilityUpdatedAt: {
       type: Date,
@@ -68,23 +68,28 @@ const memberSchema = new mongoose.Schema(
     accessibilityNotes: {
       type: String,
       maxlength: 500,
-      trim: true,
     },
   },
   { timestamps: true }
 );
 
-// ================= NO CUSTOM HOOKS - ALL VALIDATION IN CONTROLLER =================
-// All pre-save, pre-validate, and post-save hooks have been removed
-// All validation is handled in the controller
+// ✅ Pre-save validation for parent field
+memberSchema.pre('validate', function(next) {
+  if (this.category !== "adult" && !this.parent) {
+    this.invalidate('parent', `Parent is required for ${this.category}`);
+  }
+  next();
+});
 
-// ================= ADD INDEXES =================
-memberSchema.index({ fullName: 1 });
-memberSchema.index({ category: 1 });
-memberSchema.index({ subgroup: 1 });
-memberSchema.index({ nationalId: 1 }, { unique: true, sparse: true });
+// ✅ Pre-save hook to update accessibilityUpdatedAt
+memberSchema.pre('save', function(next) {
+  if (this.isModified('accessibility')) {
+    this.accessibilityUpdatedAt = new Date();
+  }
+  next();
+});
 
-// ================= ADD HELPER METHODS (these are safe - no hooks) =================
+// ✅ Method to get accessibility status in Kinyarwanda
 memberSchema.methods.getAccessibilityInKinyarwanda = function() {
   const translations = {
     alive: "Ariho",
@@ -94,10 +99,12 @@ memberSchema.methods.getAccessibilityInKinyarwanda = function() {
   return translations[this.accessibility] || this.accessibility;
 };
 
+// ✅ Method to check if member can participate in events
 memberSchema.methods.canParticipate = function() {
   return this.accessibility === "alive" && this.isActive === true;
 };
 
+// ✅ Method to get parent info
 memberSchema.methods.getParentInfo = function() {
   if (!this.parent) {
     return this.category === "adult" 
@@ -107,22 +114,30 @@ memberSchema.methods.getParentInfo = function() {
   return this.parent;
 };
 
+// ✅ Method to get spouse info
 memberSchema.methods.getSpouseInfo = async function() {
   if (!this.spouse) return null;
   const spouse = await mongoose.model("Member").findById(this.spouse);
   return spouse;
 };
 
+// ✅ Method to check if member is married
 memberSchema.methods.isMarried = function() {
   return !!this.spouse;
 };
 
+// ✅ Method to get marriage status in Kinyarwanda
 memberSchema.methods.getMarriageStatus = function() {
   if (this.spouse) return "Yashyingiye";
   return "Ntashyingiye";
 };
 
-// ================= PREVENT OVERWRITE MODEL ERROR =================
-const Member = mongoose.models.Member || mongoose.model("Member", memberSchema);
+// ✅ DO NOT add this line - it would create a duplicate index
+// memberSchema.index({ nationalId: 1 });
 
-export default Member;
+// ✅ If you need indexes for other fields, add them here
+memberSchema.index({ fullName: 1 });
+memberSchema.index({ category: 1 });
+memberSchema.index({ subgroup: 1 });
+
+export default mongoose.model("Member", memberSchema);
