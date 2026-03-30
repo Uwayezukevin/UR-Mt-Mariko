@@ -66,6 +66,7 @@ export default function Home() {
   const [allParents, setAllParents] = useState([]);
   const [members, setMembers] = useState([]);
   const [marriageSakramentId, setMarriageSakramentId] = useState(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // MEMBER REGISTRATION STATES
   const [showRegistration, setShowRegistration] = useState(false);
@@ -104,13 +105,16 @@ export default function Home() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await api.get("/events");
-        const upcoming = res.data
+        const res = await api.get("/events").catch(err => {
+          console.warn("Events fetch failed:", err.response?.status);
+          return { data: [] };
+        });
+        const upcoming = (res.data || [])
           .filter((e) => new Date(e.date) >= new Date())
           .sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(upcoming.slice(0, 3));
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching events:", err);
       }
     };
     fetchEvents();
@@ -120,25 +124,43 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch all data with error handling for each
         const [subgroupsRes, sakramentsRes, membersRes] = await Promise.all([
-          api.get("/subgroups"),
-          api.get("/sakraments"),
-          api.get("/members")
+          api.get("/subgroups").catch(err => {
+            console.warn("Subgroups fetch failed:", err.response?.status);
+            return { data: [] };
+          }),
+          api.get("/sakraments").catch(err => {
+            console.warn("Sakraments fetch failed:", err.response?.status);
+            return { data: [] };
+          }),
+          api.get("/members").catch(err => {
+            console.warn("Members fetch failed:", err.response?.status);
+            return { data: [] };
+          })
         ]);
 
-        // Handle different response formats
+        // Handle different response formats safely
         const subgroupsData = Array.isArray(subgroupsRes.data) ? subgroupsRes.data : 
-                              subgroupsRes.data.subgroups || subgroupsRes.data.members || [];
+                              subgroupsRes.data?.subgroups || subgroupsRes.data?.members || [];
         
         const sakramentsData = Array.isArray(sakramentsRes.data) ? sakramentsRes.data : 
-                               sakramentsRes.data.sakraments || sakramentsRes.data.members || [];
+                               sakramentsRes.data?.sakraments || sakramentsRes.data?.members || [];
         
         let membersData = [];
         if (Array.isArray(membersRes.data)) {
           membersData = membersRes.data;
-        } else if (membersRes.data.members && Array.isArray(membersRes.data.members)) {
+        } else if (membersRes.data?.members && Array.isArray(membersRes.data.members)) {
           membersData = membersRes.data.members;
+        } else if (membersRes.data?.data && Array.isArray(membersRes.data.data)) {
+          membersData = membersRes.data.data;
         }
+
+        console.log("Data loaded:", {
+          subgroups: subgroupsData.length,
+          sakraments: sakramentsData.length,
+          members: membersData.length
+        });
 
         setSubgroups(subgroupsData);
         setSakraments(sakramentsData);
@@ -161,10 +183,16 @@ export default function Home() {
           (member) => member.category === "adult"
         );
         setParents(adults);
+        
+        setDataLoaded(true);
+        
       } catch (err) {
         console.error("Error fetching data:", err);
+        // Don't set error state - just log it and continue with empty data
+        setDataLoaded(true); // Still mark as loaded to show UI
       }
     };
+    
     fetchData();
   }, []);
 
@@ -194,14 +222,17 @@ export default function Home() {
       try {
         const searchRes = await api.get(
           `/members/search?name=${searchTerm}&subgroup=${selectedSubgroup}`
-        );
+        ).catch(err => {
+          console.warn("Search failed:", err.response?.status);
+          return { data: [] };
+        });
         
         const membersWithDetails = await Promise.all(
-          searchRes.data.map(async (member) => {
+          (searchRes.data || []).map(async (member) => {
             try {
               const [attendanceRes, decisionRes] = await Promise.all([
-                api.get(`/attendance/member/${member._id}`),
-                api.get(`/decision/member/${member._id}`)
+                api.get(`/attendance/member/${member._id}`).catch(() => ({ data: [] })),
+                api.get(`/decision/member/${member._id}`).catch(() => ({ data: null }))
               ]);
               
               const attendanceData = attendanceRes.data || [];
@@ -519,14 +550,17 @@ export default function Home() {
     );
   };
 
-  const getCategoryIcon = () => {
-    switch(registerData.category) {
-      case "child": return <FaChild className="text-blue-500" />;
-      case "youth": return <FaUserGraduate className="text-green-500" />;
-      case "adult": return <FaUserFriends className="text-purple-500" />;
-      default: return <FaUsers className="text-gray-500" />;
-    }
-  };
+  // Show loading indicator while data is being fetched
+  if (!dataLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-gray-600 text-sm sm:text-base">Turimo gutegura...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-b from-blue-50 to-white min-h-screen scroll-smooth">

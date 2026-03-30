@@ -11,37 +11,30 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-    console.log("🔐 Token from localStorage:", token ? `${token.substring(0, 20)}...` : "MISSING");
-    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("✅ Authorization header set for:", config.url);
-    } else {
-      console.warn("⚠️ No token found for:", config.url);
     }
-    
     return config;
   },
   (error) => {
-    console.error("❌ Request interceptor error:", error);
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor for error handling
+// Response interceptor - ONLY redirect on 401 Unauthorized
 api.interceptors.response.use(
-  (response) => {
-    console.log("✅ Response:", response.status, response.config.url);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error("❌ Response error:", error.response?.status, error.config?.url);
-    
+    // Only redirect on 401 Unauthorized
     if (error.response?.status === 401) {
-      console.log("🔒 401 Unauthorized - Removing token and redirecting");
+      console.log("🔒 401 Unauthorized - Redirecting to login");
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      // Don't redirect if already on login page
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
     }
+    // For 404, 500, etc., just reject and let components handle them
     return Promise.reject(error);
   }
 );
