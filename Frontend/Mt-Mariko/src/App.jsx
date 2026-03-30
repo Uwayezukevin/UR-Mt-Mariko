@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup"; // Make sure this file exists as Signup.jsx, not Register.jsx
+import Signup from "./pages/Signup"; 
 import Dashboard from "./pages/Dashboard";
 import Members from "./pages/Members";
 import CreateMember from "./pages/CreateMember";

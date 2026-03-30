@@ -21,20 +21,22 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - ONLY redirect on 401 Unauthorized
+// Response interceptor - NO REDIRECTS, just log errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only redirect on 401 Unauthorized
+    // Log errors but don't redirect
     if (error.response?.status === 401) {
-      console.log("🔒 401 Unauthorized - Redirecting to login");
+      console.log("🔒 401 Unauthorized - Token may be invalid or expired");
+      // Optional: Clear token but DON'T redirect
       localStorage.removeItem("token");
-      // Don't redirect if already on login page
-      if (!window.location.pathname.includes("/login")) {
-        window.location.href = "/login";
-      }
     }
-    // For 404, 500, etc., just reject and let components handle them
+    
+    if (error.response?.status === 404) {
+      console.warn("⚠️ 404 Not Found - Endpoint:", error.config?.url);
+    }
+    
+    // Just reject the promise - let components handle the error
     return Promise.reject(error);
   }
 );

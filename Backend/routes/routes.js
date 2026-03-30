@@ -58,23 +58,21 @@ router.post("/users/logout", logoutUser);
 /* ==================== MEMBER ROUTES ==================== */
 
 // 🔥 SEARCH MUST COME BEFORE :id - CORRECT ORDER
-router.get("/members/search", protect, searchMembers);
+router.get("/members/search",searchMembers);
 
 // Get all members
-router.get("/members", protect, getAllMembers);
+router.get("/members", getAllMembers);
 
 // Create member
 router.post(
   "/members",
-  protect,
-  adminOnly,
   createMemberSchema,
   validate,
   createMember
 );
 
 // Get member by ID - This must come AFTER specific routes like /search
-router.get("/members/:id", protect, getMemberById);
+router.get("/members/:id",getMemberById);
 
 // Update member
 router.put(
