@@ -49,91 +49,41 @@ import decisionRoutes from "./decisionRoutes.js";
 
 const router = express.Router();
 
-/* ==================== USER ROUTES ==================== */
-
+/* ==================== USER ROUTES (PUBLIC) ==================== */
 router.post("/users/register", userSchema, validate, registerUser);
 router.post("/users/login", loginUser);
 router.post("/users/logout", logoutUser);
 
-/* ==================== MEMBER ROUTES ==================== */
-
-// 🔥 SEARCH MUST COME BEFORE :id - CORRECT ORDER
-router.get("/members/search",searchMembers);
-
-// Get all members
+/* ==================== PUBLIC MEMBER ROUTES ==================== */
+router.get("/members/search", searchMembers);
 router.get("/members", getAllMembers);
+router.get("/members/:id", getMemberById);
+router.post("/members", createMemberSchema, validate, createMember);
 
-// Create member
-router.post(
-  "/members",
-  createMemberSchema,
-  validate,
-  createMember
-);
-
-// Get member by ID - This must come AFTER specific routes like /search
-router.get("/members/:id",getMemberById);
-
-// Update member
-router.put(
-  "/members/:id",
-  protect,
-  adminOnly,
-  updateMemberSchema,
-  validate,
-  updateMember
-);
-
-// Delete member
+/* ==================== PROTECTED MEMBER ROUTES (ADMIN ONLY) ==================== */
+router.put("/members/:id", protect, adminOnly, updateMemberSchema, validate, updateMember);
 router.delete("/members/:id", protect, adminOnly, deleteMember);
-
 router.get("/members/:id/family", protect, getMemberWithFamily);
-
-// Get complete family tree starting from a root member
 router.get("/members/:id/family-tree", protect, getFamilyTree);
-
-// Get all members grouped by families
 router.get("/families", protect, getMembersByFamily);
 
-/* ==================== EVENT ROUTES ==================== */
+/* ==================== PUBLIC EVENT ROUTES ==================== */
+router.get("/events", getAllEvents);
+router.get("/events/:id", getEventById);
 
-// Create event
-router.post(
-  "/events", 
-  protect, 
-  adminOnly, 
-  eventSchema, 
-  validate, 
-  createEvent
-);
-
-// Get all events
-router.get("/events", protect, getAllEvents);
-
-// Get event by ID
-router.get("/events/:id", protect, getEventById);
-
-// Update event
-router.put(
-  "/events/:id",
-  protect,
-  adminOnly,
-  eventSchema,
-  validate,
-  updateEvent
-);
-
-// Delete event
+/* ==================== PROTECTED EVENT ROUTES (ADMIN ONLY) ==================== */
+router.post("/events", protect, adminOnly, eventSchema, validate, createEvent);
+router.put("/events/:id", protect, adminOnly, eventSchema, validate, updateEvent);
 router.delete("/events/:id", protect, adminOnly, deleteEvent);
 
-/* ==================== SACRAMENTS & SUBGROUPS ==================== */
+/* ==================== PUBLIC SAKRAMENTS & SUBGROUPS ==================== */
+router.get("/sakraments", getAllSakraments);
+router.get("/subgroups", getAllSubgroups);
 
-router.get("/sakraments", protect, getAllSakraments);
-router.get("/subgroups", protect, getAllSubgroups);
-
-/* ==================== EXTRA MODULES ==================== */
-
-router.use("/attendance", protect, attendanceRoutes);
-router.use("/decision", protect, decisionRoutes);
+/* ==================== ATTENDANCE & DECISION ROUTES ==================== */
+// Make GET routes public, but keep POST/PUT/DELETE protected
+// Option 1: Use the routes without global protect
+router.use("/attendance", attendanceRoutes);
+router.use("/decision", decisionRoutes);
 
 export default router;
