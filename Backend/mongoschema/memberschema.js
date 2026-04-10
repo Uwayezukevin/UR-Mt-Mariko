@@ -73,17 +73,14 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ REMOVED the problematic pre-save hook
-
-// ✅ Keep pre-validate for parent field
-memberSchema.pre('validate', function(next) {
+// ✅ FIXED: Use async function instead of next()
+memberSchema.pre('validate', async function() {
   if (this.category !== "adult" && !this.parent) {
     this.invalidate('parent', `Parent is required for ${this.category}`);
   }
-  next();
 });
 
-// ✅ Keep helper methods
+// ✅ Helper methods
 memberSchema.methods.getAccessibilityInKinyarwanda = function() {
   const translations = {
     alive: "Ariho",
