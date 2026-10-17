@@ -72,26 +72,14 @@ export const createMemberSchema = checkSchema({
 
   /* ================= SPOUSE ================= */
   spouse: {
-    optional: true,
+    optional: { options: { nullable: true, checkFalsy: true } },
     custom: {
-      options: (value, { req }) => {
-        const { sakraments, category } = req.body;
-
-        // Only adults can marry
-        if (category !== "adult") return true;
-
-        // Check if marriage sakrament selected (by ID)
-        const hasMarriage =
-          Array.isArray(sakraments) && sakraments.length > 0;
-
-        if (hasMarriage && !value) {
-          throw new Error("Ugomba gushyiraho uwo mwashyingiranywe");
-        }
-
+      options: (value) => {
+        // Marriage/spouse requirement is enforced in the controller using the
+        // actual marriage sakrament ID. Here we only validate the ID format.
         if (value && !mongoose.Types.ObjectId.isValid(value)) {
           throw new Error("Spouse must be valid ID");
         }
-
         return true;
       },
     },
@@ -212,12 +200,15 @@ export const updateMemberSchema = checkSchema({
   },
 
   parent: {
-    optional: true,
+    optional: { options: { nullable: true, checkFalsy: true } },
     custom: {
       options: (value, { req }) => {
-        const category = req.body.category || req.member?.category;
+        // Only enforce the "parent required" rule when the caller explicitly
+        // changes the category to a non-adult value. When category is omitted
+        // the controller re-validates against the stored member.
+        const category = req.body.category;
 
-        if (category !== "adult" && !value) {
+        if (category && category !== "adult" && !value) {
           throw new Error("Umubyeyi arakenewe");
         }
 

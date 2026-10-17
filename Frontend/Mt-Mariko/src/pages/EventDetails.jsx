@@ -40,7 +40,6 @@ export default function EventDetails() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("info");
   const [stats, setStats] = useState({ present: 0, absent: 0, total: 0 });
   const [showReportForm, setShowReportForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -105,7 +104,7 @@ export default function EventDetails() {
     try {
       if (!dateStr) return "-";
       const date = new Date(dateStr);
-      return date.toLocaleDateString('rw-TZ', {
+      return date.toLocaleDateString('rw-RW', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

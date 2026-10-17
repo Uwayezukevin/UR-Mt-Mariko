@@ -8,18 +8,9 @@ import {
 
 const router = express.Router();
 
-// Mark attendance (admin only)
-router.post(
-  "/mark/:eventId/:memberId",
-  protect,
-  adminOnly,
-  markAttendance
-);
-
-// Get all attendance for a specific event
+router.post("/mark/:eventId/:memberId", protect, adminOnly, markAttendance);
 router.get("/event/:eventId", protect, getAttendanceByEvent);
-
-// Get all attendance for a specific member
-router.get("/member/:memberId", getAttendanceByMember); // No protect for public access
+// Attendance history is internal — requires authentication.
+router.get("/member/:memberId", protect, getAttendanceByMember);
 
 export default router;

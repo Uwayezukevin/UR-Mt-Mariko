@@ -474,7 +474,7 @@ export default function Events() {
                         <div className="flex items-center gap-2 text-blue-600">
                           <FaCalendarAlt className="text-xs sm:text-sm" />
                           <span className="text-xs sm:text-sm font-medium">
-                            {eventDate.toLocaleDateString('rw-TZ', {
+                            {eventDate.toLocaleDateString('rw-RW', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric'
@@ -495,7 +495,7 @@ export default function Events() {
                         <div className="mt-3 flex items-center gap-1 text-xs text-gray-400">
                           <FaClock className="text-xs" />
                           <span>
-                            {eventDate.toLocaleTimeString('rw-TZ', {
+                            {eventDate.toLocaleTimeString('rw-RW', {
                               hour: '2-digit',
                               minute: '2-digit'
                             })}

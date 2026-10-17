@@ -5,6 +5,8 @@ const memberSchema = new mongoose.Schema(
     fullName: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 120,
     },
     category: {
       type: String,
@@ -122,5 +124,8 @@ memberSchema.methods.getMarriageStatus = function() {
 memberSchema.index({ fullName: 1 });
 memberSchema.index({ category: 1 });
 memberSchema.index({ subgroup: 1 });
+memberSchema.index({ parent: 1 }); // family/children lookups
+memberSchema.index({ spouse: 1 }); // spouse lookups
+memberSchema.index({ createdAt: -1 }); // listing sort
 
-export default mongoose.model("Member", memberSchema);
+export default mongoose.models.Member || mongoose.model("Member", memberSchema);

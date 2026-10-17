@@ -24,10 +24,6 @@ const getMarriageSakramentId = async () => {
 // ================= CREATE MEMBER =================
 export const createMember = async (req, res) => {
   try {
-    console.log("🔍 ========== CREATE MEMBER START ==========");
-    console.log("📦 Request body received:", JSON.stringify(req.body, null, 2));
-    console.log("👤 User making request:", req.user?._id, req.user?.role);
-
     const {
       fullName,
       category,
@@ -222,18 +218,14 @@ export const createMember = async (req, res) => {
     }
     if (safeSakraments.length > 0) memberData.sakraments = safeSakraments;
 
-    console.log("📦 Final member data:", JSON.stringify(memberData, null, 2));
-    
     // ================= CREATE MEMBER =================
     const member = await Member.create(memberData);
-    console.log("✅ Member created successfully:", member._id);
     
     // ================= LINK SPOUSE =================
     if (hasMarriage && spouse) {
       await Member.findByIdAndUpdate(spouse, {
         spouse: member._id,
       });
-      console.log("✅ Spouse linked:", spouse);
     }
     
     // ================= POPULATE AND RETURN =================
@@ -302,7 +294,8 @@ export const getAllMembers = async (req, res) => {
       .populate("parent", "fullName category")
       .populate("spouse", "fullName category")
       .select("-nationalId")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     
     res.status(200).json(members);
     
@@ -375,7 +368,8 @@ export const searchMembers = async (req, res) => {
       .populate("sakraments", "name")
       .populate("parent", "fullName category")
       .populate("spouse", "fullName category")
-      .select("-nationalId");
+      .select("-nationalId")
+      .lean();
     
     if (members.length === 0) {
       return res.status(200).json([]);
@@ -426,7 +420,7 @@ export const searchMembers = async (req, res) => {
       const status = attendancePercentage >= 30 ? "ACTIVE" : "NOT ACTIVE";
       
       return {
-        ...member.toObject(),
+        ...member,
         attendance: attendanceMap[memberId] || [],
         decision: {
           totalEvents,
@@ -459,8 +453,14 @@ export const getMemberById = async (req, res) => {
         message: "Member not found",
       });
     }
+
+    const result = member.toObject();
+    // nationalId is sensitive — only expose it to authenticated admins
+    if (req.user?.userrole !== "admin") {
+      delete result.nationalId;
+    }
     
-    res.status(200).json(member);
+    res.status(200).json(result);
   } catch (err) {
     console.error("Error in getMemberById:", err);
     if (err.name === "CastError") {
@@ -521,7 +521,8 @@ export const updateMember = async (req, res) => {
     const updatedSakraments = sakraments !== undefined ? sakraments : member.sakraments;
     const hasMarriage = updatedSakraments?.some(sak => sak && sak.toString() === marriageId?.toString());
     const updatedSpouse = spouse !== undefined ? spouse : member.spouse;
-    
+    const previousSpouse = member.spouse;
+
     if (hasMarriage && !updatedSpouse) {
       return res.status(400).json({
         message: "Ugomba gushyiraho uwo mwashyingiranywe",
@@ -592,20 +593,22 @@ export const updateMember = async (req, res) => {
     
     await member.save();
     
-    // Update spouse's record to maintain bidirectional link
-    if (updatedSpouse && updatedSpouse !== member.spouse) {
-      if (member.spouse && member.spouse !== updatedSpouse) {
-        await Member.findByIdAndUpdate(member.spouse, {
-          $unset: { spouse: "" }
-        });
+    // Update spouse's record to maintain bidirectional link.
+    // Compare against the previously stored spouse, not the freshly assigned one.
+    const prevSpouseId = previousSpouse ? previousSpouse.toString() : null;
+    const newSpouseId = updatedSpouse ? updatedSpouse.toString() : null;
+    const memberIdStr = member._id.toString();
+
+    if (newSpouseId && newSpouseId !== prevSpouseId) {
+      // Unlink the old spouse (if any and different from the new one)
+      if (prevSpouseId && prevSpouseId !== newSpouseId) {
+        await Member.findByIdAndUpdate(prevSpouseId, { $unset: { spouse: "" } });
       }
-      await Member.findByIdAndUpdate(updatedSpouse, {
-        spouse: member._id
-      });
-    } else if (updatedSpouse === null && member.spouse) {
-      await Member.findByIdAndUpdate(member.spouse, {
-        $unset: { spouse: "" }
-      });
+      // Link the new spouse back
+      await Member.findByIdAndUpdate(newSpouseId, { spouse: member._id });
+    } else if (!newSpouseId && prevSpouseId && prevSpouseId !== memberIdStr) {
+      // Spouse cleared — remove reciprocal link
+      await Member.findByIdAndUpdate(prevSpouseId, { $unset: { spouse: "" } });
     }
     
     const updatedMember = await Member.findById(member._id)
@@ -882,25 +885,29 @@ export const getFamilyTree = async (req, res) => {
       });
     }
     
-    // Recursive function to build family tree
-    async function buildFamilyTree(memberId, level = 0, maxLevel = 3) {
+    // Recursive function to build family tree (cycle-safe)
+    async function buildFamilyTree(memberId, level = 0, maxLevel = 3, visited = new Set()) {
       if (level > maxLevel) return null;
-      
+
+      const key = memberId.toString();
+      if (visited.has(key)) return null; // guard against cyclic parent references
+      visited.add(key);
+
       const member = await Member.findById(memberId)
         .populate("subgroup", "name")
         .populate("sakraments", "name")
         .populate("spouse", "fullName category gender");
-      
+
       if (!member) return null;
-      
+
       // Get children
       const children = await Member.find({ parent: member._id })
         .select("fullName category gender dateOfBirth isActive");
-      
+
       // Recursively build children trees
       const childrenTrees = await Promise.all(
         children.map(async (child) => {
-          const childTree = await buildFamilyTree(child._id, level + 1, maxLevel);
+          const childTree = await buildFamilyTree(child._id, level + 1, maxLevel, visited);
           return {
             ...child.toObject(),
             children: childTree ? childTree.children : [],
@@ -946,14 +953,18 @@ export const getFamilyTree = async (req, res) => {
   }
 };
 
-// Helper function to count total family members
-async function countFamilyMembers(rootId) {
+// Helper function to count total family members (cycle-safe)
+async function countFamilyMembers(rootId, visited = new Set()) {
+  const key = rootId.toString();
+  if (visited.has(key)) return 0;
+  visited.add(key);
+
   let count = 1; // Count the root member
   
-  const children = await Member.find({ parent: rootId });
+  const children = await Member.find({ parent: rootId }, "_id");
   
   for (const child of children) {
-    count += await countFamilyMembers(child._id);
+    count += await countFamilyMembers(child._id, visited);
   }
   
   return count;

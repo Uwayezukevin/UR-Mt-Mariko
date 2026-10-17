@@ -68,7 +68,7 @@ export default function EventReportView({ report, onEdit, isAdmin }) {
 
         {/* Footer */}
         <div className="mt-6 pt-4 border-t border-gray-200 text-sm text-gray-500">
-          <span>Yanditswe: {new Date(report.createdAt || report.publishedAt).toLocaleDateString('rw-TZ')}</span>
+          <span>Yanditswe: {new Date(report.createdAt || report.publishedAt).toLocaleDateString('rw-RW')}</span>
         </div>
       </div>
 

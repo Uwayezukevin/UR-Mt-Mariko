@@ -96,14 +96,14 @@ export default function EventAttendance() {
 
       attendanceData.forEach((a) => {
         map[a.member._id] = a.status;
-        if (a.status === "yitabiriye") present++;
-        else if (a.status === "ntabwo yitabiriye") absent++;
+        if (a.status === "present") present++;
+        else if (a.status === "absent") absent++;
       });
 
       if (closed) {
         membersData.forEach((member) => {
           if (!map[member._id]) {
-            map[member._id] = "ntabwo yitabiriye";
+            map[member._id] = "absent";
             absent++;
           }
         });
@@ -135,8 +135,8 @@ export default function EventAttendance() {
         const newAttendance = { ...prev, [memberId]: status };
         
         // Update stats
-        const present = Object.values(newAttendance).filter(s => s === "yitabiriye").length;
-        const absent = Object.values(newAttendance).filter(s => s === "ntabwo yitabiriye").length;
+        const present = Object.values(newAttendance).filter(s => s === "present").length;
+        const absent = Object.values(newAttendance).filter(s => s === "absent").length;
         setStats({ present, absent, total: members.length });
         
         return newAttendance;
@@ -151,12 +151,6 @@ export default function EventAttendance() {
     } finally {
       setSubmittingId(null);
     }
-  };
-
-  const getAttendanceCount = () => {
-    const present = Object.values(attendance).filter(s => s === "yitabiriye").length;
-    const absent = Object.values(attendance).filter(s => s === "ntabwo yitabiriye").length;
-    return { present, absent };
   };
 
   if (loading) {
@@ -235,7 +229,7 @@ export default function EventAttendance() {
               <FaCalendarAlt className="text-sm" />
               <span>
                 {event.date 
-                  ? new Date(event.date).toLocaleDateString('rw-TZ', {
+                  ? new Date(event.date).toLocaleDateString('rw-RW', {
                       weekday: 'long',
                       year: 'numeric',
                       month: 'long',
@@ -324,8 +318,8 @@ export default function EventAttendance() {
                        text-sm sm:text-base bg-white"
             >
               <option value="all">Uko byitabiriwe</option>
-              <option value="yitabiriye">Yitabiriye gusa</option>
-              <option value="ntabwo yitabiriye">Ntabwo yitabiriye gusa</option>
+              <option value="present">Yitabiriye gusa</option>
+              <option value="absent">Ntabwo yitabiriye gusa</option>
             </select>
           </div>
 
@@ -375,9 +369,9 @@ export default function EventAttendance() {
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full 
                                         flex items-center justify-center flex-shrink-0
-                                        ${memberStatus === 'yitabiriye' 
+                                        ${memberStatus === 'present' 
                                           ? 'bg-green-100 text-green-600' 
-                                          : memberStatus === 'ntabwo yitabiriye'
+                                          : memberStatus === 'absent'
                                           ? 'bg-red-100 text-red-600'
                                           : 'bg-gray-100 text-gray-600'}`}>
                             <FaUserCheck className="text-lg sm:text-xl" />
@@ -412,10 +406,10 @@ export default function EventAttendance() {
                       {isAttendanceClosed && memberStatus && (
                         <div className="sm:hidden">
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium
-                            ${memberStatus === 'yitabiriye' 
+                            ${memberStatus === 'present' 
                               ? 'bg-green-100 text-green-700' 
                               : 'bg-red-100 text-red-700'}`}>
-                            {memberStatus === 'yitabiriye' ? '✓ Yitabiriye' : '✗ Ntabwo yitabiriye'}
+                            {memberStatus === 'present' ? '✓ Yitabiriye' : '✗ Ntabwo yitabiriye'}
                           </span>
                         </div>
                       )}
@@ -424,12 +418,12 @@ export default function EventAttendance() {
                       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                         <button
                           disabled={isAttendanceClosed || isSubmitting}
-                          onClick={() => markAttendance(member._id, "yitabiriye")}
+                          onClick={() => markAttendance(member._id, "present")}
                           className={`flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-2 
                                      text-sm sm:text-base rounded-lg sm:rounded-full
                                      font-medium transition-all duration-200
                                      flex items-center justify-center gap-2
-                                     ${memberStatus === "yitabiriye"
+                                     ${memberStatus === "present"
                                        ? "bg-green-600 text-white shadow-md"
                                        : "bg-green-50 text-green-600 hover:bg-green-100"
                                      } 
@@ -452,12 +446,12 @@ export default function EventAttendance() {
 
                         <button
                           disabled={isAttendanceClosed || isSubmitting}
-                          onClick={() => markAttendance(member._id, "ntabwo yitabiriye")}
+                          onClick={() => markAttendance(member._id, "absent")}
                           className={`flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-2 
                                      text-sm sm:text-base rounded-lg sm:rounded-full
                                      font-medium transition-all duration-200
                                      flex items-center justify-center gap-2
-                                     ${memberStatus === "ntabwo yitabiriye"
+                                     ${memberStatus === "absent"
                                        ? "bg-red-600 text-white shadow-md"
                                        : "bg-red-50 text-red-600 hover:bg-red-100"
                                      } 
@@ -484,10 +478,10 @@ export default function EventAttendance() {
                     {isAttendanceClosed && memberStatus && (
                       <div className="hidden sm:block absolute top-4 right-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium
-                          ${memberStatus === 'yitabiriye' 
+                          ${memberStatus === 'present' 
                             ? 'bg-green-100 text-green-700' 
                             : 'bg-red-100 text-red-700'}`}>
-                          {memberStatus === 'yitabiriye' ? 'Yitabiriye' : 'Ntabwo yitabiriye'}
+                          {memberStatus === 'present' ? 'Yitabiriye' : 'Ntabwo yitabiriye'}
                         </span>
                       </div>
                     )}

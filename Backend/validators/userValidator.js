@@ -37,3 +37,14 @@ export const userSchema = checkSchema({
     },
   },
 });
+
+/* ================= LOGIN SCHEMA ================= */
+export const userLoginSchema = checkSchema({
+  useremail: {
+    notEmpty: { errorMessage: "Email is required" },
+    isEmail: { errorMessage: "Enter a valid email" },
+  },
+  userpassword: {
+    notEmpty: { errorMessage: "Password is required" },
+  },
+});

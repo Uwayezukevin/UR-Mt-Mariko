@@ -61,7 +61,7 @@ export default function EventDetailsPublic() {
       if (!dateStr) return "-";
       const date = new Date(dateStr);
       if (includeTime) {
-        return date.toLocaleDateString('rw-TZ', {
+        return date.toLocaleDateString('rw-RW', {
           weekday: 'long',
           year: 'numeric',
           month: 'long',
@@ -70,7 +70,7 @@ export default function EventDetailsPublic() {
           minute: '2-digit'
         });
       }
-      return date.toLocaleDateString('rw-TZ', {
+      return date.toLocaleDateString('rw-RW', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -88,7 +88,7 @@ export default function EventDetailsPublic() {
           text: `✅ Yitabiriye: ${stats.present} | ❌ Ntiyitabiriye: ${stats.absent}`,
           url: window.location.href,
         });
-      } catch (err) {
+      } catch {
         console.log('Share cancelled');
       }
     } else {
@@ -348,7 +348,7 @@ export default function EventDetailsPublic() {
                   <>
                     {/* Mobile Card View */}
                     <div className="block lg:hidden space-y-3">
-                      {attendance.map((record, index) => (
+                      {attendance.map((record) => (
                         <div
                           key={record._id}
                           className="bg-gradient-to-r from-gray-50 to-white 

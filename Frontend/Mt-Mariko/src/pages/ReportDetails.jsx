@@ -76,7 +76,7 @@ export default function ReportDetails() {
             <h1 className="text-2xl font-bold text-white mb-2">{report.title}</h1>
             <p className="text-purple-100">
               <FaCalendarAlt className="inline mr-2" />
-              {new Date(report.createdAt || report.publishedAt).toLocaleDateString('rw-TZ', {
+              {new Date(report.createdAt || report.publishedAt).toLocaleDateString('rw-RW', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',

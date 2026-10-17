@@ -22,14 +22,16 @@ import {
   FaCog,
   FaUserCircle,
 } from "react-icons/fa";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-import io from "socket.io-client";
+import createSocket from "../api/socket";
+import { useAuth } from "../context/authContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user: authUser, logout: authLogout } = useAuth();
   const [time, setTime] = useState(new Date());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [stats, setStats] = useState(null);
@@ -38,10 +40,8 @@ export default function Dashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [user, setUser] = useState(null);
 
-  const logout = () => {
-    console.log("🔓 Logging out...");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    await authLogout();
     navigate("/");
   };
 
@@ -51,8 +51,12 @@ export default function Dashboard() {
     return () => clearInterval(t);
   }, []);
 
-  // Get user from localStorage
+  // Get user from auth context (fallback to localStorage)
   useEffect(() => {
+    if (authUser) {
+      setUser(authUser);
+      return;
+    }
     const userData = localStorage.getItem("user");
     if (userData) {
       try {
@@ -61,7 +65,7 @@ export default function Dashboard() {
         console.error("Error parsing user data:", err);
       }
     }
-  }, []);
+  }, [authUser]);
 
   // Fetch stats from backend with authentication
   useEffect(() => {
@@ -120,23 +124,12 @@ export default function Dashboard() {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    try {
-      const socket = io(
-        import.meta.env.VITE_API_URL || "https://ur-mt-mariko.onrender.com",
-        {
-          auth: { token },
-        },
-      );
+    const socket = createSocket();
+    socket.on("newMessage", () => {
+      setUnreadMessages((prev) => prev + 1);
+    });
 
-      socket.on("newMessage", () => {
-        console.log("📨 New message received");
-        setUnreadMessages((prev) => prev + 1);
-      });
-
-      return () => socket.disconnect();
-    } catch (err) {
-      console.error("Socket connection error:", err);
-    }
+    return () => socket.disconnect();
   }, []);
 
   // Close sidebar when clicking outside on mobile
@@ -202,8 +195,8 @@ export default function Dashboard() {
 
             <div className="hidden md:flex items-center gap-1 lg:gap-2">
               <NavLink to="/" icon={<FaHome />} label="Ahabanza" />
-              <NavLink to="/about" icon={<FaInfoCircle />} label="Ibyerekeye" />
-              <NavLink to="/contact" icon={<FaEnvelopeOpenText />} label="Twandikire" />
+              <NavLink to="/#about" icon={<FaInfoCircle />} label="Ibyerekeye" />
+              <NavLink to="/#contact" icon={<FaEnvelopeOpenText />} label="Twandikire" />
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
@@ -217,7 +210,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <FaUserCircle className="text-gray-500 text-xl" />
                   <span className="hidden sm:inline text-sm text-gray-600">
-                    {user.fullName || user.email}
+                    {user.username || user.useremail || "Umukoresha"}
                   </span>
                 </div>
               )}
@@ -229,7 +222,7 @@ export default function Dashboard() {
       {/* SIDEBAR OVERLAY */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity animate-fadeIn"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm transition-opacity animate-fade-in"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -492,20 +485,6 @@ export default function Dashboard() {
           )}
         </div>
       </main>
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }
@@ -513,9 +492,23 @@ export default function Dashboard() {
 // NavLink Component for top navigation
 function NavLink({ to, icon, label }) {
   const navigate = useNavigate();
+  const handleClick = () => {
+    // Support anchor links like "/#about" — navigate then scroll
+    const hashIndex = to.indexOf("#");
+    if (hashIndex !== -1) {
+      const path = to.slice(0, hashIndex) || "/";
+      const hash = to.slice(hashIndex + 1);
+      navigate(path);
+      setTimeout(() => {
+        document.getElementById(hash)?.scrollIntoView({ behavior: "smooth" });
+      }, 150);
+      return;
+    }
+    navigate(to);
+  };
   return (
     <button
-      onClick={() => navigate(to)}
+      onClick={handleClick}
       className="px-3 lg:px-4 py-2 text-sm lg:text-base text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 flex items-center gap-2"
     >
       {icon}

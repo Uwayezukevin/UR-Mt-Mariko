@@ -1,7 +1,36 @@
-import mongoose from "mongoose"; // Added missing import
+import mongoose from "mongoose";
 import Attendance from "../mongoschema/attendanceSchema.js";
 import Event from "../mongoschema/eventschema.js";
 import Member from "../mongoschema/memberschema.js";
+
+const VALID_STATUSES = ["present", "absent"];
+
+const startOfDay = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// Mark every not-yet-recorded member absent for a closed event (bulk).
+const closeAttendanceForEvent = async (eventId) => {
+  const members = await Member.find({}, "_id");
+  const existing = await Attendance.find({ event: eventId }, "member");
+  const marked = new Set(existing.map((a) => a.member.toString()));
+
+  const absentList = members
+    .filter((m) => !marked.has(m._id.toString()))
+    .map((m) => ({
+      event: eventId,
+      member: m._id,
+      status: "absent",
+      note: "Automatically marked absent (event closed)",
+    }));
+
+  if (absentList.length > 0) {
+    await Attendance.insertMany(absentList, { ordered: false });
+  }
+  return absentList.length;
+};
 
 // =============================
 // MARK ATTENDANCE
@@ -11,64 +40,49 @@ export const markAttendance = async (req, res) => {
     const { eventId, memberId } = req.params;
     const { status, note } = req.body;
 
-    // 1️⃣ Check if event exists
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      return res.status(400).json({ message: "Invalid event ID format" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
+      return res.status(400).json({ message: "Invalid member ID format" });
+    }
+    if (status !== undefined && !VALID_STATUSES.includes(status)) {
+      return res.status(400).json({
+        message: `Status must be one of: ${VALID_STATUSES.join(", ")}`,
+      });
+    }
+
     const event = await Event.findById(eventId);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    // 2️⃣ Compare only dates (not time)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const member = await Member.findById(memberId).select("_id");
+    if (!member) {
+      return res.status(404).json({ message: "Member not found" });
+    }
 
-    const eventDate = new Date(event.date);
-    eventDate.setHours(0, 0, 0, 0);
+    const today = startOfDay(new Date());
+    const eventDate = startOfDay(event.date);
 
-    // ==================================================
-    // 🔥 AUTO MARK ABSENT IF EVENT ALREADY PASSED
-    // ==================================================
+    // If the event is in the past, close it: mark unmarked members absent
+    // and refuse further manual marking.
     if (eventDate < today) {
-
-      // Get all members
-      const allMembers = await Member.find();
-
-      for (const member of allMembers) {
-        const existing = await Attendance.findOne({
-          event: eventId,
-          member: member._id,
-        });
-
-        if (!existing) {
-          await Attendance.create({
-            event: eventId,
-            member: member._id,
-            status: "absent",
-            note: "Automatically marked absent (event closed)",
-          });
-        }
-      }
-
-      return res.status(400).json({
+      await closeAttendanceForEvent(eventId);
+      return res.status(409).json({
         message:
           "Event has already happened. All unmarked members are automatically marked as absent.",
       });
     }
 
-    // 3️⃣ Check if member exists
-    const member = await Member.findById(memberId);
-    if (!member) {
-      return res.status(404).json({ message: "Member not found" });
-    }
-
-    // 4️⃣ Check if attendance already exists
     let attendance = await Attendance.findOne({
       event: eventId,
       member: memberId,
     });
 
     if (attendance) {
-      attendance.status = status || attendance.status;
-      attendance.note = note || attendance.note;
+      if (status !== undefined) attendance.status = status;
+      if (note !== undefined) attendance.note = note;
       await attendance.save();
     } else {
       attendance = await Attendance.create({
@@ -83,9 +97,13 @@ export const markAttendance = async (req, res) => {
       message: "Attendance marked successfully",
       attendance,
     });
-
   } catch (err) {
-    console.error(err);
+    console.error("markAttendance error:", err.message);
+    if (err.code === 11000) {
+      return res
+        .status(409)
+        .json({ message: "Attendance already recorded for this member" });
+    }
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -95,19 +113,22 @@ export const markAttendance = async (req, res) => {
 // =============================
 export const getAttendanceByEvent = async (req, res) => {
   try {
-    const attendanceList = await Attendance.find({
-      event: req.params.eventId,
-    })
+    const { eventId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(eventId)) {
+      return res.status(400).json({ message: "Invalid event ID format" });
+    }
+
+    const attendanceList = await Attendance.find({ event: eventId })
       .populate({
         path: "member",
         select: "fullName category",
-        populate: { path: "subgroup", select: "name" }
+        populate: { path: "subgroup", select: "name" },
       })
       .populate("event", "title date");
 
     res.status(200).json(attendanceList);
   } catch (err) {
-    console.error(err);
+    console.error("getAttendanceByEvent error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -115,19 +136,23 @@ export const getAttendanceByEvent = async (req, res) => {
 // GET ATTENDANCE BY MEMBER
 export const getAttendanceByMember = async (req, res) => {
   try {
-    const attendanceList = await Attendance.find({
-      member: req.params.memberId,
-    })
+    const { memberId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(memberId)) {
+      return res.status(400).json({ message: "Invalid member ID format" });
+    }
+
+    const attendanceList = await Attendance.find({ member: memberId })
       .populate({
         path: "member",
         select: "fullName category",
-        populate: { path: "subgroup", select: "name" }
+        populate: { path: "subgroup", select: "name" },
       })
-      .populate("event", "title date");
+      .populate("event", "title date")
+      .sort({ createdAt: -1 });
 
     res.status(200).json(attendanceList);
   } catch (err) {
-    console.error(err);
+    console.error("getAttendanceByMember error:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 };

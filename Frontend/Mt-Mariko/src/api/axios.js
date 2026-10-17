@@ -1,44 +1,45 @@
 import axios from "axios";
+import { API_BASE, MESSAGES_BASE } from "./config";
 
-const api = axios.create({
-  baseURL: "https://ur-mt-mariko.onrender.com/umuryangoremezo/backend",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+const createClient = (baseURL) => {
+  const client = axios.create({
+    baseURL,
+    headers: { "Content-Type": "application/json" },
+  });
 
-// Add token to requests
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+  // Attach bearer token from storage when present
+  client.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
 
-// Response interceptor - NO REDIRECTS, just log errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Log errors but don't redirect
-    if (error.response?.status === 401) {
-      console.log("🔒 401 Unauthorized - Token may be invalid or expired");
-      // Optional: Clear token but DON'T redirect
-      localStorage.removeItem("token");
+  // Normalize auth failures: clear stale session and notify the app once.
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        // Let any listener (e.g. AuthContext) react without forcing a redirect.
+        window.dispatchEvent(new Event("auth:unauthorized"));
+      }
+      return Promise.reject(error);
     }
-    
-    if (error.response?.status === 404) {
-      console.warn("⚠️ 404 Not Found - Endpoint:", error.config?.url);
-    }
-    
-    // Just reject the promise - let components handle the error
-    return Promise.reject(error);
-  }
-);
+  );
+
+  return client;
+};
+
+// Main backend API client
+const api = createClient(API_BASE);
+
+// Contact/messages API client (separate backend mount point)
+export const messagesApi = createClient(MESSAGES_BASE);
 
 export default api;

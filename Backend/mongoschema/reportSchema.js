@@ -42,4 +42,4 @@ const reportSchema = new mongoose.Schema(
 // Keep this index - it's for sorting
 reportSchema.index({ publishedAt: -1 });
 
-export default mongoose.model("Report", reportSchema);
+export default mongoose.models.Report || mongoose.model("Report", reportSchema);

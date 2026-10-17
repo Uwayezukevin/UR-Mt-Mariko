@@ -1,92 +1,130 @@
+import "dotenv/config";
 import express from "express";
-import dotenv from "dotenv";
-import connectDB from "./connection/conn.js";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import http from "http";
+import { Server } from "socket.io";
+import cron from "node-cron";
+import mongoose from "mongoose";
+
+import connectDB from "./connection/conn.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import router from "./routes/routes.js";
 import messageRoutes from "./routes/messageRoute.js";
-import { Server } from "socket.io";
-import http from "http";
-import cron from "node-cron";
-import { autoMarkAbsent } from "./utils/autoAttendance.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import uploadRoutes from "./routes/uploadRoute.js";
-import cookieParser from "cookie-parser";
-import mongoose from "mongoose";
-
-dotenv.config();
+import { autoMarkAbsent } from "./utils/autoAttendance.js";
 
 const app = express();
 const server = http.createServer(app);
+const PORT = process.env.PORT || 2350;
 
 // ===============================
-// SOCKET.IO SETUP
+// CORS ORIGINS (single source of truth)
 // ===============================
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "http://localhost:5174",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
+const DEFAULT_ORIGINS = [
+  "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
+  "http://localhost:2300",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+const allowedOrigins = process.env.CLIENT_ORIGINS
+  ? process.env.CLIENT_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+  : DEFAULT_ORIGINS;
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow non-browser tools (no origin) and any allow-listed origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
   },
-});
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
 
-// Make io accessible in routes
+// ===============================
+// SOCKET.IO SETUP (same origins)
+// ===============================
+const io = new Server(server, { cors: corsOptions });
+
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
 // ===============================
-// MIDDLEWARE
+// SECURITY & CORE MIDDLEWARE
 // ===============================
-app.use(
-  cors({
-    origin: [
-      "https://umuryangoremezo-mutagatifu-mariko.vercel.app",
-      "http://localhost:2300",
-    ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
+app.use(helmet());
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
-// Request logging middleware
+// Trust proxy so rate-limit and secure cookies work behind Render/Vercel
+app.set("trust proxy", 1);
+
+// Global rate limiter (protects the whole API from abuse)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests, please slow down." },
+});
+app.use("/umuryangoremezo/backend", globalLimiter);
+app.use("/messages", globalLimiter);
+
+// Stricter limiter for authentication endpoints (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many attempts, please try again later." },
+});
+app.use("/umuryangoremezo/backend/users/login", authLimiter);
+app.use("/umuryangoremezo/backend/users/register", authLimiter);
+
+// Lightweight request logging (skip noisy health checks)
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  if (req.path === "/health") return next();
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
   next();
 });
 
 // ===============================
-// TEST ROUTE
+// TEST & HEALTH ROUTES
 // ===============================
 app.get("/", (req, res) => {
-  res.json({ 
+  res.json({
     message: "API is running...",
-    version: "1.0.0",
+    version: "1.1.0",
     endpoints: {
       members: "/umuryangoremezo/backend/members",
       events: "/umuryangoremezo/backend/events",
-      attendance: "/umuryangoremezo/backend/attendance"
-    }
+      attendance: "/umuryangoremezo/backend/attendance",
+    },
   });
 });
 
-// Health check endpoint
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "healthy", 
+  const states = ["disconnected", "connected", "connecting", "disconnecting"];
+  const dbState = states[mongoose.connection.readyState] || "unknown";
+  const healthy = mongoose.connection.readyState === 1;
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? "healthy" : "degraded",
+    database: dbState,
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -100,46 +138,47 @@ app.use("/umuryangoremezo/backend/reports", reportRoutes);
 app.use("/umuryangoremezo/backend/api/upload", uploadRoutes);
 
 // ===============================
-// ERROR HANDLING MIDDLEWARE
+// 404 HANDLER (before error handler)
 // ===============================
-app.use((err, req, res, next) => {
-  console.error("Global error handler:", err);
-  console.error("Stack trace:", err.stack);
-  
-  // Handle specific error types
-  if (err.name === "ValidationError") {
-    return res.status(400).json({ 
-      message: "Validation error",
-      errors: Object.values(err.errors).map(e => e.message)
-    });
-  }
-  
-  if (err.name === "CastError") {
-    return res.status(400).json({ 
-      message: "Invalid ID format" 
-    });
-  }
-  
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyPattern)[0];
-    return res.status(400).json({ 
-      message: `Duplicate value for ${field}` 
-    });
-  }
-  
-  res.status(500).json({ 
-    message: "Internal server error",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined
-  });
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found", path: req.originalUrl });
 });
 
 // ===============================
-// 404 HANDLER
+// ERROR HANDLING MIDDLEWARE
 // ===============================
-app.use((req, res) => {
-  res.status(404).json({ 
-    message: "Route not found",
-    path: req.url
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("Global error handler:", err.message);
+
+  if (err.name === "ValidationError") {
+    return res.status(400).json({
+      message: "Validation error",
+      errors: Object.values(err.errors).map((e) => e.message),
+    });
+  }
+
+  if (err.name === "CastError") {
+    return res.status(400).json({ message: "Invalid ID format" });
+  }
+
+  if (err.code === 11000) {
+    const field = Object.keys(err.keyPattern || {})[0] || "field";
+    return res.status(409).json({ message: `Duplicate value for ${field}` });
+  }
+
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({ message: "Origin not allowed" });
+  }
+
+  const isMulterError = err.name === "MulterError";
+  if (isMulterError) {
+    return res.status(400).json({ message: err.message });
+  }
+
+  res.status(500).json({
+    message: "Internal server error",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
@@ -147,40 +186,31 @@ app.use((req, res) => {
 // SOCKET CONNECTION
 // ===============================
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
+  console.log("Socket connected:", socket.id);
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    console.log("Socket disconnected:", socket.id);
   });
 });
 
 // ===============================
 // SERVER START
 // ===============================
-const port = process.env.PORT || 2350;
-
 const startServer = async () => {
   try {
     await connectDB();
-    console.log("✅ Database connected successfully");
-    
-    // Test database connection by listing collections
-    if (mongoose.connection.db) {
-      const collections = await mongoose.connection.db.listCollections().toArray();
-      console.log(`📚 Available collections: ${collections.map(c => c.name).join(", ")}`);
-    }
-    
-    server.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
+
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`🌍 Allowed origins: ${allowedOrigins.join(", ")}`);
     });
 
-    // Run immediately once
+    // Run auto-attendance once on boot (non-blocking failure)
     try {
       await autoMarkAbsent();
       console.log("✅ Initial auto attendance completed");
     } catch (err) {
-      console.error("❌ Initial auto attendance failed:", err);
+      console.error("❌ Initial auto attendance failed:", err.message);
     }
 
     // Schedule daily job at midnight
@@ -190,45 +220,50 @@ const startServer = async () => {
         await autoMarkAbsent();
         console.log("✅ Daily auto attendance completed");
       } catch (error) {
-        console.error("❌ Auto attendance failed:", error);
+        console.error("❌ Auto attendance failed:", error.message);
       }
     });
-
   } catch (error) {
-    console.error("❌ Database connection failed:", error);
+    console.error("❌ Failed to start server:", error.message);
     process.exit(1);
   }
 };
 
-// Handle graceful shutdown
-process.on("SIGINT", () => {
-  console.log("Shutting down gracefully...");
-  server.close(() => {
-    console.log("Server closed");
+// ===============================
+// GRACEFUL SHUTDOWN
+// ===============================
+let shuttingDown = false;
+const shutdown = (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received, shutting down gracefully...`);
+
+  io.close();
+  server.close(async () => {
+    try {
+      await mongoose.connection.close();
+      console.log("MongoDB connection closed");
+    } catch (err) {
+      console.error("Error closing MongoDB connection:", err.message);
+    }
     process.exit(0);
   });
-});
 
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received, shutting down...");
-  server.close(() => {
-    console.log("Server closed");
-    process.exit(0);
-  });
-});
+  // Force exit if it takes too long
+  setTimeout(() => process.exit(1), 10000).unref();
+};
 
-// Handle uncaught exceptions
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err);
-  console.error("Stack trace:", err.stack);
+  console.error("Uncaught Exception:", err.message);
+  console.error(err.stack);
   process.exit(1);
 });
 
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise);
-  console.error("Reason:", reason);
-  process.exit(1);
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
 });
 
 startServer();

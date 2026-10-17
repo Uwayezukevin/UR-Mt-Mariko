@@ -109,7 +109,7 @@ export default function MemberDetails() {
     try {
       if (!dateStr) return "-";
       const date = new Date(dateStr);
-      return date.toLocaleDateString("rw-TZ", {
+      return date.toLocaleDateString("rw-RW", {
         year: "numeric",
         month: "long",
         day: "numeric",

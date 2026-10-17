@@ -104,18 +104,18 @@ export default function EventsPublic() {
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     return {
-      full: date.toLocaleDateString('rw-TZ', {
+      full: date.toLocaleDateString('rw-RW', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       }),
-      short: date.toLocaleDateString('rw-TZ', {
+      short: date.toLocaleDateString('rw-RW', {
         day: 'numeric',
         month: 'short',
         year: 'numeric'
       }),
-      time: date.toLocaleTimeString('rw-TZ', {
+      time: date.toLocaleTimeString('rw-RW', {
         hour: '2-digit',
         minute: '2-digit'
       })
@@ -361,7 +361,7 @@ export default function EventsPublic() {
                   return (
                     <div
                       key={event._id}
-                      onClick={() => navigate(`/events/public/${event._id}`)}
+                      onClick={() => navigate(`/events-public/${event._id}`)}
                       className="group bg-white rounded-xl sm:rounded-2xl 
                                shadow-md hover:shadow-xl transition-all duration-300 
                                cursor-pointer overflow-hidden transform hover:-translate-y-1
@@ -440,7 +440,7 @@ export default function EventsPublic() {
                   return (
                     <div
                       key={event._id}
-                      onClick={() => navigate(`/events/public/${event._id}`)}
+                      onClick={() => navigate(`/events-public/${event._id}`)}
                       className="group bg-white rounded-xl sm:rounded-2xl 
                                shadow-md hover:shadow-lg transition-all duration-300 
                                cursor-pointer overflow-hidden border border-gray-100 
@@ -456,7 +456,7 @@ export default function EventsPublic() {
                               {new Date(event.date).getDate()}
                             </div>
                             <div className="text-xs sm:text-sm text-gray-500">
-                              {new Date(event.date).toLocaleDateString('rw-TZ', { month: 'short' })}
+                              {new Date(event.date).toLocaleDateString('rw-RW', { month: 'short' })}
                             </div>
                           </div>
 

@@ -10,11 +10,12 @@ import {
   FaCheckCircle,
   FaExclamationCircle
 } from "react-icons/fa";
-import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
   const [formData, setFormData] = useState({
     useremail: "",
     userpassword: "",
@@ -31,12 +32,6 @@ export default function Login() {
     if (savedEmail) {
       setFormData(prev => ({ ...prev, useremail: savedEmail }));
       setRememberMe(true);
-    }
-    
-    // Debug: Check if token already exists
-    const existingToken = localStorage.getItem("token");
-    if (existingToken) {
-      console.log("🔐 Existing token found:", existingToken.substring(0, 20) + "...");
     }
   }, []);
 
@@ -82,51 +77,22 @@ export default function Login() {
     setError("");
 
     try {
-      console.log("📤 Attempting login for:", formData.useremail);
-      
-      const res = await api.post("/users/login", {
-        useremail: formData.useremail,
-        userpassword: formData.userpassword,
-      });
+      // Context performs the login request and persists token + user
+      await authLogin(formData.useremail, formData.userpassword);
 
-      console.log("✅ Login response:", res.data);
-      
-      // Save token
-      const token = res.data.token;
-      localStorage.setItem("token", token);
-      console.log("🔐 Token saved:", token.substring(0, 30) + "...");
-      
-      // Save user info if needed
-      if (res.data.user) {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        console.log("👤 User saved:", res.data.user);
-      }
-      
       // Save email if remember me is checked
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", formData.useremail);
-        console.log("💾 Email saved for remember me");
       } else {
         localStorage.removeItem("rememberedEmail");
       }
 
-      // Clear error and redirect
-      setError("");
-      
-      // Small delay before redirect
-      setTimeout(() => {
-        console.log("🚀 Redirecting to dashboard...");
-        navigate("/dashboard");
-      }, 500);
-      
+      navigate("/dashboard");
     } catch (err) {
-      console.error("❌ Login error:", err);
-      console.error("Response data:", err.response?.data);
-      console.error("Response status:", err.response?.status);
-      
-      const errorMessage = err.response?.data?.message || "Kwinjira byanze. Ongera ugerageze.";
+      const errorMessage =
+        err.response?.data?.message || "Kwinjira byanze. Ongera ugerageze.";
       setError(errorMessage);
-      
+
       // Clear password field on error
       setFormData(prev => ({ ...prev, userpassword: "" }));
     } finally {
@@ -232,13 +198,6 @@ export default function Login() {
                   <label className="text-xs sm:text-sm font-medium text-gray-700 block">
                     Ijambobanga
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => navigate("/forgot-password")}
-                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    Wibagiwe?
-                  </button>
                 </div>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -359,29 +318,6 @@ export default function Login() {
           <a href="#" className="hover:text-blue-600 transition-colors">Ubujyanama</a>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-          20%, 40%, 60%, 80% { transform: translateX(2px); }
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }

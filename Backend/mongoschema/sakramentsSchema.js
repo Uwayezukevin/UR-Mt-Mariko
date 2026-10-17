@@ -4,4 +4,4 @@ const sakramentSchema = new mongoose.Schema({
   name: { type: String, required: true },
 });
 
-export default mongoose.model("Amasakramentu", sakramentSchema);
+export default mongoose.models.Amasakramentu || mongoose.model("Amasakramentu", sakramentSchema);
